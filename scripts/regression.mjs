@@ -319,7 +319,12 @@ check(
 check(
   "--create-bug, case not in run: no bug",
   run("result", "add", "-ru", runRef, "-ca", jiraCaseRef, "-s", "failed", "-cb"),
-  (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && noTicket(nextKey(bug ?? missing)),
+  (res) => errCode("CASE_NOT_IN_RUN", 2)(res) && noTicket(nextKey(bug ?? missing)),
+);
+check(
+  "--create-bug, passed: no bug",
+  run("result", "add", "-ru", jiraRunRef, "-ca", jiraCaseRef, "-s", "passed", "-cb"),
+  (res) => errCode("USAGE", 2)(res) && noTicket(nextKey(bug ?? missing)),
 );
 check("run sync without --yes", run("run", "sync", jiraRunRef), errCode("CONFIRM_REQUIRED", 2));
 check(

@@ -6,7 +6,7 @@ import { checkUploads, readOptionalText, type Upload } from "../../core/input.js
 import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
-import type { Step, Test } from "../../core/testrail-types.js";
+import type { Status, Step, Test } from "../../core/testrail-types.js";
 import { CaseService } from "../../services/case.service.js";
 import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
 import { UserService } from "../../services/user.service.js";
@@ -76,7 +76,12 @@ export function registerAdd(result: Command): void {
       if (steps)
         input.custom_step_results = await toStepResults(steps, await caseSteps(target), meta, "--steps");
       const bug = opts.createBug
-        ? await fileBug(config, await new ResultService().openTest(target), comment)
+        ? await fileBug(
+            config,
+            await new ResultService().openTest(target),
+            bugStatus(statuses, input.status_id),
+            comment,
+          )
         : undefined;
       if (bug) input.defects = joinRefs([...splitList(input.defects), bug.key]);
       const added = await addResult(target, input).catch((err: unknown) => {
@@ -145,10 +150,23 @@ async function attachTo(resultId: number, test: number, uploads: readonly Upload
   });
 }
 
+/** A bug is filed only for a failed or blocked result, so a passing run cannot open one by mistake. */
+function bugStatus(statuses: readonly Status[], statusId: number | undefined): "failed" | "blocked" {
+  const name = statuses.find((status) => status.id === statusId)?.name;
+  if (name !== "failed" && name !== "blocked")
+    throw new InputError("USAGE", "--create-bug needs -s failed or -s blocked.");
+  return name;
+}
+
 /** A Jira Bug named after the test, with the comment and a link back to TestRail. */
-async function fileBug(config: Config, test: Test, comment: string | undefined): Promise<JiraCreated> {
+async function fileBug(
+  config: Config,
+  test: Test,
+  status: "failed" | "blocked",
+  comment: string | undefined,
+): Promise<JiraCreated> {
   const url = testUrl(config, test.id);
   const description = [comment, `TestRail test T${test.id}: ${url}`].filter(Boolean).join("\n\n");
   // Jira summaries hold 255 characters.
-  return createJiraBug(clip(`T${test.id} failed: ${test.title}`, MAX_SUMMARY), description);
+  return createJiraBug(clip(`T${test.id} ${status}: ${test.title}`, MAX_SUMMARY), description);
 }
