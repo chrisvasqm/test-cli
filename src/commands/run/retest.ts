@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { isJiraKey, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
-import { jiraStatuses } from "../../core/jira.js";
+import { jiraStatuses, type JiraStatus } from "../../core/jira.js";
 import { grid, printResult } from "../../core/output.js";
 import type { Result, Test } from "../../core/testrail-types.js";
 import { sameName, splitList, uniqueRefs } from "../../core/text.js";
@@ -13,7 +13,7 @@ import { TestService } from "../../services/test.service.js";
 
 /** The statuses checked when `--status` is not given. */
 const RETEST_FROM = "failed,blocked";
-/** Jira statuses that count as fixed when `--done` is not given. */
+/** Jira statuses that count as fixed when `--done` is not given; any status in Jira's Done category counts too. */
 const DONE = "Done";
 
 interface RetestOptions {
@@ -43,7 +43,11 @@ export function registerRetest(run: Command): void {
     .command("retest <run>")
     .description("Set tests back to Retest when every Jira bug in their defects is done (needs jira-cli)")
     .option("-s, --status <names>", "Check tests with these statuses, comma-separated", RETEST_FROM)
-    .option("-o, --done <names>", "Jira statuses that mean fixed, comma-separated", DONE)
+    .option(
+      "-o, --done <names>",
+      "Jira statuses that mean fixed, comma-separated (any status in Jira's Done category counts too)",
+      DONE,
+    )
     .option("-y, --yes", "Add the Retest results without asking")
     .action(async (rawRun: string, opts: RetestOptions, cmd: Command) => {
       const id = runId(rawRun);
@@ -62,9 +66,12 @@ export function registerRetest(run: Command): void {
       ]);
       const bugsOf = new Map(tests.map((test) => [test.id, streakDefects(test, results, statusIds)]));
       const keys = uniqueRefs([...bugsOf.values()].flat());
-      const statuses = keys.length > 0 ? await jiraStatuses(keys) : new Map<string, string | null>();
-      const statusOf = (key: string) => statuses.get(key) ?? null;
-      const isDone = (key: string) => doneNames.some((name) => sameName(name, statusOf(key) ?? ""));
+      const statuses = keys.length > 0 ? await jiraStatuses(keys) : new Map<string, JiraStatus | null>();
+      const statusOf = (key: string) => statuses.get(key)?.status ?? null;
+      // Jira's Done category (jira-cli with statusCategory), or a --done name (any jira-cli).
+      const isDone = (key: string) =>
+        statuses.get(key)?.statusCategory?.toLowerCase() === "done" ||
+        doneNames.some((name) => sameName(name, statusOf(key) ?? ""));
 
       const plan: Plan = { retested: [], waiting: [], unlinked: [], errors: [] };
       for (const test of tests) {

@@ -74,21 +74,22 @@ async function viewAll(keys: readonly string[]): Promise<(readonly [string, Jira
   return replies;
 }
 
-/** The status field of `jira ticket view`. jira-cli has no status category, only the name. */
-const statusSchema = z.object({ status: z.string().min(1) });
+/** The status fields of `jira ticket view`; older jira-cli has no `statusCategory` (new, indeterminate or done). */
+const statusSchema = z.object({ status: z.string().min(1), statusCategory: z.string().optional() });
+export type JiraStatus = z.infer<typeof statusSchema>;
 
 /**
- * Each key's Jira status name, or null when Jira has no such ticket (or the user cannot see it).
+ * Each key's Jira status, or null when Jira has no such ticket (or the user cannot see it).
  * Any other jira-cli failure fails the lookup as a whole; a terminal user is offered `jira setup`
  * once, and the lookup runs again.
  */
 export async function jiraStatuses(
   keys: readonly string[],
   setupOffered = false,
-): Promise<Map<string, string | null>> {
+): Promise<Map<string, JiraStatus | null>> {
   const replies = await viewAll(keys);
   if (replies.some(([, reply]) => reply === undefined)) throw cliMissing();
-  const statuses = new Map<string, string | null>();
+  const statuses = new Map<string, JiraStatus | null>();
   for (const [key, reply] of replies) {
     if (reply?.error?.code === "TICKET_NOT_FOUND") {
       statuses.set(key, null);
@@ -96,7 +97,7 @@ export async function jiraStatuses(
     }
     const parsed = statusSchema.safeParse(reply?.data);
     if (reply?.ok === true && parsed.success) {
-      statuses.set(key, parsed.data.status);
+      statuses.set(key, parsed.data);
       continue;
     }
     const error = reply?.ok === true ? { code: "INVALID_RESPONSE", message: "no status" } : reply?.error;
