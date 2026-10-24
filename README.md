@@ -111,7 +111,7 @@ Every feature or fix PR ships a release.
    - `pnpm bump minor` for a new command or visible feature;
    - `pnpm bump patch` for fixes only;
    - `pnpm bump major` for a breaking change.
-2. **Write a clear squash commit subject** (the PR title), such as "Add run close". The release notes list the subjects of every commit since the previous release.
+2. **Write a clear squash commit subject** (the PR title), such as "Add run close", and put its Spanish version in an `Es:` trailer of the squash commit body, such as `Es: Agrega run close` (`gh pr merge --squash --body "Es: …"`). The release notes have an English section built from the subjects and a Spanish section built from the trailers; a commit without a trailer repeats its English subject there.
 3. **After the merge, run `pnpm release` on an up-to-date `main`**, before the next code PR merges. Docs-only merges in between are fine.
    - It needs `gh auth login` with push access.
    - It runs `pnpm check`, packs the CLI, tags the commit, and creates the GitHub release with notes built from the commit subjects, the checksum file `testrail-cli.tgz.sha256`, `testrail-cli-X.Y.Z.tgz` and `testrail-cli.tgz` (the latest-version link).
