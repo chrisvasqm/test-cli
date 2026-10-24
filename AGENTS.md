@@ -25,7 +25,7 @@ Every flag has a short form (`-s` for `--status`). Give each new flag one too, k
   - `delete_*&soft=1` is not a safe preview on TestRail Cloud: it deleted the case. Never send it.
 - **Checks.**
   - `pnpm check` runs the build, oxlint (max-depth 2, id-length ≥ 2, prefer-for-of, no-console) and `prettier --check`.
-  - There are no automated tests (owner decision). Verify with `pnpm check` and, after a command or flag change, `pnpm regression` (every command with short flags), plus live runs against the owner's throwaway TestRail project, with the owner's OK.
+  - There are no automated tests (owner decision). Verify with `pnpm check` and, after a command or flag change, `pnpm regression` (every command with short flags; Jira features use the real `jira` CLI, set up for this directory, and its throwaway tickets are deleted), plus live runs against the owner's throwaway TestRail project, with the owner's OK.
 - **Config file.** `.testrail-cli.json` (`baseUrl` https only, `email`, `apiKey`, `projectId`, optional `suiteId`) is gitignored and saved with mode 600. Never read it or commit it.
 - **Dependencies.** pnpm only, with exact versions. Never relax the supply-chain policy in `pnpm-workspace.yaml`.
 - **Pull requests.** Every change gets a branch and a squash-merged PR. There is no AI credit in commits or PRs. Bumping, release notes and `pnpm release` follow [README → Releasing](README.md#releasing).
