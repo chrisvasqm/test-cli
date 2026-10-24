@@ -66,6 +66,12 @@ You need [Node.js](https://nodejs.org) 24 or newer.
 curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
 \`\`\`
 
+On Windows (PowerShell):
+
+\`\`\`powershell
+irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
+\`\`\`
+
 To install exactly this version: \`npm install -g https://github.com/chrisvasqm/testrail-cli/releases/download/$tag/$asset_name\`
 
 ---
@@ -80,6 +86,12 @@ Necesita [Node.js](https://nodejs.org) 24 o una versión más reciente.
 
 \`\`\`sh
 curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
+\`\`\`
+
+En Windows (PowerShell):
+
+\`\`\`powershell
+irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
 \`\`\`
 
 Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/testrail-cli/releases/download/$tag/$asset_name\`
@@ -126,7 +138,7 @@ asset="$out/$asset_name"
 # Same file under a fixed name, so releases/latest/download/testrail-cli.tgz always installs the newest version.
 stable="$out/testrail-cli.tgz"
 cp "$asset" "$stable"
-# Checksum of the stable asset, which install.sh verifies before installing.
+# Checksum of the stable asset, which install.sh and install.ps1 verify before installing.
 checksum="$out/testrail-cli.tgz.sha256"
 (cd "$out" && shasum -a 256 testrail-cli.tgz >"$checksum")
 printf '\nSHA-256 of `%s`: `%s`\n' "$asset_name" "$(cut -d' ' -f1 "$checksum")" >>"$notes"

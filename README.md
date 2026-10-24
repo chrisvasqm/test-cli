@@ -10,7 +10,13 @@ You need Node.js 24 or newer. To install the latest release, or update to it, ru
 curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
 ```
 
-The [script](install.sh) checks your Node.js version, downloads the latest release, verifies its SHA-256 checksum, then installs it with `npm install -g`. Each [release](https://github.com/chrisvasqm/testrail-cli/releases) also lists the command for that exact version.
+On Windows, run this in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
+```
+
+The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js version, download the latest release, verify its SHA-256 checksum, then install it with `npm install -g`. Each [release](https://github.com/chrisvasqm/testrail-cli/releases) also lists the command for that exact version.
 
 To teach your AI agent (Claude Code, Codex, Cursor and others) to use the CLI, run:
 
