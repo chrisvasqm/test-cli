@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Live regression run against the configured TestRail project: creates its own case and run,
 // exercises every command on them with short flags only, then deletes the case and closes the run.
-// Needs a config (testrail setup) pointing at a throwaway project. usage: pnpm regression
+// Needs a config (test-cli setup) pointing at a throwaway project. usage: pnpm regression
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -39,7 +39,7 @@ function ticket(summary) {
     "--summary",
     summary,
     "--description",
-    "Created by testrail-cli regression",
+    "Created by test-cli regression",
   ).data?.key;
   if (!key) throw new Error("jira ticket create failed; is jira-cli set up for this directory?");
   tickets.push(key);
@@ -67,7 +67,7 @@ const K1 = ticket(`Regression ${tag} one (delete me)`);
 const K2 = ticket(story);
 const missing = `${K1.split("-")[0]}-999999`;
 
-/** Runs `testrail --json …`; returns { code, out } where out is the parsed JSON line. */
+/** Runs `test-cli --json …`; returns { code, out } where out is the parsed JSON line. */
 function run(...args) {
   try {
     const stdout = execFileSync("node", [cli, "-j", ...args], {
@@ -267,7 +267,7 @@ const child = jira(
   "--summary",
   `Regression ${tag} child (delete me)`,
   "--description",
-  "Created by testrail-cli regression",
+  "Created by test-cli regression",
 ).data?.key;
 if (child) tickets.push(child);
 check("link add <child>", run("link", "add", jiraCaseRef, child ?? missing), okData);

@@ -70,7 +70,7 @@ export function registerSync(run: Command): void {
       if (plans.length === 0) {
         throw new InputError(
           "NO_JIRA_KEYS",
-          `Run R${id} and its cases have no Jira keys in refs; link some with testrail link add.`,
+          `Run R${id} and its cases have no Jira keys in refs; link some with test-cli link add.`,
         );
       }
       const views = plans.map((plan) => toView(plan, statuses));

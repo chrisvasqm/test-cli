@@ -25,11 +25,11 @@ import { closePrompts } from "./core/prompt.js";
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
 const program = new FlagCommand()
-  .name("testrail")
-  .description("TestRail from the terminal, for humans and agents")
+  .name("test-cli")
+  .description("Test management (TestRail) from the terminal, for humans and agents")
   .version(version, "-v, --version", "Print the version")
   .option("-j, --json", "Machine-readable output")
-  .option("-c, --config <path>", "Path to a config file (default: nearest .testrail-cli.json)")
+  .option("-c, --config <path>", "Path to a config file (default: nearest .test-cli.json)")
   .exitOverride()
   // Commander's own error lines are dropped (printError reports them); help text still prints.
   .configureOutput({ outputError: () => undefined });

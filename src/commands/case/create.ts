@@ -18,7 +18,7 @@ interface CreateOptions extends CaseFieldOptions {
 export function registerCreate(testCase: Command): void {
   const cmd = testCase
     .command("create")
-    .description("Create a case in a section (section ids: testrail section list)")
+    .description("Create a case in a section (section ids: test-cli section list)")
     .requiredOption("-sc, --section <id>", "Section to add the case to")
     .option("-t, --title <title>", "Case title (required unless --from-jira)")
     .option(

@@ -1,10 +1,10 @@
 # AGENTS.md
 
-`testrail` is a TestRail CLI written in TypeScript for Node.js. Agents use it in place of a TestRail MCP server.
+`test-cli` (command `test-cli`, alias `testrail`) is a test management CLI written in TypeScript for Node.js. TestRail is its only provider today. Agents use it in place of a TestRail MCP server.
 
 ## Using the CLI
 
-The agent guide is the `testrail-cli` skill in [chrisvasqm/skills](https://github.com/chrisvasqm/skills/blob/main/skills/testrail-cli/SKILL.md). It covers setup, safety rules, commands, `--json` data shapes and every error code. `npx skills add chrisvasqm/skills --skill testrail-cli` installs it, so it has to stand alone.
+The agent guide is the `test-cli` skill in [chrisvasqm/skills](https://github.com/chrisvasqm/skills/blob/main/skills/test-cli/SKILL.md). It covers setup, safety rules, commands, `--json` data shapes and every error code. `npx skills add chrisvasqm/skills --skill test-cli` installs it, so it has to stand alone.
 
 When a command, flag, data shape or error code changes, update the README command table in the same PR, and open a matching PR for SKILL.md in chrisvasqm/skills.
 
@@ -33,6 +33,6 @@ Every flag has a short form (`-s` for `--status`). Give each new flag one too:
 - **Checks.**
   - `pnpm check` runs the build, oxlint (max-depth 2, id-length ≥ 2, prefer-for-of, no-console) and `prettier --check`.
   - There are no automated tests (owner decision). Verify with `pnpm check` and, after a command or flag change, `pnpm regression` (every command with short flags; Jira features use the real `jira` CLI, set up for this directory, and its throwaway tickets are deleted), plus live runs against the owner's throwaway TestRail project, with the owner's OK.
-- **Config file.** `.testrail-cli.json` (`baseUrl` https only, `email`, `apiKey`, `projectId`, optional `suiteId`) is gitignored and saved with mode 600. Never read it or commit it.
+- **Config file.** `.test-cli.json` (`baseUrl` https only, `email`, `apiKey`, `projectId`, optional `suiteId`) is gitignored and saved with mode 600. Never read it or commit it.
 - **Dependencies.** pnpm only, with exact versions. Never relax the supply-chain policy in `pnpm-workspace.yaml`.
 - **Pull requests.** Every change gets a branch and a squash-merged PR. There is no AI credit in commits or PRs. Bumping, release notes and `pnpm release` follow [README → Releasing](README.md#releasing).

@@ -144,7 +144,7 @@ async function attachTo(resultId: number, test: number, uploads: readonly Upload
   return new AttachmentService().addAll({ kind: "result", id: resultId }, uploads).catch((err: unknown) => {
     if (!(err instanceof CliError)) throw err;
     throw err.withNote(
-      `Result #${resultId} was saved; attach the files with testrail attachment add T${test} -rs ${resultId}, not result add.`,
+      `Result #${resultId} was saved; attach the files with test-cli attachment add T${test} -rs ${resultId}, not result add.`,
       { resultId, testId: test, error: err.details },
     );
   });

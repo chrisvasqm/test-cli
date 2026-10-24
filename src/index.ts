@@ -8,7 +8,7 @@ const minimum = Number(/\d+/.exec(engines.node)?.[0] ?? "0");
 const current = Number(process.versions.node.split(".")[0]);
 
 if (current < minimum) {
-  process.stderr.write(`testrail needs Node.js ${minimum} or newer (you have ${process.versions.node}).\n`);
+  process.stderr.write(`test-cli needs Node.js ${minimum} or newer (you have ${process.versions.node}).\n`);
   process.exit(1);
 }
 

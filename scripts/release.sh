@@ -10,7 +10,7 @@ die() { echo "release: $*" >&2; exit 1; }
 
 version=$(node -p "require('./package.json').version")
 tag="v$version"
-asset_name="testrail-cli-$version.tgz"
+asset_name="test-cli-$version.tgz"
 
 gh auth status >/dev/null 2>&1 || die "gh is not logged in (gh auth login)"
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || die "switch to main first"
@@ -65,16 +65,16 @@ $changes
 You need [Node.js](https://nodejs.org) 24 or newer.
 
 \`\`\`sh
-curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.sh | sh
 \`\`\`
 
 On Windows (PowerShell):
 
 \`\`\`powershell
-irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-To install exactly this version: \`npm install -g https://github.com/chrisvasqm/testrail-cli/releases/download/$tag/$asset_name\`
+To install exactly this version: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
 
 ---
 
@@ -89,16 +89,16 @@ $cambios
 Necesita [Node.js](https://nodejs.org) 24 o una versión más reciente.
 
 \`\`\`sh
-curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.sh | sh
 \`\`\`
 
 En Windows (PowerShell):
 
 \`\`\`powershell
-irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/testrail-cli/releases/download/$tag/$asset_name\`
+Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
 NOTES
 if tagged=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
   [ "$tagged" = "$head" ] || die "$tag exists on another commit; bump the version in the PR first"
@@ -139,20 +139,25 @@ tar -xzOf "$tarball" package/package.json | node -e '
 ' || die "package.json has runtime dependencies; dist/index.js must bundle them"
 asset="$out/$asset_name"
 [ "$tarball" = "$asset" ] || mv "$tarball" "$asset"
-# Same file under a fixed name, so releases/latest/download/testrail-cli.tgz always installs the newest version.
-stable="$out/testrail-cli.tgz"
+# Same file under a fixed name, so releases/latest/download/test-cli.tgz always installs the newest version.
+stable="$out/test-cli.tgz"
 cp "$asset" "$stable"
+# Install links from before the rename (releases/latest/download/testrail-cli.tgz) keep working.
+legacy="$out/testrail-cli.tgz"
+cp "$asset" "$legacy"
+legacy_checksum="$out/testrail-cli.tgz.sha256"
+(cd "$out" && shasum -a 256 testrail-cli.tgz >"$legacy_checksum")
 # Checksum of the stable asset, which install.sh and install.ps1 verify before installing.
-checksum="$out/testrail-cli.tgz.sha256"
-(cd "$out" && shasum -a 256 testrail-cli.tgz >"$checksum")
+checksum="$out/test-cli.tgz.sha256"
+(cd "$out" && shasum -a 256 test-cli.tgz >"$checksum")
 printf '\nSHA-256 of `%s`: `%s`\n' "$asset_name" "$(cut -d' ' -f1 "$checksum")" >>"$notes"
 
-git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "testrail-cli $tag"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "test-cli $tag"
 git push -q origin "$tag"
 if [ "$state" != none ]; then
-  gh release upload "$tag" "$asset" "$stable" "$checksum" --clobber
+  gh release upload "$tag" "$asset" "$stable" "$checksum" "$legacy" "$legacy_checksum" --clobber
   gh release edit "$tag" --notes-file "$notes" --draft=false >/dev/null
   echo "uploaded the assets and refreshed the notes of existing $state release $tag"
 else
-  gh release create "$tag" "$asset" "$stable" "$checksum" --verify-tag --title "testrail-cli $tag" --notes-file "$notes"
+  gh release create "$tag" "$asset" "$stable" "$checksum" "$legacy" "$legacy_checksum" --verify-tag --title "test-cli $tag" --notes-file "$notes"
 fi

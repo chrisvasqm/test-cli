@@ -5,8 +5,11 @@ import { homedir } from "node:os";
 import { z } from "zod";
 import { CliError } from "./errors.js";
 
-export const CONFIG_FILE = ".testrail-cli.json";
-export const GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
+export const CONFIG_FILE = ".test-cli.json";
+export const GLOBAL_CONFIG = join(homedir(), ".config", "test-cli", "config.json");
+/** Names from before the rename to test-cli; still read, never written by setup. */
+const LEGACY_CONFIG_FILE = ".testrail-cli.json";
+const LEGACY_GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
 
 export const configSchema = z.object({
   baseUrl: z
@@ -29,8 +32,9 @@ export type Config = z.infer<typeof configSchema>;
 function walkUp(start: string): string | undefined {
   let dir = resolve(start);
   for (;;) {
-    const candidate = join(dir, CONFIG_FILE);
-    if (existsSync(candidate)) return candidate;
+    // Both names in each directory, so a parent's new file never shadows a closer old one.
+    const candidate = [CONFIG_FILE, LEGACY_CONFIG_FILE].map((name) => join(dir, name)).find(existsSync);
+    if (candidate) return candidate;
     const parent = dirname(dir);
     if (parent === dir) return undefined;
     dir = parent;
@@ -39,18 +43,18 @@ function walkUp(start: string): string | undefined {
 
 function findConfigPath(explicit?: string): string | undefined {
   if (explicit) return resolve(explicit);
-  return walkUp(process.cwd()) ?? (existsSync(GLOBAL_CONFIG) ? GLOBAL_CONFIG : undefined);
+  return walkUp(process.cwd()) ?? [GLOBAL_CONFIG, LEGACY_GLOBAL_CONFIG].find(existsSync);
 }
 
 export function loadConfig(explicit?: string): { path: string; config: Config } {
   const path = findConfigPath(explicit);
   if (!path) {
-    throw new CliError("CONFIG_MISSING", `No ${CONFIG_FILE} found. Run \`testrail setup\` first.`);
+    throw new CliError("CONFIG_MISSING", `No ${CONFIG_FILE} found. Run \`test-cli setup\` first.`);
   }
   if (!existsSync(path)) {
     throw new CliError(
       "CONFIG_MISSING",
-      `${path} does not exist. Run \`testrail --config ${path} setup\` first.`,
+      `${path} does not exist. Run \`test-cli --config ${path} setup\` first.`,
     );
   }
   let raw: unknown;

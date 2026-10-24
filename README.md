@@ -1,27 +1,29 @@
-# testrail-cli
+# test-cli
 
-`testrail` is a small command-line tool for TestRail. Use it from the terminal or from CI, or let an AI agent use it instead of a TestRail MCP server, for far fewer tokens.
+`test-cli` is a small command-line tool for test management. It works with TestRail today, and is built so other providers (Qase, Xray) can follow. Use it from the terminal or from CI, or let an AI agent use it instead of a TestRail MCP server, for far fewer tokens.
+
+The command is `test-cli`. Version 3 also installs `testrail` as an alias, so scripts from before the rename keep working.
 
 ## Install
 
 You need Node.js 24 or newer. To install the latest release, or update to it, run:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.sh | sh
 ```
 
 On Windows, run this in PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 ```
 
-The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js version, download the latest release, verify its SHA-256 checksum, then install it with `npm install -g`. Each [release](https://github.com/chrisvasqm/testrail-cli/releases) also lists the command for that exact version.
+The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js version, download the latest release, verify its SHA-256 checksum, then install it with `npm install -g`. Each [release](https://github.com/chrisvasqm/test-cli/releases) also lists the command for that exact version.
 
 To teach your AI agent (Claude Code, Codex, Cursor and others) to use the CLI, run:
 
 ```sh
-npx skills add chrisvasqm/skills --skill testrail-cli
+npx skills add chrisvasqm/skills --skill test-cli
 ```
 
 `npx skills add chrisvasqm/skills` adds every skill there, including the one for [jira-cli](https://github.com/chrisvasqm/jira-cli).
@@ -30,14 +32,14 @@ npx skills add chrisvasqm/skills --skill testrail-cli
 
 First, turn on the API in TestRail (Administration > Site Settings > API) and create an API key (My Settings > API Keys).
 
-Then run `testrail setup` in the project directory. It asks for:
+Then run `test-cli setup` in the project directory. It asks for:
 
 - your TestRail URL (`https://…`; a link copied from the browser works too);
 - your TestRail email;
 - the API key;
 - a project, and a suite if the project has several.
 
-It saves them to `.testrail-cli.json` with file mode 600. If that file already exists, it asks before replacing it (`--yes` skips the question). Add `--global` to save to `~/.config/testrail-cli/config.json` instead, or pass `--config <path>` to choose the file.
+It saves them to `.test-cli.json` with file mode 600 (configs from before 3.0.0, `.testrail-cli.json` and `~/.config/testrail-cli/config.json`, are still read). If that file already exists, it asks before replacing it (`--yes` skips the question). Add `--global` to save to `~/.config/test-cli/config.json` instead, or pass `--config <path>` to choose the file.
 
 - Keep the file out of git, because it holds your API key. `setup` warns you when git does not ignore it.
 - Each directory can have its own config, so different projects can use different TestRail sites or projects.
@@ -45,7 +47,7 @@ It saves them to `.testrail-cli.json` with file mode 600. If that file already e
 The CLI looks for a config in this order:
 
 1. `--config <path>`;
-2. the nearest `.testrail-cli.json`, walking up from the current directory;
+2. the nearest `.test-cli.json`, walking up from the current directory;
 3. the global file.
 
 ## Ask your agent
@@ -53,33 +55,33 @@ The CLI looks for a config in this order:
 With the skill installed, describe the job in plain words and let the agent pick the commands. Some examples, with the commands the agent runs:
 
 - **"Write test cases for KAN-12: a happy path and a wrong-password case."** It reads the ticket, picks a section and creates each case with steps, linked to the ticket.
-  `jira ticket view KAN-12` → `testrail section list` → `testrail case create -sc 4 -t "Login with a valid password" -r KAN-12 -sa "Enter a valid email and password::The dashboard opens"`
+  `jira ticket view KAN-12` → `test-cli section list` → `test-cli case create -sc 4 -t "Login with a valid password" -r KAN-12 -sa "Enter a valid email and password::The dashboard opens"`
 - **"Start a test run for KAN-12."** A run named after the ticket with only the cases linked to it.
-  `testrail run create -fj KAN-12`
+  `test-cli run create -fj KAN-12`
 - **"Start a run for the current sprint."** The cases linked to the active sprint's tickets.
-  `testrail run create -w active`
+  `test-cli run create -w active`
 - **"Which tickets in this sprint have no tests, and what is failing?"** Every sprint ticket with its linked cases and their latest results.
-  `testrail coverage`
+  `test-cli coverage`
 - **"What failed in R3, and why?"** The failed and retest tests, then the latest results of each.
-  `testrail test list R3 -s failed,retest` → `testrail test view T45 -n 3`
+  `test-cli test list R3 -s failed,retest` → `test-cli test view T45 -n 3`
 - **"T45 fails: the login page returns a 500. Mark it failed and file a bug."** One result with the comment, and a Jira bug linked as its defect.
-  `testrail result add T45 -s failed -m "Login returns 500" -cb`
+  `test-cli result add T45 -s failed -m "Login returns 500" -cb`
 - **"CI finished. Report results.json to R3."** Every result in one request; all land or none do.
-  `testrail result import R3 -f results.json`
+  `test-cli result import R3 -f results.json`
 - **"Which cases cover KAN-12? Is anything missing from the acceptance criteria?"** The linked cases, read next to the ticket.
-  `testrail case list -r KAN-12` → `testrail case view C12` → `jira ticket view KAN-12`
+  `test-cli case list -r KAN-12` → `test-cli case view C12` → `jira ticket view KAN-12`
 - **"Link KAN-14 to C12 and C13."**
-  `testrail link add C12 KAN-14` → `testrail link add C13 KAN-14`
+  `test-cli link add C12 KAN-14` → `test-cli link add C13 KAN-14`
 - **"Rerun what failed in R3, assigned to me."** A new run with only R3's failed, retest and blocked cases.
-  `testrail run create -ru R3 -a me`
+  `test-cli run create -ru R3 -a me`
 - **"T45 failed at step 2. Attach the screenshot."** Per-step statuses and the file on the same result.
-  `testrail result add T45 -s failed -sl 1:passed,2:failed -at login.png`
+  `test-cli result add T45 -s failed -sl 1:passed,2:failed -at login.png`
 - **"Plan the 2.0 release: one run per browser."** A plan on the milestone, with one run per configuration.
-  `testrail milestone list` → `testrail plan create -na "Release 2.0" -ml M3 -cf Chrome,Firefox`
+  `test-cli milestone list` → `test-cli plan create -na "Release 2.0" -ml M3 -cf Chrome,Firefox`
 - **"What has C12 done over the last runs?"** Its results across runs, newest first.
-  `testrail case history C12 -n 10`
+  `test-cli case history C12 -n 10`
 - **"The sprint is over. Summarize R3 and close it."** Counts per status, then a close after you confirm.
-  `testrail run view R3` → `testrail run close R3 -y`
+  `test-cli run view R3` → `test-cli run close R3 -y`
 
 Agents add `-j` to every command to read the JSON output. They never pass `-y` (delete or close) unless you asked for it.
 
@@ -89,64 +91,64 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 
 | Command                                 | What it does                                                                                                                                                                       |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `testrail project list`                 | Active projects; `*` marks yours                                                                                                                                                   |
-| `testrail project view [P]`             | Overview of yours or `P`: open runs and plans with counts and pass %, totals, open milestones (overdue flagged); `-n` per list                                                     |
-| `testrail project use <P>`              | Make a project (and `-su <S>`) the default                                                                                                                                         |
-| `testrail suite list`                   | Suites in your project; `*` marks yours                                                                                                                                            |
-| `testrail suite view <S>`               | Name, description, state and URL                                                                                                                                                   |
-| `testrail suite create`                 | New suite (`-na <name>`, `-d <text>` or `-f <file>`); multi-suite projects only                                                                                                    |
-| `testrail suite edit <S>`               | Change the name (`-na`) or description (`-d`, `-f`)                                                                                                                                |
-| `testrail suite delete <S>`             | Delete a suite with its sections, cases and tests                                                                                                                                  |
-| `testrail section list`                 | Sections and their ids, nested                                                                                                                                                     |
-| `testrail section create`               | New section (`-na <name>`, `-pa <parent>`, `-d <text>` or `-f <file>`)                                                                                                             |
-| `testrail section edit <id>`            | Rename (`-na`) or change the description (`-d`, `-f`)                                                                                                                              |
-| `testrail section move <id>`            | Move under `-pa <parent>` (or `top`) and/or after `-af <sibling>` (or `first`)                                                                                                     |
-| `testrail section delete <id>`          | Delete a section, its child sections and all their cases                                                                                                                           |
-| `testrail case list`                    | Cases (`-sc <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-ty <type>`, `-u <date>`, `-n <limit>`, 50)                                                                          |
-| `testrail case view <C>`                | Fields, preconditions, steps and expected results                                                                                                                                  |
-| `testrail case history <C>`             | Results across the latest runs, newest first (`-rn <runs>`, 25; `-n <limit>`, 20; or `-ru <R>`)                                                                                    |
-| `testrail case create`                  | New case (`-sc <section>`, and `-t <title>` or `-fj KAN-12`)                                                                                                                       |
-| `testrail case edit <C…>`               | Change only the fields you pass; with several cases, only `-ty`, `-p`, `-r`, `-es`                                                                                                 |
-| `testrail case copy <C…> -sc <section>` | Copy cases into a section                                                                                                                                                          |
-| `testrail case move <C…> -sc <section>` | Move cases into a section (same suite)                                                                                                                                             |
-| `testrail case delete <C>`              | Delete a case and its tests in active runs                                                                                                                                         |
-| `testrail run list`                     | Open runs, newest first (`-cp` for closed, `-n <limit>`, 25)                                                                                                                       |
-| `testrail run view <R>`                 | Progress per status, refs and description                                                                                                                                          |
-| `testrail run create`                   | New run with every case, `-ca C1,C2`, `-fj KAN-12`, `-w <sprint>` or `-ep <epic>`; `-ru R3` reruns R3's failed, retest and blocked tests (`-s` picks statuses); `-a me` assigns it |
-| `testrail run edit <R>`                 | Change an open run, in a plan too (`-na`, `-d`, `-r`, `-ml M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-ca C1,C2` sets                                                   |
-| `testrail run close <R>`                | Close a run (it cannot be reopened); a run in a plan closes only with its plan                                                                                                     |
-| `testrail run delete <R>`               | Delete a run, its tests and results (closed runs need permission)                                                                                                                  |
-| `testrail run retest <R>`               | Back to Retest: failed and blocked tests whose Jira bugs (defects) are all Done (`-s` statuses, `-dn` done statuses)                                                               |
-| `testrail run sync <R>`                 | Comment the run's results on its linked Jira tickets (a key linked by cases: their tests; otherwise a run ref: all tests); `-mv Done` also moves fully passed tickets              |
-| `testrail plan list`                    | Open test plans, newest first (`-cp` for closed, `-n <limit>`, 25)                                                                                                                 |
-| `testrail plan view <R>`                | Progress per status, milestone, and each entry's runs with configurations                                                                                                          |
-| `testrail plan create`                  | New plan (`-na <name>`; `-d`/`-f`, `-ml <M>`); run flags as in `add-run` add its first runs                                                                                        |
-| `testrail plan add-run <R>`             | Add runs (`-su <S>`, `-na`, `-ca C1,C2` or `-fj KAN-12`, `-a me`, `-cf Chrome,Windows`: one run per combination)                                                                   |
-| `testrail plan close <R>`               | Close a plan and its runs (it cannot be reopened)                                                                                                                                  |
-| `testrail plan delete <R>`              | Delete a plan with its runs, tests and results                                                                                                                                     |
-| `testrail milestone list`               | Open milestones with due dates (`-cp` for completed, `-n <limit>`, 25)                                                                                                             |
-| `testrail milestone view <M>`           | Dates, parent, refs and description                                                                                                                                                |
-| `testrail milestone create`             | New milestone (`-na <name>`; `-d`/`-f`, `-sd`/`-du` start/due dates, `-pa <M>` parent, `-r`)                                                                                       |
-| `testrail milestone edit <M>`           | Change the fields given (`-na`, `-d`/`-f`, `-sd`/`-du`, `-pa <M>` parent, `-r`); `-sr` marks it started (`-sd` makes it upcoming again)                                            |
-| `testrail milestone close <M>`          | Mark it completed                                                                                                                                                                  |
-| `testrail milestone reopen <M>`         | Mark a completed milestone open again                                                                                                                                              |
-| `testrail milestone delete <M>`         | Delete a milestone (its sub-milestones stay, without a parent)                                                                                                                     |
-| `testrail test list <R>`                | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                                                                                    |
-| `testrail test todo`                    | Your To-Do: tests assigned to you, not done (Untested, Retest), in open runs and plans (`-a <user>`, `-s`, `-ml <M>`, `-n <limit>`, 100)                                           |
-| `testrail test view <T>`                | Status, steps and latest results (`-n <0-100>` results, 5)                                                                                                                         |
-| `testrail result add <T>`               | Add a result (`-sl 1:passed,2:failed` step statuses, `-at <file>` attaches, `-cb` files a Jira bug, `-a me` reassigns); or `-ru <R> -ca <C>`                                       |
-| `testrail result import <R> -f <file>`  | Add many results in one request from a JSON file (`-` is stdin)                                                                                                                    |
-| `testrail link list <C\|R\|T\|KEY>`     | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it                                                                     |
-| `testrail link add <C\|R\|T> <KEY…>`    | Link Jira keys; checks them with jira-cli when installed                                                                                                                           |
-| `testrail link remove <C\|R> <KEY…>`    | Unlink Jira keys from a case or run                                                                                                                                                |
-| `testrail coverage`                     | Jira tickets of a sprint (`-w`, default the active one), epic (`-ep`) or JQL (`-ql`): their linked cases and each case's latest result (`-rn` runs to read)                        |
-| `testrail configuration list`           | Configuration groups (e.g. browsers, OS) and their ids                                                                                                                             |
-| `testrail report list`                  | On-demand report templates (made in the UI with "On-demand via the API")                                                                                                           |
-| `testrail report run <id>`              | Run a report template; prints its URL, HTML and PDF links                                                                                                                          |
-| `testrail user list`                    | Users in the project (id, name, email); `*` marks you                                                                                                                              |
-| `testrail attachment list <C\|R\|T>`    | Files on a case, a run, or a test's results (`-n <limit>`, 100)                                                                                                                    |
-| `testrail attachment add <C\|R\|T> …`   | Attach files (256 MB each); a test's go to its newest result or `-rs <result id>`; also `result add -at`                                                                           |
-| `testrail setup`                        | Create the config (see [Set up](#set-up))                                                                                                                                          |
+| `test-cli project list`                 | Active projects; `*` marks yours                                                                                                                                                   |
+| `test-cli project view [P]`             | Overview of yours or `P`: open runs and plans with counts and pass %, totals, open milestones (overdue flagged); `-n` per list                                                     |
+| `test-cli project use <P>`              | Make a project (and `-su <S>`) the default                                                                                                                                         |
+| `test-cli suite list`                   | Suites in your project; `*` marks yours                                                                                                                                            |
+| `test-cli suite view <S>`               | Name, description, state and URL                                                                                                                                                   |
+| `test-cli suite create`                 | New suite (`-na <name>`, `-d <text>` or `-f <file>`); multi-suite projects only                                                                                                    |
+| `test-cli suite edit <S>`               | Change the name (`-na`) or description (`-d`, `-f`)                                                                                                                                |
+| `test-cli suite delete <S>`             | Delete a suite with its sections, cases and tests                                                                                                                                  |
+| `test-cli section list`                 | Sections and their ids, nested                                                                                                                                                     |
+| `test-cli section create`               | New section (`-na <name>`, `-pa <parent>`, `-d <text>` or `-f <file>`)                                                                                                             |
+| `test-cli section edit <id>`            | Rename (`-na`) or change the description (`-d`, `-f`)                                                                                                                              |
+| `test-cli section move <id>`            | Move under `-pa <parent>` (or `top`) and/or after `-af <sibling>` (or `first`)                                                                                                     |
+| `test-cli section delete <id>`          | Delete a section, its child sections and all their cases                                                                                                                           |
+| `test-cli case list`                    | Cases (`-sc <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-ty <type>`, `-u <date>`, `-n <limit>`, 50)                                                                          |
+| `test-cli case view <C>`                | Fields, preconditions, steps and expected results                                                                                                                                  |
+| `test-cli case history <C>`             | Results across the latest runs, newest first (`-rn <runs>`, 25; `-n <limit>`, 20; or `-ru <R>`)                                                                                    |
+| `test-cli case create`                  | New case (`-sc <section>`, and `-t <title>` or `-fj KAN-12`)                                                                                                                       |
+| `test-cli case edit <C…>`               | Change only the fields you pass; with several cases, only `-ty`, `-p`, `-r`, `-es`                                                                                                 |
+| `test-cli case copy <C…> -sc <section>` | Copy cases into a section                                                                                                                                                          |
+| `test-cli case move <C…> -sc <section>` | Move cases into a section (same suite)                                                                                                                                             |
+| `test-cli case delete <C>`              | Delete a case and its tests in active runs                                                                                                                                         |
+| `test-cli run list`                     | Open runs, newest first (`-cp` for closed, `-n <limit>`, 25)                                                                                                                       |
+| `test-cli run view <R>`                 | Progress per status, refs and description                                                                                                                                          |
+| `test-cli run create`                   | New run with every case, `-ca C1,C2`, `-fj KAN-12`, `-w <sprint>` or `-ep <epic>`; `-ru R3` reruns R3's failed, retest and blocked tests (`-s` picks statuses); `-a me` assigns it |
+| `test-cli run edit <R>`                 | Change an open run, in a plan too (`-na`, `-d`, `-r`, `-ml M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-ca C1,C2` sets                                                   |
+| `test-cli run close <R>`                | Close a run (it cannot be reopened); a run in a plan closes only with its plan                                                                                                     |
+| `test-cli run delete <R>`               | Delete a run, its tests and results (closed runs need permission)                                                                                                                  |
+| `test-cli run retest <R>`               | Back to Retest: failed and blocked tests whose Jira bugs (defects) are all Done (`-s` statuses, `-dn` done statuses)                                                               |
+| `test-cli run sync <R>`                 | Comment the run's results on its linked Jira tickets (a key linked by cases: their tests; otherwise a run ref: all tests); `-mv Done` also moves fully passed tickets              |
+| `test-cli plan list`                    | Open test plans, newest first (`-cp` for closed, `-n <limit>`, 25)                                                                                                                 |
+| `test-cli plan view <R>`                | Progress per status, milestone, and each entry's runs with configurations                                                                                                          |
+| `test-cli plan create`                  | New plan (`-na <name>`; `-d`/`-f`, `-ml <M>`); run flags as in `add-run` add its first runs                                                                                        |
+| `test-cli plan add-run <R>`             | Add runs (`-su <S>`, `-na`, `-ca C1,C2` or `-fj KAN-12`, `-a me`, `-cf Chrome,Windows`: one run per combination)                                                                   |
+| `test-cli plan close <R>`               | Close a plan and its runs (it cannot be reopened)                                                                                                                                  |
+| `test-cli plan delete <R>`              | Delete a plan with its runs, tests and results                                                                                                                                     |
+| `test-cli milestone list`               | Open milestones with due dates (`-cp` for completed, `-n <limit>`, 25)                                                                                                             |
+| `test-cli milestone view <M>`           | Dates, parent, refs and description                                                                                                                                                |
+| `test-cli milestone create`             | New milestone (`-na <name>`; `-d`/`-f`, `-sd`/`-du` start/due dates, `-pa <M>` parent, `-r`)                                                                                       |
+| `test-cli milestone edit <M>`           | Change the fields given (`-na`, `-d`/`-f`, `-sd`/`-du`, `-pa <M>` parent, `-r`); `-sr` marks it started (`-sd` makes it upcoming again)                                            |
+| `test-cli milestone close <M>`          | Mark it completed                                                                                                                                                                  |
+| `test-cli milestone reopen <M>`         | Mark a completed milestone open again                                                                                                                                              |
+| `test-cli milestone delete <M>`         | Delete a milestone (its sub-milestones stay, without a parent)                                                                                                                     |
+| `test-cli test list <R>`                | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                                                                                    |
+| `test-cli test todo`                    | Your To-Do: tests assigned to you, not done (Untested, Retest), in open runs and plans (`-a <user>`, `-s`, `-ml <M>`, `-n <limit>`, 100)                                           |
+| `test-cli test view <T>`                | Status, steps and latest results (`-n <0-100>` results, 5)                                                                                                                         |
+| `test-cli result add <T>`               | Add a result (`-sl 1:passed,2:failed` step statuses, `-at <file>` attaches, `-cb` files a Jira bug, `-a me` reassigns); or `-ru <R> -ca <C>`                                       |
+| `test-cli result import <R> -f <file>`  | Add many results in one request from a JSON file (`-` is stdin)                                                                                                                    |
+| `test-cli link list <C\|R\|T\|KEY>`     | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it                                                                     |
+| `test-cli link add <C\|R\|T> <KEY…>`    | Link Jira keys; checks them with jira-cli when installed                                                                                                                           |
+| `test-cli link remove <C\|R> <KEY…>`    | Unlink Jira keys from a case or run                                                                                                                                                |
+| `test-cli coverage`                     | Jira tickets of a sprint (`-w`, default the active one), epic (`-ep`) or JQL (`-ql`): their linked cases and each case's latest result (`-rn` runs to read)                        |
+| `test-cli configuration list`           | Configuration groups (e.g. browsers, OS) and their ids                                                                                                                             |
+| `test-cli report list`                  | On-demand report templates (made in the UI with "On-demand via the API")                                                                                                           |
+| `test-cli report run <id>`              | Run a report template; prints its URL, HTML and PDF links                                                                                                                          |
+| `test-cli user list`                    | Users in the project (id, name, email); `*` marks you                                                                                                                              |
+| `test-cli attachment list <C\|R\|T>`    | Files on a case, a run, or a test's results (`-n <limit>`, 100)                                                                                                                    |
+| `test-cli attachment add <C\|R\|T> …`   | Attach files (256 MB each); a test's go to its newest result or `-rs <result id>`; also `result add -at`                                                                           |
+| `test-cli setup`                        | Create the config (see [Set up](#set-up))                                                                                                                                          |
 
 - **Case fields (`create` and `edit`):**
   - `-t --title`, `-ty --type <name>`, `-p --priority <name>`, `-es --estimate 5m`
@@ -165,7 +167,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
 - **Deletes, `run close`, `run sync`, `run retest` and `plan close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
 
-Every option has a short form, lowercase only. A letter means one thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status, `-a` is an assignee (`me`, an email or a user id), `-w` a sprint, `-y` is `--yes`. When a letter is taken, a later option gets two letters: `-sc` section, `-pa` parent, `-na` name, `-cp` closed or completed, `-fj` `--from-jira`, `-ep` an epic, `-ql` JQL, `-rn` how many recent runs to read, `-ca`/`-ru`/`-su`/`-ml` case, run, suite and milestone ids. Combined short flags (`-yj`) are not supported. Run `testrail <command> --help` for every option.
+Every option has a short form, lowercase only. A letter means one thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status, `-a` is an assignee (`me`, an email or a user id), `-w` a sprint, `-y` is `--yes`. When a letter is taken, a later option gets two letters: `-sc` section, `-pa` parent, `-na` name, `-cp` closed or completed, `-fj` `--from-jira`, `-ep` an epic, `-ql` JQL, `-rn` how many recent runs to read, `-ca`/`-ru`/`-su`/`-ml` case, run, suite and milestone ids. Combined short flags (`-yj`) are not supported. Run `test-cli <command> --help` for every option.
 
 ## Output
 
@@ -181,7 +183,7 @@ Exit codes:
 - `130`: cancelled with Ctrl+C
 - `1`: any other error
 
-The [agent skill](https://github.com/chrisvasqm/skills/blob/main/skills/testrail-cli/SKILL.md) lists the data shapes and every error code.
+The [agent skill](https://github.com/chrisvasqm/skills/blob/main/skills/test-cli/SKILL.md) lists the data shapes and every error code.
 
 ## Development
 
@@ -189,7 +191,7 @@ The [agent skill](https://github.com/chrisvasqm/skills/blob/main/skills/testrail
 pnpm install
 pnpm dev case list  # run from source
 pnpm check          # type-check, bundle, lint, format check
-pnpm add -g .       # once: use your local build as the global `testrail` (then `pnpm build` after changes)
+pnpm add -g .       # once: use your local build as the global `test-cli` (then `pnpm build` after changes)
 ```
 
 [AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs, plan and milestone as evidence. Jira features go through the real `jira` CLI: it creates throwaway tickets in its configured project and deletes them when the run ends, even on Ctrl+C.
@@ -205,5 +207,5 @@ Every feature or fix PR ships a release.
 2. **Write a clear squash commit subject** (the PR title), such as "Add run close", and put its Spanish version in an `Es:` trailer of the squash commit body, such as `Es: Agrega run close` (`gh pr merge --squash --body "Es: …"`). The release notes have an English section built from the subjects and a Spanish section built from the trailers; a commit without a trailer repeats its English subject there.
 3. **After the merge, run `pnpm release` on an up-to-date `main`**, before the next code PR merges. Docs-only merges in between are fine.
    - It needs `gh auth login` with push access.
-   - It runs `pnpm check`, packs the CLI, tags the commit, and creates the GitHub release with notes built from the commit subjects, the checksum file `testrail-cli.tgz.sha256`, `testrail-cli-X.Y.Z.tgz` and `testrail-cli.tgz` (the latest-version link).
+   - It runs `pnpm check`, packs the CLI, tags the commit, and creates the GitHub release with notes built from the commit subjects, the checksum file `test-cli.tgz.sha256`, `test-cli-X.Y.Z.tgz` and `test-cli.tgz` (the latest-version link), plus `testrail-cli.tgz` and its checksum so install links from before 3.0.0 keep working.
    - If it fails after tagging, fix the cause and run it again. A rerun also finishes a draft or partial release.

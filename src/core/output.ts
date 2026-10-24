@@ -3,7 +3,7 @@ import { CliError } from "./errors.js";
 
 export type OutputMode = "human" | "json";
 
-// A reader that stops early (`testrail case list | head`) closes the pipe; that is not an error.
+// A reader that stops early (`test-cli case list | head`) closes the pipe; that is not an error.
 for (const stream of [process.stdout, process.stderr]) {
   stream.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code !== "EPIPE") throw err;
