@@ -18,6 +18,11 @@ export function sameKey(left: string, right: string): boolean {
   return left.toUpperCase() === right.toUpperCase();
 }
 
+/** Whether comma-separated `refs` hold `key` exactly, ignoring case. */
+export function hasRef(refs: string | null | undefined, key: string): boolean {
+  return splitList(refs).some((ref) => sameKey(ref, key));
+}
+
 /** Longest TestRail run name or case title. */
 export const MAX_NAME = 250;
 /** Longest Jira summary. */

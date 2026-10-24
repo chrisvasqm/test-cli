@@ -1,7 +1,7 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
-import { sameKey, splitList } from "../core/text.js";
+import { hasRef } from "../core/text.js";
 import type { Case, CaseContent, Section } from "../core/testrail-types.js";
 
 export interface CaseFilter {
@@ -46,7 +46,7 @@ export class CaseService {
   /** Every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
   async withRef(filter: Omit<CaseFilter, "refs" | "limit">, key: string): Promise<Case[]> {
     const { items } = await this.list({ ...filter, refs: key, limit: Number.MAX_SAFE_INTEGER });
-    return items.filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)));
+    return items.filter((item) => hasRef(item.refs, key));
   }
 
   /** Ids of every case linked to `key`. */
