@@ -36,7 +36,7 @@ testrail project list                        # active projects; current: true ma
 testrail project use P2 [--suite S3]         # change the default project (writes the config)
 testrail section list [--limit <n>]          # section ids, nested by depth (250)
 
-testrail case list [--section <id>] [--limit <n>]       # cases in the configured project/suite (50)
+testrail case list [--section <id>] [--refs KAN-12] [--limit <n>]   # cases in the configured project/suite (50); --refs: only cases linked to that key
 testrail case view C12                       # fields, preconditions, steps, expected
 testrail case create --section <id> --title "…" [case fields]
 testrail case create --section <id> --from-jira KAN-12 [--title "…"] [case fields]   # title = ticket summary, KAN-12 added to refs
