@@ -79,16 +79,15 @@ export class AttachmentService {
 
   /** The id of a test's newest result, or of `resultId` after checking it belongs to the test. */
   async resultOf(testId: number, resultId?: number): Promise<number> {
-    const { tests } = this;
     if (resultId === undefined) {
-      const { items } = await tests.results(testId, 1);
+      const { items } = await this.tests.results(testId, 1);
       if (items[0]) return items[0].id;
       throw new CliError(
         "TEST_HAS_NO_RESULTS",
         `Test T${testId} has no results to attach to; add one first.`,
       );
     }
-    const { items } = await tests.results(testId, ALL);
+    const { items } = await this.tests.results(testId, ALL);
     if (items.some((item) => item.id === resultId)) return resultId;
     throw new CliError("RESULT_NOT_IN_TEST", `Result #${resultId} is not a result of test T${testId}.`);
   }

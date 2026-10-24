@@ -37,15 +37,15 @@ export function registerHistory(testCase: Command): void {
       const scan = intInRange(opts.runs ?? "25", "--runs", 1, MAX_HISTORY);
       const { config, mode } = bootstrap(cmd);
       const statusesLoaded = provider().meta.statuses();
-      const runService = provider().runs;
+      const runs = provider().runs;
       // The case is checked even with --run, so an unknown case is CASE_NOT_FOUND, not an empty history.
       const [found, single] = await Promise.all([
         provider().cases.get(id),
-        onlyRun === undefined ? undefined : runService.get(onlyRun),
+        onlyRun === undefined ? undefined : runs.get(onlyRun),
       ]);
       const history = single
         ? await singleRun(single, id, limit)
-        : await recentRuns(runService, config.projectId, found.suite_id, scan, id, limit);
+        : await recentRuns(runs, config.projectId, found.suite_id, scan, id, limit);
       const [statuses, authors] = await Promise.all([
         statusesLoaded,
         provider().users.names(history.items.map((item) => item.result.created_by)),

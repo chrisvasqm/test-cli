@@ -2,10 +2,12 @@ import type { Command } from "commander";
 import { provider } from "../../providers/index.js";
 import { testId } from "../../providers/testrail/ids.js";
 import { intInRange } from "../../core/args.js";
+import { emptyPage } from "../../core/paging.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
 import { nameOf } from "../../providers/testrail/lookup.js";
+import type { Result } from "../../providers/testrail/types.js";
 import { renderContent, renderResult, testUrl, toContent, toResult } from "../render.js";
 
 /** Most results `test view` shows. */
@@ -31,7 +33,7 @@ export function registerView(test: Command): void {
       const { tests, meta } = provider();
       const [found, results, statuses] = await Promise.all([
         tests.get(id),
-        limit > 0 ? tests.results(id, limit) : Promise.resolve({ items: [], hasMore: false }),
+        limit > 0 ? tests.results(id, limit) : emptyPage<Result>(),
         meta.statuses(),
       ]);
       const view = {
