@@ -1,0 +1,126 @@
+import { existsSync } from "node:fs";
+import { basename, resolve } from "node:path";
+import type { Command } from "commander";
+import { z } from "zod";
+import { globalOptions, outputMode } from "../core/bootstrap.js";
+import { CONFIG_FILE, GLOBAL_CONFIG, configSchema, isGitignored, saveConfig } from "../core/config.js";
+import { confirm } from "../core/confirm.js";
+import { CliError } from "../core/errors.js";
+import { HttpClient } from "../core/http.js";
+import { info, printResult, table, type OutputMode } from "../core/output.js";
+import { ask, askSecret } from "../core/prompt.js";
+import { SUITE_MODE_MULTIPLE, type Suite } from "../core/testrail-types.js";
+import { ProjectService } from "../services/project.service.js";
+import { UserService } from "../services/user.service.js";
+
+interface SetupOptions {
+  global?: boolean;
+  yes?: boolean;
+}
+
+const shape = configSchema.shape;
+
+async function askValid<T>(
+  prompt: () => Promise<string>,
+  schema: { safeParse: (value: unknown) => { success: boolean; data?: T } },
+  hint: string,
+): Promise<T> {
+  for (;;) {
+    const parsed = schema.safeParse(await prompt());
+    if (parsed.success && parsed.data !== undefined) return parsed.data;
+    process.stderr.write(`${hint}\n`);
+  }
+}
+
+/** Prints a numbered list on stderr and returns the picked item. */
+async function pick<T>(items: T[], label: (item: T) => string, what: string): Promise<T> {
+  info(items.map((item, index) => `${String(index + 1).padStart(3)}  ${label(item)}`).join("\n"));
+  const choice = await askValid(
+    () => ask(`Pick a ${what} number`, "1"),
+    z.coerce.number().int().min(1).max(items.length),
+    `Enter a number between 1 and ${items.length}`,
+  );
+  return items[choice - 1]!;
+}
+
+export function registerSetup(program: Command): void {
+  program
+    .command("setup")
+    .description(`Create ${CONFIG_FILE} in the current directory by prompting for TestRail details`)
+    .option("--global", `Write to ${GLOBAL_CONFIG} instead`)
+    .option("-y, --yes", "Overwrite an existing config without asking")
+    .action(async (opts: SetupOptions, cmd: Command) => {
+      const all = globalOptions(cmd);
+      const mode = outputMode(cmd);
+      if (opts.global && all.config)
+        throw new CliError("USAGE", "Use either --global or --config, not both.");
+      const target = opts.global ? GLOBAL_CONFIG : resolve(all.config ?? CONFIG_FILE);
+      // Ask before anything else: replacing a config throws away its key and project.
+      if (existsSync(target) && !opts.yes) await confirm(`${target} already exists. Replace it?`);
+      await runSetup(target, mode);
+    });
+}
+
+async function runSetup(path: string, mode: OutputMode): Promise<void> {
+  const baseUrl = await askValid(
+    () => ask("TestRail URL (e.g. https://acme.testrail.io)"),
+    shape.baseUrl,
+    "Enter a full URL including https://",
+  );
+  const email = await askValid(
+    () => ask("TestRail account email"),
+    shape.email,
+    "Enter a valid email address",
+  );
+  const apiKey = await askValid(
+    () => askSecret("API key (TestRail > My Settings > API Keys)"),
+    shape.apiKey,
+    "API key cannot be empty",
+  );
+
+  HttpClient.configure({ baseUrl, email, apiKey });
+  const projects = new ProjectService();
+  // Listing projects proves the credentials; the user's name is only for the summary.
+  const [active, me] = await Promise.all([
+    projects.listActive(),
+    new UserService().byEmail(email).catch(() => undefined),
+  ]);
+  info(`Authenticated as ${me?.name ?? email}`);
+  if (active.length === 0) throw new CliError("NO_PROJECTS", "This account can see no active projects.");
+  const project = await pick(active, (item) => `${item.name} (P${item.id})`, "project");
+
+  let suite: Suite | undefined;
+  if (project.suite_mode === SUITE_MODE_MULTIPLE) {
+    const suites = (await projects.suites(project.id)).filter((item) => !item.is_completed);
+    if (suites.length === 0) throw new CliError("NO_SUITES", `Project ${project.name} has no active suites.`);
+    suite = await pick(suites, (item) => `${item.name} (S${item.id})`, "suite");
+  }
+
+  const config = configSchema.parse({ baseUrl, email, apiKey, projectId: project.id, suiteId: suite?.id });
+  saveConfig(path, config);
+
+  const ignored = path === GLOBAL_CONFIG ? undefined : isGitignored(path);
+  const warning =
+    ignored === false
+      ? `${basename(path)} is not ignored by git (add it to .gitignore, or \`git rm --cached\` it if tracked) so the API key is never committed.`
+      : undefined;
+
+  const rows: [string, string][] = [
+    ["Config", path],
+    ["Project", `${project.name} (P${project.id})`],
+  ];
+  if (suite) rows.push(["Suite", `${suite.name} (S${suite.id})`]);
+  rows.push(["Account", me?.name ?? email]);
+
+  printResult(
+    mode,
+    {
+      path,
+      project: { id: project.id, name: project.name },
+      suite: suite ? { id: suite.id, name: suite.name } : null,
+      userId: me?.id ?? null,
+      warning,
+    },
+    () => [table(rows), warning ? `\nwarning: ${warning}` : ""].join(""),
+  );
+}
