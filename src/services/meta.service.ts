@@ -49,6 +49,13 @@ export function idByName(items: Named[], typed: string, code: string, what: stri
   return findByName(items, typed, (item) => sameName(item.name, typed.trim()), code, what).id;
 }
 
+/** "High,Critical" → ids, each looked up as idByName does. */
+export function idsByName(items: Named[], typed: string, code: string, what: string): number[] {
+  const names = splitList(typed);
+  if (names.length === 0) throw new InputError("USAGE", `Give at least one ${what} name`);
+  return names.map((name) => idByName(items, name, code, what));
+}
+
 function findByName<T extends { name: string; label?: string }>(
   items: T[],
   typed: string,
