@@ -55,10 +55,12 @@ export function registerImport(result: Command): void {
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
       // Statuses and assignees before the write: a failed lookup after it would hide that the results were saved.
-      const statuses = await meta.statuses();
+      const [statuses, stepsOf] = await Promise.all([
+        meta.statuses(),
+        entries.some((entry) => entry.steps) ? runSteps(run) : undefined,
+      ]);
       const assignees = new Map<string, Promise<User>>();
       const users = new UserService();
-      const stepsOf = entries.some((entry) => entry.steps) ? await runSteps(run) : undefined;
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;
@@ -97,8 +99,8 @@ export function registerImport(result: Command): void {
 
 /** Each case's separated steps in the run, from its tests (one paged request). */
 async function runSteps(run: number): Promise<Map<number, Step[] | null | undefined>> {
-  const { items } = await new TestService().list(run, [], Number.MAX_SAFE_INTEGER);
-  return new Map(items.map((test) => [test.case_id, test.custom_steps_separated]));
+  const tests = await new TestService().all(run);
+  return new Map(tests.map((test) => [test.case_id, test.custom_steps_separated]));
 }
 
 function stepResults(

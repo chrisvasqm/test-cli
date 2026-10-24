@@ -9,6 +9,7 @@ import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
 import { TestService } from "../../services/test.service.js";
 import { UserService } from "../../services/user.service.js";
+import { assigneeView } from "../render.js";
 
 interface EditOptions {
   name?: string;
@@ -67,9 +68,7 @@ export function registerEdit(run: Command): void {
         );
       }
       const [assignee, current] = await Promise.all([
-        opts.assign === undefined
-          ? undefined
-          : new UserService().resolve(opts.assign, config.email, "--assign"),
+        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
         change === undefined ? undefined : runCases(id),
       ]);
       if (assignee) input.assignedto_id = assignee.id;
@@ -93,7 +92,7 @@ export function registerEdit(run: Command): void {
         changed: Object.keys(input).filter((field) => field !== "include_all"),
         added: cases?.added ?? [],
         removed: cases?.removed ?? [],
-        assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
+        assignedTo: assigneeView(assignee),
         url: updated.url,
       };
       printResult(mode, view, () => {
@@ -129,8 +128,7 @@ function caseChange(opts: EditOptions): CaseChange | undefined {
 
 /** Case ids of the run's tests: update_run takes the whole list, so add and remove start from it. */
 async function runCases(id: number): Promise<number[]> {
-  const { items } = await new TestService().list(id, [], Number.MAX_SAFE_INTEGER);
-  return items.map((test) => test.case_id);
+  return (await new TestService().all(id)).map((test) => test.case_id);
 }
 
 /** The new case list and what it adds and removes; undefined when it matches the run's cases. */

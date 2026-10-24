@@ -3,7 +3,6 @@ import { caseId, intInRange, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { inBatches } from "../../core/paging.js";
 import type { Run } from "../../core/testrail-types.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -49,7 +48,7 @@ export function registerHistory(testCase: Command): void {
         : await recentRuns(runService, config.projectId, found.suite_id, scan, id, limit);
       const [statuses, authors] = await Promise.all([
         statusesLoaded,
-        authorNames(history.items.map((item) => item.result.created_by)),
+        new UserService().names(history.items.map((item) => item.result.created_by)),
       ]);
       const view = {
         case: { id: found.id, title: found.title },
@@ -101,13 +100,5 @@ async function recentRuns(
 ) {
   const runs = await runService.recent(projectId, suiteId, scan);
   const history = await new ResultService().history(runs.items, id, limit);
-  return { ...history, moreRuns: runs.hasMore };
-}
-
-/** Names of the users who added the results; one get_user each, and an unknown user stays unnamed. */
-async function authorNames(ids: number[]): Promise<Map<number, string>> {
-  const users = new UserService();
-  const unique = [...new Set(ids)];
-  const named = await inBatches(unique, (id) => users.byId(id).catch(() => undefined));
-  return new Map(named.flatMap((user) => (user ? [[user.id, user.name] as const] : [])));
+  return { ...history, scanned: runs.items.length, moreRuns: runs.hasMore };
 }

@@ -26,9 +26,7 @@ export function registerList(test: Command): void {
       const meta = new MetaService();
       const [statusIds, assignee] = await Promise.all([
         opts.status === undefined ? [] : meta.statusIds(opts.status),
-        opts.assigned === undefined
-          ? undefined
-          : new UserService().resolve(opts.assigned, config.email, "--assigned"),
+        new UserService().resolveOptional(opts.assigned, config.email, "--assigned"),
       ]);
       const [{ items, hasMore }, statuses] = await Promise.all([
         new TestService().list(run, statusIds, limit, assignee?.id),

@@ -7,7 +7,6 @@ import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { caseUrl } from "../render.js";
 import { addCaseFieldOptions, toCaseInput, type CaseFieldOptions } from "./fields.js";
-import { loadCases } from "./transfer.js";
 
 /** Fields that only make sense per case, so update_cases (one value for all) does not get them. */
 const PER_CASE: (keyof CaseFieldOptions)[] = ["title", "preconds", "steps", "expected", "step"];
@@ -39,7 +38,7 @@ export function registerEdit(testCase: Command): void {
       printResult(mode, view, () => `Updated C${view.id}  ${view.title}\n${view.url}`);
       return;
     }
-    const found = await loadCases(cases, ids);
+    const found = await cases.getMany(ids);
     const suites = new Set(found.map((item) => item.suite_id));
     if (suites.size > 1) {
       throw new InputError(

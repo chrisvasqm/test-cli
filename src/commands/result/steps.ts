@@ -1,5 +1,6 @@
 import { InputError } from "../../core/errors.js";
 import type { Step, StepResult } from "../../core/testrail-types.js";
+import { splitList } from "../../core/text.js";
 import type { MetaService } from "../../services/meta.service.js";
 
 /** One step's outcome as typed: its 1-based number in the case, a status name and what happened. */
@@ -11,17 +12,13 @@ export interface StepSpec {
 
 /** "1:passed,2:failed" → step specs. */
 export function parseStepList(raw: string): StepSpec[] {
-  const specs = raw
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      const match = /^(\d+)\s*:\s*(.+)$/.exec(part);
-      if (!match) {
-        throw new InputError("STEP_INVALID", `"${part}" is not a step like 2:failed (step number:status)`);
-      }
-      return { step: Number(match[1]), status: match[2]!.trim() };
-    });
+  const specs = splitList(raw).map((part) => {
+    const match = /^(\d+)\s*:\s*(.+)$/.exec(part);
+    if (!match) {
+      throw new InputError("STEP_INVALID", `"${part}" is not a step like 2:failed (step number:status)`);
+    }
+    return { step: Number(match[1]), status: match[2]!.trim() };
+  });
   if (specs.length === 0)
     throw new InputError("STEP_INVALID", "--steps needs at least one step, e.g. 1:passed");
   return specs;

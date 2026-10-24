@@ -44,15 +44,19 @@ export function registerList(testCase: Command): void {
         opts.updatedSince === undefined ? undefined : sinceDate(opts.updatedSince, "--updated-since");
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
-      // Names are resolved before listing; the same tables name each row's priority and type.
-      const [priorities, types] = await Promise.all([meta.priorities(), meta.caseTypes()]);
+      // The same tables name each row's priority and type; filter names need them before listing.
+      const tablesLoaded = Promise.all([meta.priorities(), meta.caseTypes()]);
+      const filtered = opts.priority !== undefined || opts.type !== undefined;
+      const [filterPriorities, filterTypes] = filtered ? await tablesLoaded : [];
       const priorityIds =
-        opts.priority === undefined
+        opts.priority === undefined || filterPriorities === undefined
           ? undefined
-          : idsByName(priorities, opts.priority, "UNKNOWN_PRIORITY", "priority");
+          : idsByName(filterPriorities, opts.priority, "UNKNOWN_PRIORITY", "priority");
       const typeIds =
-        opts.type === undefined ? undefined : idsByName(types, opts.type, "UNKNOWN_TYPE", "case type");
-      const { items, hasMore } = await listCases(
+        opts.type === undefined || filterTypes === undefined
+          ? undefined
+          : idsByName(filterTypes, opts.type, "UNKNOWN_TYPE", "case type");
+      const listed = listCases(
         {
           projectId: config.projectId,
           suiteId: config.suiteId,
@@ -65,6 +69,7 @@ export function registerList(testCase: Command): void {
         },
         key,
       );
+      const [[priorities, types], { items, hasMore }] = await Promise.all([tablesLoaded, listed]);
       const cases = items.map((item) => ({
         id: item.id,
         title: item.title,

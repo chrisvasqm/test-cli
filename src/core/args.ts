@@ -112,7 +112,7 @@ export function jiraKey(raw: string, flag: string): string {
   return keys[0]!;
 }
 
-/** "2026-10-01" (UTC midnight) or a full ISO time → Unix seconds, for TestRail's *_after filters. */
+/** "2026-10-01" (local midnight) or an ISO time with Z or an offset → Unix seconds, for TestRail's *_after filters. */
 export function sinceDate(raw: string, flag: string): number {
   const typed = raw.trim();
   if (!typed.includes("T")) return dateArg(typed, flag);
@@ -122,4 +122,9 @@ export function sinceDate(raw: string, flag: string): number {
     throw new InputError("USAGE", `${flag} must be a date like 2026-10-01 or a time like 2026-10-01T10:00Z`);
   }
   return Math.floor(ms / 1000);
+}
+
+/** `--name` given and not blank, for commands where commander cannot require it (it depends on other flags). */
+export function requireName(name: string | undefined, what: string): asserts name is string {
+  if (!name?.trim()) throw new InputError("USAGE", `Give the ${what} a name with --name`);
 }

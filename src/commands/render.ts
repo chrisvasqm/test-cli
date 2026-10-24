@@ -1,6 +1,14 @@
 import type { Config } from "../core/config.js";
 import { splitList } from "../core/text.js";
-import type { CaseContent, Result, Run, Status, StatusCounts, StepInput } from "../core/testrail-types.js";
+import type {
+  CaseContent,
+  Result,
+  Run,
+  Status,
+  StatusCounts,
+  StepInput,
+  User,
+} from "../core/testrail-types.js";
 import { nameOf } from "../services/meta.service.js";
 
 const LOCAL_TIME = new Intl.DateTimeFormat("en-CA", {
@@ -177,4 +185,9 @@ export function savedConfig(
     suite: suite ? { id: suite.id, name: suite.name } : null,
   };
   return { data, rows };
+}
+
+/** The assignee as `--json` shows it, or null when none was given. */
+export function assigneeView(user: User | undefined): { id: number; name: string } | null {
+  return user ? { id: user.id, name: user.name } : null;
 }
