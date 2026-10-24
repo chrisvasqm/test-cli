@@ -1,10 +1,12 @@
 import type { Command } from "commander";
-import { intInRange, kindedId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { kindedId } from "../../providers/testrail/ids.js";
+import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { checkUploads } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { AttachmentService, type AttachTarget } from "../../services/attachment.service.js";
+import { type AttachTarget } from "../../providers/testrail/services/attachment.service.js";
 import { targetName, targetUrl } from "../link/target.js";
 import { attached, renderAttached } from "./files.js";
 
@@ -26,8 +28,8 @@ export function registerAdd(attachment: Command): void {
       }
       const resultId = opts.result === undefined ? undefined : intInRange(opts.result, "--result", 1);
       const uploads = await checkUploads(paths);
-      const { config, mode } = bootstrap(cmd);
-      const attachments = new AttachmentService();
+      const { config, mode } = bootstrap(cmd, "attachments");
+      const attachments = provider().attachments;
       // TestRail attaches to a test's results, not to the test itself.
       const to: AttachTarget =
         target.kind === "test"

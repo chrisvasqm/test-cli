@@ -1,8 +1,8 @@
 import type { Command } from "commander";
-import { suiteId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { suiteId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
-import { SuiteService } from "../../services/suite.service.js";
 
 export function registerView(suite: Command): void {
   suite
@@ -10,8 +10,8 @@ export function registerView(suite: Command): void {
     .description("Show a suite's details, e.g. S3")
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = suiteId(rawId);
-      const { config, mode } = bootstrap(cmd);
-      const found = await new SuiteService().get(id);
+      const { config, mode } = bootstrap(cmd, "suites");
+      const found = await provider().suites.get(id);
       const view = {
         id: found.id,
         name: found.name,

@@ -1,7 +1,9 @@
-import { InputError, notFoundAs } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { collectPages, inBatches, MAX_LIST, type Collected } from "../core/paging.js";
-import type { User } from "../core/testrail-types.js";
+import { notFoundAs } from "../errors.js";
+import { InputError } from "../../../core/errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { inBatches, MAX_LIST, type Collected } from "../../../core/paging.js";
+import type { User } from "../types.js";
 
 /** get_user(s) and get_user_by_email endpoints. */
 export class UserService {

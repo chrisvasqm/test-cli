@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { CliError } from "./errors.js";
+import { CliError } from "../../core/errors.js";
 
 interface Credentials {
   baseUrl: string;

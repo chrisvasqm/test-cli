@@ -1,5 +1,5 @@
-import type { Run } from "../core/testrail-types.js";
-import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
+import type { Run } from "../types.js";
+import { joinRefs, splitList, uniqueRefs } from "../../../core/text.js";
 import { CaseService } from "./case.service.js";
 import { ResultService } from "./result.service.js";
 import { RunService } from "./run.service.js";

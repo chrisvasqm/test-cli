@@ -1,14 +1,14 @@
 import type { Command } from "commander";
-import { caseIds, jiraKey, suiteId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseIds, suiteId } from "../../providers/testrail/ids.js";
+import { jiraKey } from "../../core/args.js";
 import type { Config } from "../../core/config.js";
 import { InputError } from "../../core/errors.js";
 import { jiraTicket, type JiraTicket } from "../../core/jira.js";
 import { clip, MAX_NAME } from "../../core/text.js";
-import type { User } from "../../core/testrail-types.js";
-import { ConfigurationService, configCombinations, configIds } from "../../services/configuration.service.js";
-import type { PlanEntryInput, PlanRunInput } from "../../services/plan.service.js";
-import { ProjectService } from "../../services/project.service.js";
-import { UserService } from "../../services/user.service.js";
+import type { User } from "../../providers/testrail/types.js";
+import { configCombinations, configIds } from "../../providers/testrail/lookup.js";
+import type { PlanEntryInput, PlanRunInput } from "../../providers/testrail/services/plan.service.js";
 import { linkedCases } from "../run/create.js";
 
 /** The flags that describe one plan entry (add-run, and the optional first entry of create). */
@@ -65,8 +65,8 @@ export async function buildEntry(
   const [caseList, assignee, groups] = await Promise.all([
     parsed.cases ??
       (parsed.key === undefined ? undefined : linkedCases(config.projectId, suite, parsed.key, command)),
-    new UserService().resolveOptional(opts.assign, config.email, "--assign"),
-    opts.configs === undefined ? undefined : new ConfigurationService().groups(config.projectId),
+    provider().users.resolveOptional(opts.assign, config.email, "--assign"),
+    opts.configs === undefined ? undefined : provider().configurations.groups(config.projectId),
   ]);
   const run: PlanRunInput = { include_all: caseList === undefined };
   if (caseList) run.case_ids = caseList;
@@ -84,7 +84,7 @@ export async function buildEntry(
 
 /** add_plan_entry needs a suite even in single-suite projects, where the config has none. */
 async function onlySuite(projectId: number): Promise<number> {
-  const suites = await new ProjectService().activeSuites(projectId);
+  const suites = await provider().projects.activeSuites(projectId);
   if (suites.length === 1) return suites[0]!.id;
   throw new InputError("USAGE", "This project has several suites; give one with --suite, e.g. S1");
 }

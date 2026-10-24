@@ -1,10 +1,11 @@
 import type { Command } from "commander";
-import { milestoneId, requireName } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { milestoneId } from "../../providers/testrail/ids.js";
+import { requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { MetaService } from "../../services/meta.service.js";
-import { PlanService, type PlanInput } from "../../services/plan.service.js";
+import { type PlanInput } from "../../providers/testrail/services/plan.service.js";
 import { jiraView } from "../from-jira.js";
 import { buildEntry, entryOptions, hasEntry, parseEntry, type EntryOptions } from "./entry.js";
 import { renderPlan, toPlanView } from "./render.js";
@@ -31,15 +32,15 @@ export function registerCreate(plan: Command): void {
     const parsed = parseEntry(opts);
     const description = await readOptionalText(opts.description, opts.file, "description");
     if (description !== undefined) input.description = description;
-    const { config, mode } = bootstrap(cmd);
+    const { config, mode } = bootstrap(cmd, "plans");
     const entry = hasEntry(opts)
       ? await buildEntry(opts, parsed, config, undefined, "plan create")
       : undefined;
     if (entry) input.entries = [entry.input];
     // Statuses before the write: a failed lookup after it would report an error for a plan that exists.
-    const statuses = await new MetaService().statuses();
+    const statuses = await provider().meta.statuses();
     const view = {
-      ...toPlanView(await new PlanService().add(config.projectId, input), statuses),
+      ...toPlanView(await provider().plans.add(config.projectId, input), statuses),
       jira: jiraView(entry?.ticket),
     };
     printResult(mode, view, () => renderPlan(view, "Created"));

@@ -1,16 +1,14 @@
 import type { Command } from "commander";
-import { isJiraKey, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { runId } from "../../providers/testrail/ids.js";
+import { isJiraKey } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
 import { InputError } from "../../core/errors.js";
 import { jiraStatuses, type JiraStatus } from "../../core/jira.js";
 import { grid, printResult } from "../../core/output.js";
-import type { Result, Test } from "../../core/testrail-types.js";
+import type { Result, Test } from "../../providers/testrail/types.js";
 import { sameName, splitList, uniqueRefs } from "../../core/text.js";
-import { MetaService } from "../../services/meta.service.js";
-import { ResultService } from "../../services/result.service.js";
-import { RunService } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
 
 /** The statuses checked when `--status` is not given. */
 const RETEST_FROM = "failed,blocked";
@@ -54,17 +52,17 @@ export function registerRetest(run: Command): void {
       const id = runId(rawRun);
       const doneNames = splitList(opts.done);
       const { mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       // TestRail first, so an unknown or closed run fails before any Jira call.
       const [, statusIds, retest] = await Promise.all([
-        new RunService().open(id),
+        provider().runs.open(id),
         meta.statusIds(opts.status),
         meta.status("retest"),
       ]);
       if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
       const [{ items: tests }, { items: results }] = await Promise.all([
-        new TestService().list(id, statusIds, Number.MAX_SAFE_INTEGER),
-        new ResultService().forRun(id),
+        provider().tests.list(id, statusIds, Number.MAX_SAFE_INTEGER),
+        provider().results.forRun(id),
       ]);
       const bugsOf = new Map(tests.map((test) => [test.id, streakDefects(test, results, statusIds)]));
       const keys = uniqueRefs([...bugsOf.values()].flat());
@@ -94,7 +92,7 @@ export function registerRetest(run: Command): void {
       const added =
         plan.retested.length === 0
           ? []
-          : await new ResultService().addForCases(
+          : await provider().results.addForCases(
               id,
               plan.retested.map((row) => ({
                 case_id: row.caseId,

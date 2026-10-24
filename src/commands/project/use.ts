@@ -1,11 +1,11 @@
 import type { Command } from "commander";
-import { projectId, suiteId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { projectId, suiteId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { configSchema, saveConfig } from "../../core/config.js";
 import { InputError } from "../../core/errors.js";
 import { printResult, table } from "../../core/output.js";
-import { SUITE_MODE_SINGLE, type Suite } from "../../core/testrail-types.js";
-import { ProjectService } from "../../services/project.service.js";
+import { SUITE_MODE_SINGLE, type Suite } from "../../providers/testrail/types.js";
 import { savedConfig } from "../render.js";
 
 interface UseOptions {
@@ -21,7 +21,7 @@ export function registerUse(project: Command): void {
       const id = projectId(rawProject);
       const wantedSuite = opts.suite === undefined ? undefined : suiteId(opts.suite);
       const { config, configPath, mode } = bootstrap(cmd);
-      const projects = new ProjectService();
+      const projects = provider().projects;
       const found = await projects.get(id);
       const single = found.suite_mode === SUITE_MODE_SINGLE;
       if (single && wantedSuite !== undefined) {

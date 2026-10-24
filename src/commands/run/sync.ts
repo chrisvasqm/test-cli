@@ -1,15 +1,15 @@
 import type { Command } from "commander";
-import { isJiraKey, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { runId } from "../../providers/testrail/ids.js";
+import { isJiraKey } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
 import { CliError, InputError } from "../../core/errors.js";
 import { addJiraComment, isJiraUnusable, jiraStatus, moveJiraTicket } from "../../core/jira.js";
 import { info, printResult, type OutputMode } from "../../core/output.js";
 import { sameName, splitList, uniqueRefs } from "../../core/text.js";
-import type { Run, Status, Test } from "../../core/testrail-types.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
-import { RunService } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
+import type { Run, Status, Test } from "../../providers/testrail/types.js";
+import { nameOf } from "../../providers/testrail/lookup.js";
 
 interface SyncOptions {
   move?: string;
@@ -62,9 +62,9 @@ export function registerSync(run: Command): void {
         throw new InputError("USAGE", "--move needs a Jira status, e.g. Done");
       const { mode } = bootstrap(cmd);
       const [found, tests, statuses] = await Promise.all([
-        new RunService().get(id),
-        new TestService().list(id, [], Number.MAX_SAFE_INTEGER),
-        new MetaService().statuses(),
+        provider().runs.get(id),
+        provider().tests.list(id, [], Number.MAX_SAFE_INTEGER),
+        provider().meta.statuses(),
       ]);
       const plans = planTickets(found, tests.items);
       if (plans.length === 0) {

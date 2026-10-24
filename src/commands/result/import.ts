@@ -1,16 +1,15 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { z } from "zod";
-import { caseId, runId } from "../../core/args.js";
+import { caseId, runId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
-import { MetaService } from "../../services/meta.service.js";
-import type { Step } from "../../core/testrail-types.js";
-import { ResultService, type ResultInput } from "../../services/result.service.js";
-import type { User } from "../../core/testrail-types.js";
-import { UserService } from "../../services/user.service.js";
-import { TestService } from "../../services/test.service.js";
+import { type MetaService } from "../../providers/testrail/services/meta.service.js";
+import type { Step } from "../../providers/testrail/types.js";
+import { type ResultInput } from "../../providers/testrail/services/result.service.js";
+import type { User } from "../../providers/testrail/types.js";
 import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";
 import { toStepResults, type StepSpec } from "./steps.js";
@@ -53,14 +52,14 @@ export function registerImport(result: Command): void {
       const run = runId(rawRun);
       const entries = parseFile(await readText(undefined, opts.file, "results file"));
       const { config, mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       // Statuses and assignees before the write: a failed lookup after it would hide that the results were saved.
       const [statuses, stepsOf] = await Promise.all([
         meta.statuses(),
         entries.some((entry) => entry.steps) ? runSteps(run) : undefined,
       ]);
       const assignees = new Map<string, Promise<User>>();
-      const users = new UserService();
+      const users = provider().users;
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;
@@ -75,7 +74,7 @@ export function registerImport(result: Command): void {
           input.custom_step_results = await stepResults(entry.steps, stepsOf, id, run, meta, where);
         results.push({ case_id: id, ...input });
       }
-      const added = await new ResultService().addForCases(run, results);
+      const added = await provider().results.addForCases(run, results);
       const rows = added.map((item, index) => ({
         id: item.id,
         testId: item.test_id,
@@ -99,7 +98,7 @@ export function registerImport(result: Command): void {
 
 /** Each case's separated steps in the run, from its tests (one paged request). */
 async function runSteps(run: number): Promise<Map<number, Step[] | null | undefined>> {
-  const tests = await new TestService().all(run);
+  const tests = await provider().tests.all(run);
   return new Map(tests.map((test) => [test.case_id, test.custom_steps_separated]));
 }
 

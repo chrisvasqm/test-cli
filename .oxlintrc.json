@@ -22,5 +22,30 @@
         "allow": ["_links"]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/commands/**/*.ts", "src/core/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/providers/testrail/http.js",
+                  "**/providers/testrail/paging.js",
+                  "**/providers/testrail/errors.js",
+                  "**/providers/testrail/index.js",
+                  "**/providers/testrail/services/*"
+                ],
+                "allowTypeImports": true,
+                "message": "Commands and core reach TestRail through provider() from providers/index.js; only types, ids and lookups are imported directly."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

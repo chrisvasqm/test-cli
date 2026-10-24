@@ -1,22 +1,18 @@
 import type { Command } from "commander";
-import { caseId, runId, testId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseId, runId, testId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { CliError, InputError } from "../../core/errors.js";
 import { checkUploads, readOptionalText, type Upload } from "../../core/input.js";
 import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
-import { MetaService } from "../../services/meta.service.js";
-import type { Status, Step, Test } from "../../core/testrail-types.js";
-import { CaseService } from "../../services/case.service.js";
-import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
-import { UserService } from "../../services/user.service.js";
-import { TestService } from "../../services/test.service.js";
+import type { Status, Step, Test } from "../../providers/testrail/types.js";
+import { type ResultInput, type ResultTarget } from "../../providers/testrail/services/result.service.js";
 import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult, assigneeView } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
 import { parseStepList, toStepResults } from "./steps.js";
-import { AttachmentService } from "../../services/attachment.service.js";
 import { attached, renderAttached } from "../attachment/files.js";
 
 interface AddOptions {
@@ -62,11 +58,11 @@ export function registerAdd(result: Command): void {
       // Checked before the result exists: results are append-only, so a retry would add a second one.
       const uploads = opts.attach.length > 0 ? await checkUploads(opts.attach) : [];
       const { config, mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
       const [statuses, assignee] = await Promise.all([
         meta.statuses(),
-        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
+        provider().users.resolveOptional(opts.assign, config.email, "--assign"),
       ]);
       const input = await toResultInput(
         { ...opts, comment, version: opts.build, assignedToId: assignee?.id },
@@ -78,7 +74,7 @@ export function registerAdd(result: Command): void {
       const bug = opts.createBug
         ? await fileBug(
             config,
-            await new ResultService().openTest(target),
+            await provider().results.openTest(target),
             bugStatus(statuses, input.status_id),
             comment,
           )
@@ -126,13 +122,13 @@ function parseTarget(rawTest: string | undefined, opts: AddOptions): ResultTarge
 async function caseSteps(target: ResultTarget): Promise<Step[] | null | undefined> {
   const content =
     target.kind === "test"
-      ? await new TestService().get(target.testId)
-      : await new CaseService().get(target.caseId);
+      ? await provider().tests.get(target.testId)
+      : await provider().cases.get(target.caseId);
   return content.custom_steps_separated;
 }
 
 function addResult(target: ResultTarget, input: ResultInput) {
-  const results = new ResultService();
+  const results = provider().results;
   return target.kind === "test"
     ? results.addForTest(target.testId, input)
     : results.addForCase(target.runId, target.caseId, input);
@@ -141,13 +137,15 @@ function addResult(target: ResultTarget, input: ResultInput) {
 /** Uploads --attach files to the saved result; a failure says so, or a retry adds a second result. */
 async function attachTo(resultId: number, test: number, uploads: readonly Upload[]) {
   if (uploads.length === 0) return [];
-  return new AttachmentService().addAll({ kind: "result", id: resultId }, uploads).catch((err: unknown) => {
-    if (!(err instanceof CliError)) throw err;
-    throw err.withNote(
-      `Result #${resultId} was saved; attach the files with test-cli attachment add T${test} -rs ${resultId}, not result add.`,
-      { resultId, testId: test, error: err.details },
-    );
-  });
+  return provider()
+    .attachments.addAll({ kind: "result", id: resultId }, uploads)
+    .catch((err: unknown) => {
+      if (!(err instanceof CliError)) throw err;
+      throw err.withNote(
+        `Result #${resultId} was saved; attach the files with test-cli attachment add T${test} -rs ${resultId}, not result add.`,
+        { resultId, testId: test, error: err.details },
+      );
+    });
 }
 
 /** A bug is filed only for a failed or blocked result, so a passing run cannot open one by mistake. */

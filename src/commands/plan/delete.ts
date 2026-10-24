@@ -1,6 +1,6 @@
 import type { Command } from "commander";
-import { planId } from "../../core/args.js";
-import { PlanService } from "../../services/plan.service.js";
+import { provider } from "../../providers/index.js";
+import { planId } from "../../providers/testrail/ids.js";
 import { registerDeleteAction } from "../action.js";
 
 export function registerDelete(plan: Command): void {
@@ -8,7 +8,8 @@ export function registerDelete(plan: Command): void {
     usage: "delete <plan>",
     description: "Delete a plan with its runs, tests and results, e.g. R7; TestRail has no undo",
     parseId: planId,
-    service: () => new PlanService(),
+    needs: "plans",
+    service: () => provider().plans,
     key: "name",
     ref: (id) => `R${id}`,
     question: (id, found) =>

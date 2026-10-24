@@ -1,9 +1,10 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { SectionService, type SectionMove } from "../../services/section.service.js";
+import { type SectionMove } from "../../providers/testrail/services/section.service.js";
 import { toSectionView } from "./render.js";
 
 interface MoveOptions {
@@ -25,7 +26,7 @@ export function registerMove(section: Command): void {
       if (Object.keys(input).length === 0)
         throw new InputError("USAGE", "Give --parent, --after or both, e.g. --parent top");
       const { mode } = bootstrap(cmd);
-      const view = toSectionView(await new SectionService().move(id, input));
+      const view = toSectionView(await provider().sections.move(id, input));
       printResult(mode, view, () => `Moved section ${view.id}  ${view.name}`);
     });
 }

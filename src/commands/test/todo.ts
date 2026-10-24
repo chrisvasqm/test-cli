@@ -1,12 +1,11 @@
 import type { Command } from "commander";
-import { listLimit, milestoneId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { milestoneId } from "../../providers/testrail/ids.js";
+import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { grid, moreHint, printResult } from "../../core/output.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
-import { MilestoneService } from "../../services/milestone.service.js";
-import { RunService, type OpenRun } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
-import { UserService } from "../../services/user.service.js";
+import { nameOf } from "../../providers/testrail/lookup.js";
+import { type OpenRun } from "../../providers/testrail/services/run.service.js";
 import { assigneeView } from "../render.js";
 
 interface TodoOptions {
@@ -66,16 +65,16 @@ export function registerTodo(test: Command): void {
       const limit = listLimit(opts.limit);
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
       const { config, mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       const [user, statusIds, runs] = await Promise.all([
-        new UserService().resolve(opts.assigned ?? "me", config.email, "--assigned"),
+        provider().users.resolve(opts.assigned ?? "me", config.email, "--assigned"),
         opts.status === undefined ? meta.openStatusIds() : meta.statusIds(opts.status),
-        new RunService().allOpen(config.projectId, milestone),
-        milestone === undefined ? undefined : new MilestoneService().get(milestone),
+        provider().runs.allOpen(config.projectId, milestone),
+        milestone === undefined ? undefined : provider().milestones.get(milestone),
       ]);
       const byRun = new Map(runs.map((item) => [item.run.id, runView(item)]));
       const [found, statuses] = await Promise.all([
-        new TestService().assigned([...byRun.keys()], statusIds, user.id),
+        provider().tests.assigned([...byRun.keys()], statusIds, user.id),
         meta.statuses(),
       ]);
       const tests = found.slice(0, limit).map((item) => ({

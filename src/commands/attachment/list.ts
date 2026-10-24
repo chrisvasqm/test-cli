@@ -1,8 +1,9 @@
 import type { Command } from "commander";
-import { kindedId, listLimit } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { kindedId } from "../../providers/testrail/ids.js";
+import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
-import { AttachmentService } from "../../services/attachment.service.js";
 import { isoTime, localTime } from "../render.js";
 import { fileSize } from "./files.js";
 
@@ -18,8 +19,8 @@ export function registerList(attachment: Command): void {
     .action(async (rawTarget: string, opts: ListOptions, cmd: Command) => {
       const target = kindedId(rawTarget);
       const limit = listLimit(opts.limit);
-      const { mode } = bootstrap(cmd);
-      const { items, hasMore } = await new AttachmentService().list(target, limit);
+      const { mode } = bootstrap(cmd, "attachments");
+      const { items, hasMore } = await provider().attachments.list(target, limit);
       const attachments = items.map((item) => ({
         id: item.id,
         name: item.name,

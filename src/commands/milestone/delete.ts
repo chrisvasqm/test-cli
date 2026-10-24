@@ -1,6 +1,6 @@
 import type { Command } from "commander";
-import { milestoneId } from "../../core/args.js";
-import { MilestoneService } from "../../services/milestone.service.js";
+import { provider } from "../../providers/index.js";
+import { milestoneId } from "../../providers/testrail/ids.js";
 import { registerDeleteAction } from "../action.js";
 
 export function registerDelete(milestone: Command): void {
@@ -8,7 +8,8 @@ export function registerDelete(milestone: Command): void {
     usage: "delete <milestone>",
     description: "Delete a milestone, e.g. M3; TestRail has no undo",
     parseId: milestoneId,
-    service: () => new MilestoneService(),
+    needs: "milestones",
+    service: () => provider().milestones,
     key: "name",
     ref: (id) => `M${id}`,
     question: (id, found) => `Delete M${id} "${found.name}"? This cannot be undone.`,

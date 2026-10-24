@@ -1,8 +1,8 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
-import { MilestoneService } from "../../services/milestone.service.js";
 import { isoTime, localDate } from "../render.js";
 
 interface ListOptions {
@@ -18,8 +18,8 @@ export function registerList(milestone: Command): void {
     .option("-n, --limit <n>", "Most milestones to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
-      const { config, mode } = bootstrap(cmd);
-      const { items, hasMore } = await new MilestoneService().list(
+      const { config, mode } = bootstrap(cmd, "milestones");
+      const { items, hasMore } = await provider().milestones.list(
         config.projectId,
         Boolean(opts.completed),
         limit,

@@ -1,9 +1,8 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
-import { MetaService } from "../../services/meta.service.js";
-import { RunService } from "../../services/run.service.js";
 import { isoTime, renderCounts, toRunSummary } from "../render.js";
 
 interface ListOptions {
@@ -21,8 +20,8 @@ export function registerList(run: Command): void {
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);
       const [{ items, hasMore }, statuses] = await Promise.all([
-        new RunService().list(config.projectId, limit, { completed: Boolean(opts.completed) }),
-        new MetaService().statuses(),
+        provider().runs.list(config.projectId, limit, { completed: Boolean(opts.completed) }),
+        provider().meta.statuses(),
       ]);
       const runs = items.map((item) => ({
         ...toRunSummary(item, statuses),

@@ -1,25 +1,30 @@
 import { existsSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import type { Command } from "commander";
+import { connectTestRail } from "../providers/index.js";
 import { z } from "zod";
 import { globalOptions, outputMode } from "../core/bootstrap.js";
-import { CONFIG_FILE, GLOBAL_CONFIG, configSchema, isGitignored, saveConfig } from "../core/config.js";
+import {
+  CONFIG_FILE,
+  GLOBAL_CONFIG,
+  configSchema,
+  isGitignored,
+  saveConfig,
+  testRailConfigSchema,
+} from "../core/config.js";
 import { confirm } from "../core/confirm.js";
 import { CliError, InputError } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
 import { info, printResult, table, type OutputMode } from "../core/output.js";
 import { ask, askSecret } from "../core/prompt.js";
-import { SUITE_MODE_SINGLE, type Suite } from "../core/testrail-types.js";
-import { ProjectService } from "../services/project.service.js";
+import { SUITE_MODE_SINGLE, type Suite } from "../providers/testrail/types.js";
 import { savedConfig } from "./render.js";
-import { UserService } from "../services/user.service.js";
 
 interface SetupOptions {
   global?: boolean;
   yes?: boolean;
 }
 
-const shape = configSchema.shape;
+const shape = testRailConfigSchema.shape;
 
 async function askValid<T>(
   prompt: () => Promise<string>,
@@ -79,12 +84,11 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
     "API key cannot be empty",
   );
 
-  HttpClient.configure({ baseUrl, email, apiKey });
-  const projects = new ProjectService();
+  const { projects, users } = connectTestRail({ baseUrl, email, apiKey });
   // Listing projects proves the credentials. Only then look up the name, so a wrong key
   // costs one failed login (repeated failures can lock the account), not two.
   const { items: active, hasMore } = await projects.listActive();
-  const me = await new UserService().byEmail(email).catch(() => undefined);
+  const me = await users.byEmail(email).catch(() => undefined);
   info(`Authenticated as ${me?.name ?? email}`);
   if (active.length === 0) throw new CliError("NO_PROJECTS", "This account can see no active projects.");
   if (hasMore) info(`Showing the first ${active.length} projects; edit projectId in the config for another.`);
@@ -98,7 +102,14 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
       suites.length === 1 ? suites[0] : await pick(suites, (item) => `${item.name} (S${item.id})`, "suite");
   }
 
-  const config = configSchema.parse({ baseUrl, email, apiKey, projectId: project.id, suiteId: suite?.id });
+  const config = configSchema.parse({
+    provider: "testrail",
+    baseUrl,
+    email,
+    apiKey,
+    projectId: project.id,
+    suiteId: suite?.id,
+  });
   saveConfig(path, config);
 
   const ignored = path === GLOBAL_CONFIG ? undefined : isGitignored(path);

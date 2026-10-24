@@ -1,11 +1,13 @@
 import type { Command } from "commander";
-import { dateArg, milestoneId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { milestoneId } from "../../providers/testrail/ids.js";
+import { dateArg } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
-import { MilestoneService, type MilestoneUpdate } from "../../services/milestone.service.js";
+import { type MilestoneUpdate } from "../../providers/testrail/services/milestone.service.js";
 import { milestoneRows, toMilestoneView } from "./render.js";
 
 interface EditOptions {
@@ -55,8 +57,8 @@ export function registerEdit(milestone: Command): void {
       if (Object.keys(input).length === 0) {
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name or --due");
       }
-      const { mode } = bootstrap(cmd);
-      const updated = await new MilestoneService().update(id, input);
+      const { mode } = bootstrap(cmd, "milestones");
+      const updated = await provider().milestones.update(id, input);
       const view = { ...toMilestoneView(updated), changed: Object.keys(input) };
       printResult(mode, view, () =>
         [`Updated M${view.id}  ${view.name}`, table(milestoneRows(view))].join("\n\n"),

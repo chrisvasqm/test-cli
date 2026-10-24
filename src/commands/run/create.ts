@@ -1,17 +1,16 @@
 import type { Command } from "commander";
-import { caseIds, jiraKey, milestoneId, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseIds, milestoneId, runId } from "../../providers/testrail/ids.js";
+import { jiraKey } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { jiraTickets, type JiraTicket, type JiraTickets, type TicketSource } from "../../core/jira.js";
 import { info, printResult, table } from "../../core/output.js";
 import { clip, fitRefs, joinRefs, MAX_NAME } from "../../core/text.js";
-import { CaseService } from "../../services/case.service.js";
-import { MetaService } from "../../services/meta.service.js";
-import type { Run } from "../../core/testrail-types.js";
-import { RunService, type RunInput } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
-import { UserService } from "../../services/user.service.js";
+import { type MetaService } from "../../providers/testrail/services/meta.service.js";
+import type { Run } from "../../providers/testrail/types.js";
+import { type RunInput } from "../../providers/testrail/services/run.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { renderCounts, toRunSummary, assigneeView } from "../render.js";
 
@@ -82,7 +81,7 @@ export function registerCreate(run: Command): void {
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
       const { ticket, refs: given } = await loadFromJira(key, opts.refs);
       const found = tickets === undefined ? undefined : await jiraTickets(tickets);
-      const meta = new MetaService();
+      const meta = provider().meta;
       const [rerun, fromTickets, linked, statuses, assignee] = await Promise.all([
         sourceId === undefined ? undefined : rerunCases(sourceId, opts.status, meta),
         found === undefined ? undefined : ticketCases(config.projectId, config.suiteId, found),
@@ -90,7 +89,7 @@ export function registerCreate(run: Command): void {
           ? undefined
           : linkedCases(config.projectId, config.suiteId, key, "run create"),
         meta.statuses(),
-        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
+        provider().users.resolveOptional(opts.assign, config.email, "--assign"),
       ]);
       const caseList = rerun?.caseIds ?? fromTickets?.caseIds ?? cases ?? linked;
       // Typed refs first; a sprint's keys can outgrow the refs field, so the rest are named instead.
@@ -107,7 +106,7 @@ export function registerCreate(run: Command): void {
       if (milestoneToSet !== undefined) input.milestone_id = milestoneToSet;
       if (refs.length > 0) input.refs = joinRefs(refs);
       if (assignee) input.assignedto_id = assignee.id;
-      const created = await new RunService().add(config.projectId, input);
+      const created = await provider().runs.add(config.projectId, input);
       const view = {
         ...toRunSummary(created, statuses),
         includeAll: created.include_all,
@@ -149,7 +148,7 @@ export async function linkedCases(
   key: string,
   command: string,
 ): Promise<number[]> {
-  const ids = await new CaseService().linkedTo(projectId, suiteId, key);
+  const ids = await provider().cases.linkedTo(projectId, suiteId, key);
   if (ids.length === 0) {
     throw new InputError(
       "NO_LINKED_CASES",
@@ -180,7 +179,7 @@ function ticketSource(opts: CreateOptions): TicketSource | undefined {
 /** The cases linked to the tickets, and which tickets have some; none at all would make an empty run. */
 async function ticketCases(projectId: number, suiteId: number | undefined, found: JiraTickets) {
   const keys = found.tickets.map((item) => item.key);
-  const byKey = await new CaseService().linkedToEach(projectId, suiteId, keys);
+  const byKey = await provider().cases.linkedToEach(projectId, suiteId, keys);
   if (byKey.size === 0) {
     const what =
       keys.length === 0
@@ -231,9 +230,9 @@ async function rerunCases(
   meta: MetaService,
 ): Promise<{ source: Run; caseIds: number[] }> {
   const typed = status ?? RERUN_STATUSES;
-  const [source, statusIds] = await Promise.all([new RunService().get(id), meta.statusIds(typed)]);
+  const [source, statusIds] = await Promise.all([provider().runs.get(id), meta.statusIds(typed)]);
   if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
-  const ids = [...new Set((await new TestService().all(id, statusIds)).map((item) => item.case_id))];
+  const ids = [...new Set((await provider().tests.all(id, statusIds)).map((item) => item.case_id))];
   if (ids.length === 0) {
     throw new InputError("NO_MATCHING_TESTS", `Run R${id} has no tests with status ${typed}.`);
   }

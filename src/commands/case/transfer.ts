@@ -1,9 +1,9 @@
 import type { Command } from "commander";
-import { caseIdList, intInRange } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseIdList } from "../../providers/testrail/ids.js";
+import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult } from "../../core/output.js";
-import { CaseService } from "../../services/case.service.js";
-import { SectionService } from "../../services/section.service.js";
 
 interface TransferOptions {
   section: string;
@@ -36,9 +36,9 @@ function registerTransfer(testCase: Command, verb: "copy" | "move", done: string
       const ids = caseIdList(rawIds);
       const sectionId = intInRange(opts.section, "--section", 1);
       const { mode } = bootstrap(cmd);
-      const cases = new CaseService();
+      const cases = provider().cases;
       // Both checks run before the write, so it never half-starts on a typo.
-      const [section, found] = await Promise.all([new SectionService().get(sectionId), cases.getMany(ids)]);
+      const [section, found] = await Promise.all([provider().sections.get(sectionId), cases.getMany(ids)]);
       await (verb === "copy"
         ? cases.copyTo(section.id, ids)
         : cases.moveTo(section.id, section.suite_id, ids));

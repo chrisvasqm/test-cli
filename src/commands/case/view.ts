@@ -1,11 +1,10 @@
 import type { Command } from "commander";
-import { caseId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
-import { CaseService } from "../../services/case.service.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
-import { SectionService } from "../../services/section.service.js";
+import { nameOf } from "../../providers/testrail/lookup.js";
 import { caseUrl, isoTime, localTime, renderContent, toContent } from "../render.js";
 
 export function registerView(testCase: Command): void {
@@ -15,13 +14,15 @@ export function registerView(testCase: Command): void {
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = caseId(rawId);
       const { config, mode } = bootstrap(cmd);
-      const cases = new CaseService();
-      const meta = new MetaService();
+      const cases = provider().cases;
+      const meta = provider().meta;
       // The lookups do not depend on the case, so they run alongside it; only the section waits.
       const lookups = Promise.all([meta.priorities(), meta.caseTypes()]);
       const found = await cases.get(id);
       const [section, [priorities, types]] = await Promise.all([
-        new SectionService().get(found.section_id).catch(() => undefined),
+        provider()
+          .sections.get(found.section_id)
+          .catch(() => undefined),
         lookups,
       ]);
       const view = {

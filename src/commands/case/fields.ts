@@ -1,9 +1,10 @@
 import type { Command } from "commander";
 import { InputError } from "../../core/errors.js";
 import { joinRefs } from "../../core/text.js";
-import type { StepInput } from "../../core/testrail-types.js";
-import type { CaseInput } from "../../services/case.service.js";
-import { idByName, type MetaService } from "../../services/meta.service.js";
+import type { StepInput } from "../../providers/testrail/types.js";
+import type { CaseInput } from "../../providers/testrail/services/case.service.js";
+import { idByName } from "../../providers/testrail/lookup.js";
+import { type MetaService } from "../../providers/testrail/services/meta.service.js";
 
 /** Stable key of the built-in "Test Case (Steps)" template; its name can be renamed. */
 const STEPS_TEMPLATE = "templates_test_case_steps";

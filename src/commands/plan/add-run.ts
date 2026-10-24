@@ -1,9 +1,8 @@
 import type { Command } from "commander";
-import { planId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { planId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult } from "../../core/output.js";
-import { MetaService } from "../../services/meta.service.js";
-import { PlanService } from "../../services/plan.service.js";
 import { jiraView } from "../from-jira.js";
 import { assigneeView } from "../render.js";
 import { buildEntry, entryOptions, parseEntry, type EntryOptions } from "./entry.js";
@@ -24,10 +23,10 @@ export function registerAddRun(plan: Command): void {
   entryOptions(addRun).action(async (rawId: string, opts: AddRunOptions, cmd: Command) => {
     const id = planId(rawId);
     const parsed = parseEntry(opts);
-    const { config, mode } = bootstrap(cmd);
+    const { config, mode } = bootstrap(cmd, "plans");
     const { input, ticket, assignee } = await buildEntry(opts, parsed, config, opts.name, "plan add-run");
-    const statuses = await new MetaService().statuses();
-    const entry = toEntryView(await new PlanService().addEntry(id, input), statuses);
+    const statuses = await provider().meta.statuses();
+    const entry = toEntryView(await provider().plans.addEntry(id, input), statuses);
     const view = {
       planId: id,
       ...entry,

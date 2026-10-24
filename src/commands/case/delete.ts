@@ -1,6 +1,6 @@
 import type { Command } from "commander";
-import { caseId } from "../../core/args.js";
-import { CaseService } from "../../services/case.service.js";
+import { provider } from "../../providers/index.js";
+import { caseId } from "../../providers/testrail/ids.js";
 import { registerDeleteAction } from "../action.js";
 
 export function registerDelete(testCase: Command): void {
@@ -8,7 +8,7 @@ export function registerDelete(testCase: Command): void {
     usage: "delete <case>",
     description: "Delete a case and its tests in active runs, e.g. C12; TestRail has no undo",
     parseId: caseId,
-    service: () => new CaseService(),
+    service: () => provider().cases,
     key: "title",
     ref: (id) => `C${id}`,
     question: (id, found) =>

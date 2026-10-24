@@ -1,8 +1,9 @@
-import { notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { ALL, collectPages, inBatches, type Collected } from "../core/paging.js";
-import { hasRef, splitList } from "../core/text.js";
-import type { Case, CaseContent } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { ALL, inBatches, type Collected } from "../../../core/paging.js";
+import { hasRef, splitList } from "../../../core/text.js";
+import type { Case, CaseContent } from "../types.js";
 
 export interface CaseFilter {
   projectId: number;

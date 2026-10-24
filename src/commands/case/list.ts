@@ -1,13 +1,14 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { intInRange, jiraKey, listLimit, sinceDate } from "../../core/args.js";
 import { InputError } from "../../core/errors.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
 import type { Collected } from "../../core/paging.js";
-import type { Case } from "../../core/testrail-types.js";
-import { CaseService, type CaseFilter } from "../../services/case.service.js";
-import { idsByName, MetaService, nameOf } from "../../services/meta.service.js";
+import type { Case } from "../../providers/testrail/types.js";
+import { type CaseFilter } from "../../providers/testrail/services/case.service.js";
+import { idsByName, nameOf } from "../../providers/testrail/lookup.js";
 import { isoTime } from "../render.js";
 
 interface ListOptions {
@@ -43,7 +44,7 @@ export function registerList(testCase: Command): void {
       const updatedAfter =
         opts.updatedSince === undefined ? undefined : sinceDate(opts.updatedSince, "--updated-since");
       const { config, mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       // The same tables name each row's priority and type; filter names need them before listing.
       const tablesLoaded = Promise.all([meta.priorities(), meta.caseTypes()]);
       const filtered = opts.priority !== undefined || opts.type !== undefined;
@@ -97,7 +98,7 @@ export function registerList(testCase: Command): void {
 
 /** With a key, every exact match is fetched first, so the limit cuts the matches, not TestRail's looser page. */
 async function listCases(filter: CaseFilter, key: string | undefined): Promise<Collected<Case>> {
-  const cases = new CaseService();
+  const cases = provider().cases;
   if (key === undefined) return cases.list(filter);
   const matches = await cases.withRef(filter, key);
   return { items: matches.slice(0, filter.limit), hasMore: matches.length > filter.limit };

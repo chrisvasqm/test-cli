@@ -1,7 +1,7 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
-import { UserService } from "../../services/user.service.js";
 
 export function registerList(user: Command): void {
   user
@@ -9,7 +9,7 @@ export function registerList(user: Command): void {
     .description("List the users with access to the project; * marks you")
     .action(async (_opts: unknown, cmd: Command) => {
       const { config, mode } = bootstrap(cmd);
-      const { items, hasMore } = await new UserService().list(config.projectId);
+      const { items, hasMore } = await provider().users.list(config.projectId);
       const me = config.email.toLowerCase();
       const users = items.map((item) => ({
         id: item.id,

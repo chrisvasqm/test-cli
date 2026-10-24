@@ -1,10 +1,11 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { SectionService, type SectionInput } from "../../services/section.service.js";
+import { type SectionInput } from "../../providers/testrail/services/section.service.js";
 import { toSectionView } from "./render.js";
 
 interface EditOptions {
@@ -29,7 +30,7 @@ export function registerEdit(section: Command): void {
       if (Object.keys(input).length === 0)
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name");
       const { mode } = bootstrap(cmd);
-      const view = toSectionView(await new SectionService().update(id, input));
+      const view = toSectionView(await provider().sections.update(id, input));
       printResult(mode, view, () => `Updated section ${view.id}  ${view.name}`);
     });
 }

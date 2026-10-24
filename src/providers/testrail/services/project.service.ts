@@ -1,7 +1,9 @@
-import { CliError, notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { collectPages, MAX_LIST, type Collected } from "../core/paging.js";
-import type { Project, Suite } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { CliError } from "../../../core/errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { MAX_LIST, type Collected } from "../../../core/paging.js";
+import type { Project, Suite } from "../types.js";
 
 /** get_project(s) and get_suites endpoints. */
 export class ProjectService {

@@ -1,10 +1,11 @@
 import type { Command } from "commander";
-import { intInRange, testId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { testId } from "../../providers/testrail/ids.js";
+import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
-import { TestService } from "../../services/test.service.js";
+import { nameOf } from "../../providers/testrail/lookup.js";
 import { renderContent, renderResult, testUrl, toContent, toResult } from "../render.js";
 
 /** Most results `test view` shows. */
@@ -27,8 +28,8 @@ export function registerView(test: Command): void {
       const id = testId(rawId);
       const limit = intInRange(opts.results, "--results", 0, MAX_RESULTS);
       const { config, mode } = bootstrap(cmd);
-      const tests = new TestService();
-      const meta = new MetaService();
+      const tests = provider().tests;
+      const meta = provider().meta;
       const [found, results, statuses] = await Promise.all([
         tests.get(id),
         limit > 0 ? tests.results(id, limit) : Promise.resolve({ items: [], hasMore: false }),

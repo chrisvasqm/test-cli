@@ -1,5 +1,5 @@
 import { splitList } from "../../core/text.js";
-import type { Milestone } from "../../core/testrail-types.js";
+import type { Milestone } from "../../providers/testrail/types.js";
 import { isoTime, localDate, localTime } from "../render.js";
 
 /** The milestone fields view, create, edit, close and reopen print. */
