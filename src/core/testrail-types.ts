@@ -27,6 +27,7 @@ export interface User {
 export interface Section {
   id: number;
   name: string;
+  description: string | null;
   suite_id: number;
   parent_id: number | null;
   depth: number;

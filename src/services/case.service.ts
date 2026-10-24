@@ -2,7 +2,7 @@ import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
 import { hasRef } from "../core/text.js";
-import type { Case, CaseContent, Section } from "../core/testrail-types.js";
+import type { Case, CaseContent } from "../core/testrail-types.js";
 
 export interface CaseFilter {
   projectId: number;
@@ -29,7 +29,7 @@ export interface CaseInput extends CaseContent {
   estimate?: string;
 }
 
-/** get/add/update/delete_case, get_cases and get_section(s) endpoints. */
+/** get/add/update/delete_case, and get_cases endpoints. */
 export class CaseService {
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -69,10 +69,6 @@ export class CaseService {
     return cases.map((item) => item.id);
   }
 
-  section(id: number): Promise<Section> {
-    return this.http.get<Section>(`get_section/${id}`).catch(notFound.section(id));
-  }
-
   add(sectionId: number, input: CaseInput & { title: string }): Promise<Case> {
     return this.http.post<Case>(`add_case/${sectionId}`, input).catch(notFound.section(sectionId));
   }
@@ -85,15 +81,5 @@ export class CaseService {
   /** Deletes the case and its tests and results in active runs. TestRail has no undo. */
   async remove(id: number): Promise<void> {
     await this.http.post<undefined>(`delete_case/${id}`).catch(notFound.case(id));
-  }
-
-  sections(projectId: number, suiteId: number | undefined, limit: number): Promise<Collected<Section>> {
-    return collectPages<Section>(
-      `get_sections/${projectId}`,
-      "sections",
-      { suite_id: suiteId },
-      limit,
-      this.http,
-    );
   }
 }
