@@ -3,13 +3,12 @@ import { caseIds, intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
-import { jiraTicket } from "../../core/jira.js";
 import { printResult, table } from "../../core/output.js";
-import { clip, MAX_NAME, splitList, uniqueRefs } from "../../core/text.js";
+import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
-import { jiraKey } from "../link/target.js";
+import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { renderCounts, toRunSummary } from "../render.js";
 
 interface CreateOptions {
@@ -40,33 +39,28 @@ export function registerCreate(run: Command): void {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone =
         opts.milestone === undefined ? undefined : intInRange(opts.milestone, "--milestone", 1);
-      const key = opts.fromJira === undefined ? undefined : jiraKey(opts.fromJira, "--from-jira");
-      if (key === undefined && opts.name === undefined) {
-        throw new InputError("USAGE", "Give --name, or --from-jira KAN-12 to take it from Jira");
-      }
+      const key = fromJiraKey(opts.fromJira, opts.name, "--name");
       const description = await readOptionalText(opts.description, opts.file, "description");
       const { config, mode } = bootstrap(cmd);
-      const ticket = key === undefined ? undefined : await jiraTicket(key);
-      const caseList =
-        cases ??
-        (ticket
-          ? await new CaseService().linkedIds(config.projectId, config.suiteId, ticket.key)
-          : undefined);
+      // Jira first, alone: it may prompt for `jira setup`. Then the TestRail lookups, all before the
+      // write; statuses too, as a failed lookup after it would report an error for a run that exists.
+      const { ticket, refs } = await loadFromJira(key, opts.refs);
+      const [caseList, statuses] = await Promise.all([
+        cases ?? (key === undefined ? undefined : linkedCases(config.projectId, config.suiteId, key)),
+        new MetaService().statuses(),
+      ]);
       const name = opts.name ?? clip(`${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
       const input: RunInput = { name, include_all: caseList === undefined };
       if (config.suiteId !== undefined) input.suite_id = config.suiteId;
       if (caseList) input.case_ids = caseList;
       if (description !== undefined) input.description = description;
       if (milestone !== undefined) input.milestone_id = milestone;
-      const refs = ticket ? uniqueRefs([ticket.key, ...splitList(opts.refs)]) : splitList(opts.refs);
-      if (refs.length > 0) input.refs = refs.join(",");
-      // Statuses first: a failed lookup after the write would report an error for a run that exists.
-      const statuses = await new MetaService().statuses();
+      if (refs.length > 0) input.refs = joinRefs(refs);
       const created = await new RunService().add(config.projectId, input);
       const view = {
         ...toRunSummary(created, statuses),
         includeAll: created.include_all,
-        jira: ticket ? { key: ticket.key, url: ticket.url } : null,
+        jira: jiraView(ticket),
       };
       printResult(mode, view, () =>
         [
@@ -78,4 +72,16 @@ export function registerCreate(run: Command): void {
         ].join("\n\n"),
       );
     });
+}
+
+/** Ids of the cases linked to the key; a run of none would be empty. */
+async function linkedCases(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
+  const ids = await new CaseService().linkedTo(projectId, suiteId, key);
+  if (ids.length === 0) {
+    throw new InputError(
+      "NO_LINKED_CASES",
+      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or pass --cases.`,
+    );
+  }
+  return ids;
 }

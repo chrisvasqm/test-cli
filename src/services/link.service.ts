@@ -23,22 +23,22 @@ export class LinkService {
     private readonly results = new ResultService(),
   ) {}
 
-  /** Runs read by keys(), so a write can check them without another request. */
-  private readonly fetched = new Map<number, Run>();
-
   /**
    * Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first.
+   * `runId` is the run a write would change (none for a case), and `run` is it when already read.
    */
-  async keys(target: LinkTarget): Promise<string[]> {
-    if (target.kind === "case") return splitList((await this.cases.get(target.id)).refs);
+  async load(target: LinkTarget): Promise<{ keys: string[]; runId?: number; run?: Run }> {
+    if (target.kind === "case") return { keys: splitList((await this.cases.get(target.id)).refs) };
     if (target.kind === "run") {
       const run = await this.runs.get(target.id);
-      this.fetched.set(run.id, run);
-      return splitList(run.refs);
+      return { keys: splitList(run.refs), runId: run.id, run };
     }
-    // get_results maps an unknown test to TEST_NOT_FOUND itself.
-    const { items } = await this.tests.results(target.id, ALL_RESULTS);
-    return uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
+    const [test, { items }] = await Promise.all([
+      this.tests.get(target.id),
+      this.tests.results(target.id, ALL_RESULTS),
+    ]);
+    const keys = uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
+    return { keys, runId: test.run_id };
   }
 
   /**
@@ -64,15 +64,10 @@ export class LinkService {
     else await this.runs.update(target.id, input);
   }
 
-  /** Before a write: TestRail refuses changes in closed runs, and update_run runs inside test plans. */
-  async assertWritable(target: LinkTarget): Promise<void> {
-    if (target.kind === "case") return;
-    // A test's link is a result, which a closed run refuses too.
-    const runId = target.kind === "run" ? target.id : (await this.tests.get(target.id)).run_id;
-    const run = this.fetched.get(runId) ?? (await this.runs.get(runId));
-    if (run.is_completed) {
-      throw new InputError("RUN_CLOSED", `Run R${run.id} is closed; TestRail cannot change it.`);
-    }
+  /** Before a write: the run must be open, and update_run cannot change runs inside test plans. */
+  async assertWritable(target: LinkTarget, loaded: { runId?: number; run?: Run }): Promise<void> {
+    if (loaded.runId === undefined) return;
+    const run = await this.runs.open(loaded.runId, loaded.run);
     if (target.kind === "run" && run.plan_id) {
       throw new InputError(
         "RUN_IN_PLAN",

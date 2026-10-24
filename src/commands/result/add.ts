@@ -74,9 +74,7 @@ export function registerAdd(result: Command): void {
     });
 }
 
-type Target = ResultTarget;
-
-function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
+function parseTarget(rawTest: string | undefined, opts: AddOptions): ResultTarget {
   const byCase = opts.run !== undefined || opts.case !== undefined;
   if (rawTest !== undefined && byCase)
     throw new InputError("USAGE", "Give a test id or --run with --case, not both");
@@ -87,7 +85,7 @@ function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
   return { kind: "case", runId: runId(opts.run), caseId: caseId(opts.case) };
 }
 
-function addResult(target: Target, input: ResultInput) {
+function addResult(target: ResultTarget, input: ResultInput) {
   const results = new ResultService();
   return target.kind === "test"
     ? results.addForTest(target.testId, input)

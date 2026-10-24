@@ -1,4 +1,4 @@
-import { InputError, notFound } from "../core/errors.js";
+import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
 import { sameKey, splitList } from "../core/text.js";
@@ -8,6 +8,8 @@ export interface CaseFilter {
   projectId: number;
   suiteId: number | undefined;
   sectionId: number | undefined;
+  /** Only cases whose refs match this key (TestRail's own, loose, match). */
+  refs?: string;
   limit: number;
 }
 
@@ -33,7 +35,7 @@ export class CaseService {
     const page = collectPages<Case>(
       `get_cases/${filter.projectId}`,
       "cases",
-      { suite_id: filter.suiteId, section_id: filter.sectionId },
+      { suite_id: filter.suiteId, section_id: filter.sectionId, refs: filter.refs },
       filter.limit,
       this.http,
     );
@@ -41,28 +43,13 @@ export class CaseService {
     return filter.sectionId === undefined ? page : page.catch(notFound.section(filter.sectionId));
   }
 
-  /** Every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
-  async linkedTo(projectId: number, suiteId: number | undefined, key: string): Promise<Case[]> {
-    const { items } = await collectPages<Case>(
-      `get_cases/${projectId}`,
-      "cases",
-      { suite_id: suiteId, refs: key },
-      Number.MAX_SAFE_INTEGER,
-      this.http,
-    );
-    return items.filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)));
-  }
-
-  /** Ids of the cases linked to `key`; NO_LINKED_CASES when there are none (a run of them would be empty). */
-  async linkedIds(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
-    const linked = await this.linkedTo(projectId, suiteId, key);
-    if (linked.length === 0) {
-      throw new InputError(
-        "NO_LINKED_CASES",
-        `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or pass --cases.`,
-      );
-    }
-    return linked.map((item) => item.id);
+  /** Ids of every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
+  async linkedTo(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
+    const filter = { projectId, suiteId, sectionId: undefined, refs: key, limit: Number.MAX_SAFE_INTEGER };
+    const { items } = await this.list(filter);
+    return items
+      .filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)))
+      .map((item) => item.id);
   }
 
   section(id: number): Promise<Section> {

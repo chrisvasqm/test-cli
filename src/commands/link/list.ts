@@ -11,7 +11,7 @@ export function registerList(link: Command): void {
     .action(async (rawTarget: string, _opts: unknown, cmd: Command) => {
       const target = linkTarget(rawTarget);
       const { config, mode } = bootstrap(cmd);
-      const keys = await new LinkService().keys(target);
+      const { keys } = await new LinkService().load(target);
       const view = { target: targetName(target), keys, url: targetUrl(config, target) };
       printResult(mode, view, () => `${renderKeys(view.target, keys)}\n${view.url}`);
     });

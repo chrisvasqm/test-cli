@@ -2,9 +2,9 @@ import type { Command } from "commander";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { sameKey } from "../../core/text.js";
 import { LinkService } from "../../services/link.service.js";
-import { jiraKeys, linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
+import { jiraKeys } from "../../core/args.js";
+import { linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
 
 export function registerRemove(link: Command): void {
   link
@@ -21,11 +21,11 @@ export function registerRemove(link: Command): void {
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
       const links = new LinkService();
-      const current = await links.keys(target);
-      const { linked: removed, unlinked: notLinked } = partition(keys, current);
-      const left = current.filter((key) => !removed.some((other) => sameKey(other, key)));
+      const loaded = await links.load(target);
+      const { linked: removed, unlinked: notLinked } = partition(keys, loaded.keys);
+      const left = partition(loaded.keys, removed).unlinked;
       if (removed.length > 0) {
-        await links.assertWritable(target);
+        await links.assertWritable(target, loaded);
         await links.setRefs(target, left);
       }
       const name = targetName(target);

@@ -1,4 +1,4 @@
-import { notFound, notFoundAs } from "../core/errors.js";
+import { InputError, notFound, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
 import type { Run } from "../core/testrail-types.js";
@@ -33,6 +33,15 @@ export class RunService {
       .catch(
         notFoundAs("case_ids", "CASE_NOT_FOUND", "Some --cases ids are not cases in this project and suite."),
       );
+  }
+
+  /** The run, which must be open: TestRail refuses changes and new results in a closed run. `known` skips the request. */
+  async open(id: number, known?: Run): Promise<Run> {
+    const run = known ?? (await this.get(id));
+    if (run.is_completed) {
+      throw new InputError("RUN_CLOSED", `Run R${id} is closed; TestRail takes no changes or results in it.`);
+    }
+    return run;
   }
 
   /** Only the fields given change. TestRail refuses changes to a closed run. */

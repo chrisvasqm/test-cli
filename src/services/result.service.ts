@@ -1,4 +1,4 @@
-import { CliError, InputError, notFound } from "../core/errors.js";
+import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import type { Result, Test } from "../core/testrail-types.js";
 import { CaseService } from "./case.service.js";
@@ -52,20 +52,16 @@ export class ResultService {
     const tests = new TestService(this.http);
     if (target.kind === "test") {
       const test = await tests.get(target.testId);
-      await this.assertOpen(test.run_id);
+      await new RunService(this.http).open(test.run_id);
       return test;
     }
-    await this.assertOpen(target.runId);
-    const { items } = await tests.list(target.runId, [], Number.MAX_SAFE_INTEGER);
+    const [, { items }] = await Promise.all([
+      new RunService(this.http).open(target.runId),
+      tests.list(target.runId, [], Number.MAX_SAFE_INTEGER),
+    ]);
     const found = items.find((item) => item.case_id === target.caseId);
     if (found) return found;
     await new CaseService(this.http).get(target.caseId);
     throw new CliError("CASE_NOT_IN_RUN", `Case C${target.caseId} is not in run R${target.runId}.`);
-  }
-
-  private async assertOpen(runId: number): Promise<void> {
-    if ((await new RunService(this.http).get(runId)).is_completed) {
-      throw new InputError("RUN_CLOSED", `Run R${runId} is closed; TestRail takes no new results in it.`);
-    }
   }
 }
