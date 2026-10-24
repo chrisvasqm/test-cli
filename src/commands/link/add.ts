@@ -19,8 +19,9 @@ export function registerAdd(link: Command): void {
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
       const links = new LinkService();
-      const current = await links.keys(target, true);
+      const current = await links.keys(target);
       const { linked: already, unlinked: added } = partition(keys, current);
+      if (added.length > 0) await links.assertWritable(target);
       // Only new keys are checked; the check runs before any write.
       const checked = added.length > 0 && opts.check ? await checkJiraKeys(added) : false;
       if (added.length > 0) await links.add(target, current, added);

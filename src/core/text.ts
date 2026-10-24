@@ -23,7 +23,14 @@ export const MAX_NAME = 250;
 
 /** Text cut to `max` characters, ending in "…" when cut (TestRail names and titles hold 250). */
 export function clip(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+  // By code point, so an emoji is never cut in half.
+  const chars = Array.from(text);
+  return chars.length <= max
+    ? text
+    : `${chars
+        .slice(0, max - 1)
+        .join("")
+        .trimEnd()}…`;
 }
 
 /** Keys without repeats, compared ignoring case; the first spelling wins. */

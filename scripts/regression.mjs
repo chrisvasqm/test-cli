@@ -213,7 +213,7 @@ check("close the from-jira run", run("run", "close", jiraRunRef, "--yes"), okDat
 check(
   "--create-bug, closed run: no bug",
   run("result", "add", `T${jiraTest}`, "--status", "failed", "--create-bug"),
-  (res) => errCode("RUN_CLOSED", 1)(res) && creates() === 1,
+  (res) => errCode("RUN_CLOSED", 2)(res) && creates() === 1,
 );
 check("delete the from-jira case", run("case", "delete", jiraCaseRef, "--yes"), okData);
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));

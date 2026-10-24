@@ -1,4 +1,5 @@
 import { InputError } from "../core/errors.js";
+import type { Run } from "../core/testrail-types.js";
 import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
 import { CaseService } from "./case.service.js";
 import { ResultService } from "./result.service.js";
@@ -22,20 +23,17 @@ export class LinkService {
     private readonly results = new ResultService(),
   ) {}
 
+  /** Runs read by keys(), so a write can check them without another request. */
+  private readonly fetched = new Map<number, Run>();
+
   /**
    * Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first.
-   * `forWrite` refuses a run inside a test plan: update_run cannot change those.
    */
-  async keys(target: LinkTarget, forWrite = false): Promise<string[]> {
+  async keys(target: LinkTarget): Promise<string[]> {
     if (target.kind === "case") return splitList((await this.cases.get(target.id)).refs);
     if (target.kind === "run") {
       const run = await this.runs.get(target.id);
-      if (forWrite && run.plan_id !== null) {
-        throw new InputError(
-          "RUN_IN_PLAN",
-          `R${target.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,
-        );
-      }
+      this.fetched.set(run.id, run);
       return splitList(run.refs);
     }
     // get_results maps an unknown test to TEST_NOT_FOUND itself.
@@ -64,5 +62,20 @@ export class LinkService {
     const input = { refs: joinRefs(refs) };
     if (target.kind === "case") await this.cases.update(target.id, input);
     else await this.runs.update(target.id, input);
+  }
+
+  /** Before a write: update_run refuses closed runs and runs inside test plans. Cases always pass. */
+  async assertWritable(target: LinkTarget): Promise<void> {
+    if (target.kind !== "run") return;
+    const run = this.fetched.get(target.id) ?? (await this.runs.get(target.id));
+    if (run.is_completed) {
+      throw new InputError("RUN_CLOSED", `Run R${run.id} is closed; TestRail cannot change it.`);
+    }
+    if (run.plan_id) {
+      throw new InputError(
+        "RUN_IN_PLAN",
+        `R${run.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,
+      );
+    }
   }
 }

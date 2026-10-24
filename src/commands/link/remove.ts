@@ -21,10 +21,13 @@ export function registerRemove(link: Command): void {
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
       const links = new LinkService();
-      const current = await links.keys(target, true);
+      const current = await links.keys(target);
       const { linked: removed, unlinked: notLinked } = partition(keys, current);
       const left = current.filter((key) => !removed.some((other) => sameKey(other, key)));
-      if (removed.length > 0) await links.setRefs(target, left);
+      if (removed.length > 0) {
+        await links.assertWritable(target);
+        await links.setRefs(target, left);
+      }
       const name = targetName(target);
       const view = { target: name, keys: left, removed, notLinked, url: targetUrl(config, target) };
       printResult(mode, view, () => {

@@ -1,4 +1,4 @@
-import { CliError, notFound } from "../core/errors.js";
+import { CliError, InputError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import type { Result, Test } from "../core/testrail-types.js";
 import { CaseService } from "./case.service.js";
@@ -65,7 +65,7 @@ export class ResultService {
 
   private async assertOpen(runId: number): Promise<void> {
     if ((await new RunService(this.http).get(runId)).is_completed) {
-      throw new CliError("RUN_CLOSED", `Run R${runId} is closed; TestRail takes no new results in it.`);
+      throw new InputError("RUN_CLOSED", `Run R${runId} is closed; TestRail takes no new results in it.`);
     }
   }
 }
