@@ -1,6 +1,6 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { ALL, collectPages, inBatches, type Collected } from "../core/paging.js";
+import { ALL, collectPages, findInPages, inBatches, type Collected } from "../core/paging.js";
 import type { Result, Test } from "../core/testrail-types.js";
 
 /** get_test(s) and get_results endpoints. A test is one case inside one run. */
@@ -14,6 +14,20 @@ export class TestService {
   /** Every test of the run, optionally only those with `statusIds`. */
   async all(runId: number, statusIds: number[] = []): Promise<Test[]> {
     return (await this.list(runId, statusIds, ALL)).items;
+  }
+
+  /**
+   * The run's test of the case, or undefined when the case is not in the run. get_tests has no
+   * case filter, so pages are read until the case turns up.
+   */
+  forCase(runId: number, caseId: number): Promise<Test | undefined> {
+    return findInPages<Test>(
+      `get_tests/${runId}`,
+      "tests",
+      {},
+      (item) => item.case_id === caseId,
+      this.http,
+    ).catch(notFound.run(runId));
   }
 
   /** `assignedTo` filters here: get_tests has no assignee filter, so every page is read first. */

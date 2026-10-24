@@ -62,16 +62,26 @@ export async function checkJiraKeys(keys: readonly string[], setupOffered = fals
   return true;
 }
 
-/** `jira ticket view` for each key, MAX_PARALLEL at a time; undefined replies mean no jira-cli. */
+/**
+ * `jira ticket view` for each key, in key order, by MAX_PARALLEL workers that each start the next
+ * key when one ends. An undefined reply means no jira-cli: no more keys are started, and the keys
+ * never started are left out, so callers check for an undefined reply before reading the rest.
+ */
 async function viewAll(keys: readonly string[]): Promise<(readonly [string, JiraReply | undefined])[]> {
-  const replies: (readonly [string, JiraReply | undefined])[] = [];
-  for (let start = 0; start < keys.length; start += MAX_PARALLEL) {
-    const batch = keys.slice(start, start + MAX_PARALLEL);
-    replies.push(
-      ...(await Promise.all(batch.map(async (key) => [key, await runJira(viewArgs(key))] as const))),
-    );
-  }
-  return replies;
+  const replies: (readonly [string, JiraReply | undefined] | undefined)[] = [];
+  let next = 0;
+  let missing = false;
+  const worker = async (): Promise<void> => {
+    while (!missing && next < keys.length) {
+      const index = next++;
+      const key = keys[index]!;
+      const reply = await runJira(viewArgs(key));
+      if (reply === undefined) missing = true;
+      replies[index] = [key, reply];
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, keys.length) }, worker));
+  return replies.filter((reply) => reply !== undefined);
 }
 
 /** The status fields of `jira ticket view`; older jira-cli has no `statusCategory` (new, indeterminate or done). */
