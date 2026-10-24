@@ -1,3 +1,5 @@
+import { InputError } from "../core/errors.js";
+import type { Run } from "../core/testrail-types.js";
 import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
 import { CaseService } from "./case.service.js";
 import { ResultService } from "./result.service.js";
@@ -21,11 +23,20 @@ export class LinkService {
     private readonly results = new ResultService(),
   ) {}
 
-  /** Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first. */
+  /** Runs read by keys(), so a write can check them without another request. */
+  private readonly fetched = new Map<number, Run>();
+
+  /**
+   * Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first.
+   */
   async keys(target: LinkTarget): Promise<string[]> {
     if (target.kind === "case") return splitList((await this.cases.get(target.id)).refs);
-    if (target.kind === "run") return splitList((await this.runs.get(target.id)).refs);
-    await this.tests.get(target.id);
+    if (target.kind === "run") {
+      const run = await this.runs.get(target.id);
+      this.fetched.set(run.id, run);
+      return splitList(run.refs);
+    }
+    // get_results maps an unknown test to TEST_NOT_FOUND itself.
     const { items } = await this.tests.results(target.id, ALL_RESULTS);
     return uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
   }
@@ -52,9 +63,21 @@ export class LinkService {
     if (target.kind === "case") await this.cases.update(target.id, input);
     else await this.runs.update(target.id, input);
   }
-}
 
-/** Keys compare ignoring case, as Jira does; the first spelling wins. */
-export function sameKey(left: string, right: string): boolean {
-  return left.toUpperCase() === right.toUpperCase();
+  /** Before a write: TestRail refuses changes in closed runs, and update_run runs inside test plans. */
+  async assertWritable(target: LinkTarget): Promise<void> {
+    if (target.kind === "case") return;
+    // A test's link is a result, which a closed run refuses too.
+    const runId = target.kind === "run" ? target.id : (await this.tests.get(target.id)).run_id;
+    const run = this.fetched.get(runId) ?? (await this.runs.get(runId));
+    if (run.is_completed) {
+      throw new InputError("RUN_CLOSED", `Run R${run.id} is closed; TestRail cannot change it.`);
+    }
+    if (target.kind === "run" && run.plan_id) {
+      throw new InputError(
+        "RUN_IN_PLAN",
+        `R${run.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,
+      );
+    }
+  }
 }

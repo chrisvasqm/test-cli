@@ -5,7 +5,7 @@ import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { jiraTicket } from "../../core/jira.js";
 import { printResult, table } from "../../core/output.js";
-import { splitList, uniqueRefs } from "../../core/text.js";
+import { clip, MAX_NAME, splitList, uniqueRefs } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
@@ -48,8 +48,11 @@ export function registerCreate(run: Command): void {
       const { config, mode } = bootstrap(cmd);
       const ticket = key === undefined ? undefined : await jiraTicket(key);
       const caseList =
-        cases ?? (ticket ? await linkedCases(config.projectId, config.suiteId, ticket.key) : undefined);
-      const name = opts.name ?? `${ticket?.key}: ${ticket?.summary}`;
+        cases ??
+        (ticket
+          ? await new CaseService().linkedIds(config.projectId, config.suiteId, ticket.key)
+          : undefined);
+      const name = opts.name ?? clip(`${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
       const input: RunInput = { name, include_all: caseList === undefined };
       if (config.suiteId !== undefined) input.suite_id = config.suiteId;
       if (caseList) input.case_ids = caseList;
@@ -75,16 +78,4 @@ export function registerCreate(run: Command): void {
         ].join("\n\n"),
       );
     });
-}
-
-/** Ids of the cases whose refs include the key; a run with none would be empty. */
-async function linkedCases(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
-  const linked = await new CaseService().linkedTo(projectId, suiteId, key);
-  if (linked.length === 0) {
-    throw new InputError(
-      "NO_LINKED_CASES",
-      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or pass --cases.`,
-    );
-  }
-  return linked.map((item) => item.id);
 }

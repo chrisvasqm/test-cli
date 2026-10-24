@@ -121,10 +121,11 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `JIRA_TICKET_NOT_FOUND`: `details` lists the keys Jira does not have. Nothing was linked. Check the keys with the user.
 - `JIRA_CHECK_FAILED`: jira-cli is installed but failed (e.g. no `.jira-cli.json`); `details` is its error. Nothing was linked. In a terminal the CLI offers `jira setup`; without one, ask the user to run `jira setup` themselves (it asks for secrets), or pass `--no-check` if they say so.
 - `JIRA_CLI_MISSING`: `--from-jira` and `--create-bug` need jira-cli. Tell the user; don't install it yourself.
-- `JIRA_ERROR`: jira-cli refused (`details` is its error, e.g. `CONFIG_MISSING`). Nothing was created in TestRail. For setup errors, ask the user to run `jira setup`.
+- `JIRA_ERROR`: jira-cli refused (`details` is its error, e.g. `CONFIG_MISSING`; ask the user to run `jira setup` for setup errors), or answered in an unexpected shape (`details.code` is `INVALID_RESPONSE`, with `details.issues`). Nothing was created in TestRail. For `--create-bug`, an `INVALID_RESPONSE` or a timeout means the bug may exist in Jira: check there before retrying.
 - `NO_LINKED_CASES`: no case has that key in its refs. Link cases first (`link add`) or pass `--cases`.
-- `RUN_CLOSED`: `--create-bug` checks first that the run is open and (with `--run --case`) that the case is in it (`CASE_NOT_IN_RUN`), so no bug is filed for a result TestRail would refuse.
+- `RUN_CLOSED`: the run is closed, so TestRail refuses the change (`link add|remove R…`, `link add T…` for a test in it). `--create-bug` checks first that the run is open and (with `--run --case`) that the case is in it (`CASE_NOT_IN_RUN`), so no bug is filed for a result TestRail would refuse.
 - After `--create-bug`, if the TestRail result then fails, the error message and `details.bug` name the bug that was created. Retry with `--defects <that key>`, not `--create-bug`, or you get a second bug.
+- `RUN_IN_PLAN`: the run belongs to a test plan; `link add|remove` cannot change its refs. Edit it in TestRail.
 - `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.
 - `CONFIRM_REQUIRED`: see the rule on deletes above.
 - `FILE_ERROR`: the `--file` path can't be read.

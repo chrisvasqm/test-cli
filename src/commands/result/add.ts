@@ -7,11 +7,8 @@ import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import type { Test } from "../../core/testrail-types.js";
-import { CaseService } from "../../services/case.service.js";
-import { ResultService, type ResultInput } from "../../services/result.service.js";
-import { RunService } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
-import { joinRefs, splitList } from "../../core/text.js";
+import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
+import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
@@ -49,7 +46,9 @@ export function registerAdd(result: Command): void {
       // Statuses before the write: a failed lookup after it would report an error for a saved result.
       const statuses = await meta.statuses();
       const input = await toResultInput({ ...opts, comment, version: opts.build }, meta, "result");
-      const bug = opts.createBug ? await fileBug(config, await resolveTest(target), comment) : undefined;
+      const bug = opts.createBug
+        ? await fileBug(config, await new ResultService().openTest(target), comment)
+        : undefined;
       if (bug) input.defects = joinRefs([...splitList(input.defects), bug.key]);
       const added = await addResult(target, input).catch((err: unknown) => {
         // The bug exists now; say so, or a retry files a second one.
@@ -75,7 +74,7 @@ export function registerAdd(result: Command): void {
     });
 }
 
-type Target = { kind: "test"; testId: number } | { kind: "case"; runId: number; caseId: number };
+type Target = ResultTarget;
 
 function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
   const byCase = opts.run !== undefined || opts.case !== undefined;
@@ -95,30 +94,10 @@ function addResult(target: Target, input: ResultInput) {
     : results.addForCase(target.runId, target.caseId, input);
 }
 
-/**
- * The test a result would go to, checked so TestRail will take it: a Jira bug cannot be deleted
- * here, so nothing that fails after it may be left to the result request.
- */
-async function resolveTest(target: Target): Promise<Test> {
-  const tests = new TestService();
-  const runId = target.kind === "test" ? (await tests.get(target.testId)).run_id : target.runId;
-  const run = await new RunService().get(runId);
-  if (run.is_completed) {
-    throw new CliError("RUN_CLOSED", `Run R${runId} is closed; TestRail takes no new results in it.`);
-  }
-  if (target.kind === "test") return tests.get(target.testId);
-  const { items } = await tests.list(runId, [], Number.MAX_SAFE_INTEGER);
-  const found = items.find((item) => item.case_id === target.caseId);
-  if (!found) {
-    await new CaseService().get(target.caseId);
-    throw new CliError("CASE_NOT_IN_RUN", `Case C${target.caseId} is not in run R${runId}.`);
-  }
-  return found;
-}
-
 /** A Jira Bug named after the test, with the comment and a link back to TestRail. */
 async function fileBug(config: Config, test: Test, comment: string | undefined): Promise<JiraCreated> {
   const url = testUrl(config, test.id);
   const description = [comment, `TestRail test T${test.id}: ${url}`].filter(Boolean).join("\n\n");
-  return createJiraBug(`T${test.id} failed: ${test.title}`, description);
+  // Jira summaries hold 255 characters.
+  return createJiraBug(clip(`T${test.id} failed: ${test.title}`, MAX_SUMMARY), description);
 }

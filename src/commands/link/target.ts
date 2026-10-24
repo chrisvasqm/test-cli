@@ -1,7 +1,7 @@
 import type { Config } from "../../core/config.js";
 import { InputError } from "../../core/errors.js";
-import { splitList } from "../../core/text.js";
-import { sameKey, type LinkTarget } from "../../services/link.service.js";
+import { sameKey, splitList, uniqueRefs } from "../../core/text.js";
+import type { LinkTarget } from "../../services/link.service.js";
 import { caseUrl, runUrl, testUrl } from "../render.js";
 
 /** By id letter: C, R, T. */
@@ -32,7 +32,7 @@ export function jiraKeys(raw: readonly string[]): string[] {
   const bad = keys.filter((key) => !/^[A-Z][A-Z0-9_]*-[1-9]\d*$/.test(key));
   if (bad.length > 0) throw new InputError("USAGE", `Not a Jira key like KAN-12: ${bad.join(", ")}`);
   if (keys.length === 0) throw new InputError("USAGE", "Give at least one Jira key, e.g. KAN-12");
-  return keys.filter((key, index) => keys.indexOf(key) === index);
+  return uniqueRefs(keys);
 }
 
 /** One Jira key, for --from-jira. */
