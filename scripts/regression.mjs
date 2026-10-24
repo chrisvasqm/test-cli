@@ -258,11 +258,6 @@ const epicRun = check(
   (res) => okData(res) && res.out.data.tickets.from === "epic" && res.out.data.tickets.linked.includes(child),
 )?.id;
 if (epicRun) check("delete the from-epic run", run("run", "delete", `R${epicRun}`, "-y"), okData);
-// Later checks (run sync) expect only K2 in the case's refs.
-check("link remove <child>", run("link", "remove", jiraCaseRef, child ?? missing), okData);
-check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO_LINKED_CASES", 2));
-check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
-check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
 check(
   "coverage --epic",
   run("coverage", "-K", K2, "-W", "5"),
@@ -277,6 +272,11 @@ check(
   (res) => okData(res) && res.out.data.summary.uncovered === 1 && res.out.data.tickets[0]?.cases.length === 0,
 );
 check("coverage -w -K", run("coverage", "-w", "active", "-K", K2), errCode("USAGE", 2));
+// Later checks (run sync) expect only K2 in the case's refs.
+check("link remove <child>", run("link", "remove", jiraCaseRef, child ?? missing), okData);
+check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO_LINKED_CASES", 2));
+check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
+check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
 check(
   "JIRA_TICKET_NOT_FOUND",
   run("case", "create", "-s", sectionId, "-J", missing),
