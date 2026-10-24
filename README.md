@@ -86,6 +86,10 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail suite delete <S>`            | Delete a suite with its sections, cases and tests                                                              |
 | `testrail section list`                | Sections and their ids, nested                                                                                 |
 | `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-T <type>`, `-u <date>`, `-n <limit>`, 50)        |
+| `testrail section create`              | New section (`-N <name>`, `-s <parent>`, `-d <text>` or `-f <file>`)                                           |
+| `testrail section edit <id>`           | Rename (`-N`) or change the description (`-d`, `-f`)                                                           |
+| `testrail section move <id>`           | Move under `-s <parent>` (or `top`) and/or after `-A <sibling>` (or `first`)                                   |
+| `testrail section delete <id>`         | Delete a section, its child sections and all their cases                                                       |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                              |
 | `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                     |
 | `testrail case edit <C>`               | Change only the fields you pass                                                                                |

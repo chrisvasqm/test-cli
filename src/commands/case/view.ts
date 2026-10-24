@@ -5,6 +5,7 @@ import { printResult, table } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService, nameOf } from "../../services/meta.service.js";
+import { SectionService } from "../../services/section.service.js";
 import { caseUrl, isoTime, localTime, renderContent, toContent } from "../render.js";
 
 export function registerView(testCase: Command): void {
@@ -20,7 +21,7 @@ export function registerView(testCase: Command): void {
       const lookups = Promise.all([meta.priorities(), meta.caseTypes()]);
       const found = await cases.get(id);
       const [section, [priorities, types]] = await Promise.all([
-        cases.section(found.section_id).catch(() => undefined),
+        new SectionService().get(found.section_id).catch(() => undefined),
         lookups,
       ]);
       const view = {
