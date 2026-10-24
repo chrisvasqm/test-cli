@@ -145,3 +145,17 @@ export interface ConfigGroup {
   project_id: number;
   configs: Config[];
 }
+
+/** A report template with "On-demand via the API" on; get_reports lists only those. */
+export interface Report {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+/** What run_report returns: links to the report TestRail just made. */
+export interface ReportRun {
+  report_url: string;
+  report_html: string;
+  report_pdf: string;
+}
