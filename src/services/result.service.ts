@@ -43,7 +43,12 @@ function skipNotInRun(err: unknown): undefined {
 
 /** add_result(s) and get_results_for_case endpoints. Results are append-only: TestRail has no edit or delete for them. */
 export class ResultService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(
+    private readonly http = HttpClient.get(),
+    private readonly tests = new TestService(http),
+    private readonly runs = new RunService(http),
+    private readonly cases = new CaseService(http),
+  ) {}
 
   addForTest(testId: number, input: ResultInput): Promise<Result> {
     return this.http.post<Result>(`add_result/${testId}`, input).catch(notFound.test(testId));
@@ -103,19 +108,17 @@ export class ResultService {
    * For writes that cannot be undone (a Jira bug) and must not be followed by a refused result.
    */
   async openTest(target: ResultTarget): Promise<Test> {
-    const tests = new TestService(this.http);
     if (target.kind === "test") {
-      const test = await tests.get(target.testId);
-      await new RunService(this.http).open(test.run_id);
+      const test = await this.tests.get(target.testId);
+      await this.runs.open(test.run_id);
       return test;
     }
-    const [, items] = await Promise.all([
-      new RunService(this.http).open(target.runId),
-      tests.all(target.runId),
+    const [, found] = await Promise.all([
+      this.runs.open(target.runId),
+      this.tests.forCase(target.runId, target.caseId),
     ]);
-    const found = items.find((item) => item.case_id === target.caseId);
     if (found) return found;
-    await new CaseService(this.http).get(target.caseId);
+    await this.cases.get(target.caseId);
     throw new CliError("CASE_NOT_IN_RUN", `Case C${target.caseId} is not in run R${target.runId}.`);
   }
 }

@@ -25,7 +25,7 @@ export function registerAddRun(plan: Command): void {
     const id = planId(rawId);
     const parsed = parseEntry(opts);
     const { config, mode } = bootstrap(cmd);
-    const { input, ticket, assignee } = await buildEntry(opts, parsed, config, opts.name);
+    const { input, ticket, assignee } = await buildEntry(opts, parsed, config, opts.name, "plan add-run");
     const statuses = await new MetaService().statuses();
     const entry = toEntryView(await new PlanService().addEntry(id, input), statuses);
     const view = {

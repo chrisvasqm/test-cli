@@ -32,7 +32,9 @@ export function registerCreate(plan: Command): void {
     const description = await readOptionalText(opts.description, opts.file, "description");
     if (description !== undefined) input.description = description;
     const { config, mode } = bootstrap(cmd);
-    const entry = hasEntry(opts) ? await buildEntry(opts, parsed, config, undefined) : undefined;
+    const entry = hasEntry(opts)
+      ? await buildEntry(opts, parsed, config, undefined, "plan create")
+      : undefined;
     if (entry) input.entries = [entry.input];
     // Statuses before the write: a failed lookup after it would report an error for a plan that exists.
     const statuses = await new MetaService().statuses();

@@ -58,11 +58,13 @@ export async function buildEntry(
   parsed: ReturnType<typeof parseEntry>,
   config: Config,
   name: string | undefined,
+  command: string,
 ): Promise<BuiltEntry> {
   const ticket = parsed.key === undefined ? undefined : await jiraTicket(parsed.key);
   const suite = parsed.suite ?? config.suiteId ?? (await onlySuite(config.projectId));
   const [caseList, assignee, groups] = await Promise.all([
-    parsed.cases ?? (parsed.key === undefined ? undefined : linkedCases(config.projectId, suite, parsed.key)),
+    parsed.cases ??
+      (parsed.key === undefined ? undefined : linkedCases(config.projectId, suite, parsed.key, command)),
     new UserService().resolveOptional(opts.assign, config.email, "--assign"),
     opts.configs === undefined ? undefined : new ConfigurationService().groups(config.projectId),
   ]);

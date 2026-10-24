@@ -86,7 +86,9 @@ export function registerCreate(run: Command): void {
       const [rerun, fromTickets, linked, statuses, assignee] = await Promise.all([
         sourceId === undefined ? undefined : rerunCases(sourceId, opts.status, meta),
         found === undefined ? undefined : ticketCases(config.projectId, config.suiteId, found),
-        key === undefined || cases ? undefined : linkedCases(config.projectId, config.suiteId, key),
+        key === undefined || cases
+          ? undefined
+          : linkedCases(config.projectId, config.suiteId, key, "run create"),
         meta.statuses(),
         new UserService().resolveOptional(opts.assign, config.email, "--assign"),
       ]);
@@ -137,17 +139,21 @@ export function registerCreate(run: Command): void {
     });
 }
 
-/** Ids of the cases linked to the key; a run of none would be empty. */
+/**
+ * Ids of the cases linked to the key; a run of none would be empty. `command` is the caller as
+ * typed (e.g. "plan add-run"), named in the error with its --cases flag.
+ */
 export async function linkedCases(
   projectId: number,
   suiteId: number | undefined,
   key: string,
+  command: string,
 ): Promise<number[]> {
   const ids = await new CaseService().linkedTo(projectId, suiteId, key);
   if (ids.length === 0) {
     throw new InputError(
       "NO_LINKED_CASES",
-      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or pass --cases.`,
+      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or give \`testrail ${command}\` the cases with --cases.`,
     );
   }
   return ids;
