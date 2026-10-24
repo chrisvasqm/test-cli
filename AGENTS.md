@@ -4,9 +4,9 @@
 
 ## Using the CLI
 
-[skills/testrail-cli/SKILL.md](skills/testrail-cli/SKILL.md) is the agent guide. It covers setup, safety rules, commands, `--json` data shapes and every error code. It is also the skill that `npx skills add chrisvasqm/testrail-cli` installs, so it has to stand alone.
+The agent guide is the `testrail-cli` skill in [chrisvasqm/skills](https://github.com/chrisvasqm/skills/blob/main/skills/testrail-cli/SKILL.md). It covers setup, safety rules, commands, `--json` data shapes and every error code. `npx skills add chrisvasqm/skills --skill testrail-cli` installs it, so it has to stand alone.
 
-When a command, flag, data shape or error code changes, update SKILL.md and the README command table in the same PR.
+When a command, flag, data shape or error code changes, update the README command table in the same PR, and open a matching PR for SKILL.md in chrisvasqm/skills.
 
 ## Working on this repo
 
