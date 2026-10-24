@@ -38,7 +38,10 @@ export function requireCapability(current: Provider, need: Capability): void {
   }
 }
 
-/** The provider with each optional service behind its capability, so no call site can skip the check. */
+/**
+ * The provider with each optional service behind its capability, so commands cannot use a feature
+ * the provider lacks. Services inside a provider only call that provider's own endpoints.
+ */
 function gated(built: Provider): Provider {
   const out = { ...built };
   for (const need of CAPABILITIES) {

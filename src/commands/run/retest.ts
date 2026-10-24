@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { ALL } from "../../core/paging.js";
 import { provider } from "../../providers/index.js";
 import { runId } from "../../providers/testrail/ids.js";
 import { isJiraKey } from "../../core/args.js";
@@ -61,7 +62,7 @@ export function registerRetest(run: Command): void {
       ]);
       if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
       const [{ items: tests }, { items: results }] = await Promise.all([
-        provider().tests.list(id, statusIds, Number.MAX_SAFE_INTEGER),
+        provider().tests.list(id, statusIds, ALL),
         provider().results.forRun(id),
       ]);
       const bugsOf = new Map(tests.map((test) => [test.id, streakDefects(test, results, statusIds)]));

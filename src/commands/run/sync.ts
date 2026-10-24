@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { ALL } from "../../core/paging.js";
 import { provider } from "../../providers/index.js";
 import { runId } from "../../providers/testrail/ids.js";
 import { isJiraKey } from "../../core/args.js";
@@ -63,7 +64,7 @@ export function registerSync(run: Command): void {
       const { mode } = bootstrap(cmd);
       const [found, tests, statuses] = await Promise.all([
         provider().runs.get(id),
-        provider().tests.list(id, [], Number.MAX_SAFE_INTEGER),
+        provider().tests.list(id, [], ALL),
         provider().meta.statuses(),
       ]);
       const plans = planTickets(found, tests.items);

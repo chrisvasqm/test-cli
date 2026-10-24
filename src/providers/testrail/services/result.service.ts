@@ -2,7 +2,7 @@ import { notFound } from "../errors.js";
 import { CliError, InputError } from "../../../core/errors.js";
 import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
-import { inBatches, type Collected } from "../../../core/paging.js";
+import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import type { Result, Run, StepResult, Test } from "../types.js";
 import type { CaseService } from "./case.service.js";
 import type { RunService } from "./run.service.js";
@@ -91,13 +91,9 @@ export class ResultService {
 
   /** Every result in the run, for all its tests, newest first as TestRail returns them. */
   forRun(runId: number): Promise<Collected<Result>> {
-    return collectPages<Result>(
-      `get_results_for_run/${runId}`,
-      "results",
-      {},
-      Number.MAX_SAFE_INTEGER,
-      this.http,
-    ).catch(notFound.run(runId));
+    return collectPages<Result>(`get_results_for_run/${runId}`, "results", {}, ALL, this.http).catch(
+      notFound.run(runId),
+    );
   }
 
   /** One request for many cases; TestRail applies all or none. */

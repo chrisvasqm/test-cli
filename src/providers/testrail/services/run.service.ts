@@ -2,10 +2,10 @@ import { notFound, notFoundAs } from "../errors.js";
 import { CliError, InputError } from "../../../core/errors.js";
 import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
-import { inBatches, type Collected } from "../../../core/paging.js";
+import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import type { Plan, PlanEntry, PlanRun, Run } from "../types.js";
 import { hasRef } from "../../../core/text.js";
-import { PlanService } from "./plan.service.js";
+import type { PlanService } from "./plan.service.js";
 
 /** A run with the plan it belongs to (null outside plans). */
 export interface OpenRun {
@@ -46,7 +46,10 @@ export type RunChange = Partial<Omit<RunInput, "suite_id">>;
  * update_run_in_plan_entry for runs inside test plans. get_runs leaves out runs in plans.
  */
 export class RunService {
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly plans: PlanService,
+  ) {}
 
   get(id: number): Promise<Run> {
     return this.http.get<Run>(`get_run/${id}`).catch(notFound.run(id));
@@ -65,11 +68,10 @@ export class RunService {
 
   /** Every open run, those inside open plans too (get_runs leaves them out), newest first. */
   async allOpen(projectId: number, milestoneId?: number): Promise<OpenRun[]> {
-    const plans = new PlanService(this.http);
-    const all = Number.MAX_SAFE_INTEGER;
+    const { plans } = this;
     const [runs, planList] = await Promise.all([
-      this.list(projectId, all, { completed: false, milestoneId }),
-      plans.list(projectId, false, all, milestoneId),
+      this.list(projectId, ALL, { completed: false, milestoneId }),
+      plans.list(projectId, false, ALL, milestoneId),
     ]);
     // get_plans leaves out the entries, so each plan is read on its own.
     const full = await inBatches(planList.items, (item) => plans.get(item.id));
@@ -88,7 +90,7 @@ export class RunService {
       `get_runs/${projectId}`,
       "runs",
       { refs_filter: key, suite_id: suiteId },
-      Number.MAX_SAFE_INTEGER,
+      ALL,
       this.http,
     );
     return items.filter((item) => hasRef(item.refs, key));
@@ -116,7 +118,7 @@ export class RunService {
   async editable(id: number, known?: Run): Promise<EditableRun> {
     const run = await this.open(id, known);
     if (run.plan_id === null) return { run, entry: null };
-    const plan = await new PlanService(this.http).get(run.plan_id);
+    const plan = await this.plans.get(run.plan_id);
     const entry = plan.entries?.find((item) => item.runs.some((planRun) => planRun.id === id));
     if (!entry)
       throw new CliError("RUN_NOT_FOUND", `Run R${id} is not in the entries of plan R${run.plan_id}.`);

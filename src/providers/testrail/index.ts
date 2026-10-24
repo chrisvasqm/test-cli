@@ -22,20 +22,21 @@ export type { Credentials as TestRailCredentials } from "./http.js";
 export function createTestRail(creds: Credentials) {
   const http = new HttpClient(creds);
   const cases = new CaseService(http);
-  const runs = new RunService(http);
+  const plans = new PlanService(http);
+  const runs = new RunService(http, plans);
   const tests = new TestService(http);
   const results = new ResultService(http, tests, runs, cases);
   return {
     label: "TestRail",
     /** TestRail has every optional feature. */
     capabilities: new Set<Capability>(CAPABILITIES),
-    attachments: new AttachmentService(http),
+    attachments: new AttachmentService(http, tests),
     cases,
     configurations: new ConfigurationService(http),
     links: new LinkService(cases, runs, tests, results),
     meta: new MetaService(http),
     milestones: new MilestoneService(http),
-    plans: new PlanService(http),
+    plans,
     projects: new ProjectService(http),
     reports: new ReportService(http),
     results,

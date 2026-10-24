@@ -9,6 +9,11 @@ export interface Collected<T> {
   hasMore: boolean;
 }
 
+/** A list with nothing in it, for a feature the provider does not have. */
+export function emptyPage<T>(): Promise<Collected<T>> {
+  return Promise.resolve({ items: [], hasMore: false });
+}
+
 /** How many requests one command sends at once, so a long list of ids stays under the rate limit. */
 const BATCH_SIZE = 5;
 
