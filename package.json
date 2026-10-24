@@ -22,7 +22,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "bump": "pnpm version --no-git-tag-version --no-git-checks",
-    "release": "bash scripts/release.sh"
+    "release": "bash scripts/release.sh",
+    "regression": "pnpm build && node scripts/regression.mjs"
   },
   "license": "ISC",
   "devEngines": {
