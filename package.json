@@ -1,6 +1,6 @@
 {
   "name": "testrail-cli",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Small TestRail CLI for humans and agents",
   "type": "module",
   "engines": {
