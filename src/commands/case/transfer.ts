@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import { caseIdList, intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult } from "../../core/output.js";
+import { inBatches } from "../../core/paging.js";
 import type { Case } from "../../core/testrail-types.js";
 import { CaseService } from "../../services/case.service.js";
 import { SectionService } from "../../services/section.service.js";
@@ -10,9 +11,9 @@ interface TransferOptions {
   section: string;
 }
 
-/** Every case, fetched at once; the first unknown one fails with CASE_NOT_FOUND. */
+/** Every case, a few at a time; the first unknown one fails with CASE_NOT_FOUND. */
 export function loadCases(cases: CaseService, ids: number[]): Promise<Case[]> {
-  return Promise.all(ids.map((id) => cases.get(id)));
+  return inBatches(ids, (id) => cases.get(id));
 }
 
 export function registerCopy(testCase: Command): void {

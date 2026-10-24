@@ -63,7 +63,7 @@ export function registerEdit(run: Command): void {
       if (found.plan_id !== null) {
         throw new InputError(
           "RUN_IN_PLAN",
-          `Run R${id} is part of plan #${found.plan_id}; TestRail changes its runs only through the plan.`,
+          `Run R${id} is part of plan R${found.plan_id}; TestRail changes its runs only through the plan.`,
         );
       }
       const [assignee, current] = await Promise.all([

@@ -76,13 +76,13 @@ export class ResultService {
   /**
    * The case's results across `runs` (newest run first), newest result first; runs without the case
    * are skipped. One get_results_for_case per run: get_tests then get_results would take two.
-   * Runs are asked a few at a time, and the scan stops once `limit` results are in.
+   * Every run is scanned (a few at a time): an old run can hold the newest result.
    */
   async history(runs: Run[], caseId: number, limit: number): Promise<CaseHistory> {
     const found: RunResult[] = [];
     let scanned = 0;
     let pageCut = false;
-    while (scanned < runs.length && found.length < limit) {
+    while (scanned < runs.length) {
       const batch = runs.slice(scanned, scanned + HISTORY_BATCH);
       const pages = await Promise.all(
         batch.map((run) => this.forCase(run.id, caseId, limit).catch(skipNotInRun)),
@@ -97,7 +97,7 @@ export class ResultService {
     found.sort((left, right) => right.result.created_on - left.result.created_on);
     return {
       items: found.slice(0, limit),
-      hasMore: pageCut || found.length > limit || scanned < runs.length,
+      hasMore: pageCut || found.length > limit,
       scanned,
     };
   }

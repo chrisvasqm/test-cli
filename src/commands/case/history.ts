@@ -3,6 +3,7 @@ import { caseId, intInRange, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
+import { inBatches } from "../../core/paging.js";
 import type { Run } from "../../core/testrail-types.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -25,7 +26,7 @@ export function registerHistory(testCase: Command): void {
     .command("history <case>")
     .description("Show a case's results across the latest runs, newest first, e.g. C12")
     .option("-R, --run <run>", "Only this run, e.g. R3")
-    .option("-u, --runs <n>", `How many of the latest runs to scan, open and closed (at most ${MAX_HISTORY})`)
+    .option("-W, --runs <n>", `How many of the latest runs to scan, open and closed (at most ${MAX_HISTORY})`)
     .option("-n, --limit <n>", `Most results to show (at most ${MAX_HISTORY})`, "20")
     .action(async (rawId: string, opts: HistoryOptions, cmd: Command) => {
       const id = caseId(rawId);
@@ -107,6 +108,6 @@ async function recentRuns(
 async function authorNames(ids: number[]): Promise<Map<number, string>> {
   const users = new UserService();
   const unique = [...new Set(ids)];
-  const named = await Promise.all(unique.map((id) => users.byId(id).catch(() => undefined)));
+  const named = await inBatches(unique, (id) => users.byId(id).catch(() => undefined));
   return new Map(named.flatMap((user) => (user ? [[user.id, user.name] as const] : [])));
 }

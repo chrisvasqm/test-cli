@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { access, constants, readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { text as readStream } from "node:stream/consumers";
 import { InputError } from "./errors.js";
@@ -70,6 +70,9 @@ async function checkUpload(path: string): Promise<Upload> {
     );
   });
   if (!found.isFile()) throw new InputError("FILE_ERROR", `${path} is not a file`);
+  await access(path, constants.R_OK).catch(() => {
+    throw new InputError("FILE_ERROR", `Cannot read ${path}: permission denied`);
+  });
   if (found.size > MAX_UPLOAD_BYTES) {
     throw new InputError("FILE_TOO_LARGE", `${path} is over TestRail's 256 MB limit for one attachment`);
   }

@@ -34,14 +34,14 @@ export class MilestoneService {
   }
 
   add(projectId: number, input: MilestoneInput): Promise<Milestone> {
-    return this.http
-      .post<Milestone>(`add_milestone/${projectId}`, input)
-      .catch(
-        notFoundAs(
-          "parent_id",
-          "MILESTONE_NOT_FOUND",
-          `Parent milestone M${input.parent_id} does not exist or you cannot see it.`,
-        ),
-      );
+    const added = this.http.post<Milestone>(`add_milestone/${projectId}`, input);
+    if (input.parent_id === undefined) return added.catch(notFound.project(projectId));
+    return added.catch(
+      notFoundAs(
+        "parent_id",
+        "MILESTONE_NOT_FOUND",
+        `Parent milestone M${input.parent_id} does not exist or you cannot see it.`,
+      ),
+    );
   }
 }
