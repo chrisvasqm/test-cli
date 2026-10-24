@@ -2,15 +2,18 @@ import type { Command } from "commander";
 import { z } from "zod";
 import { caseId, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
+import { CliError, InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
+import type { Step } from "../../core/testrail-types.js";
 import { ResultService, type ResultInput } from "../../services/result.service.js";
 import type { User } from "../../core/testrail-types.js";
 import { UserService } from "../../services/user.service.js";
+import { TestService } from "../../services/test.service.js";
 import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";
+import { toStepResults, type StepSpec } from "./steps.js";
 
 /** Most results one import sends; keeps a single request a reasonable size. */
 const MAX_RESULTS = 1000;
@@ -23,6 +26,10 @@ const entrySchema = z.object({
   elapsed: z.string().optional(),
   version: z.string().optional(),
   assign: z.union([z.string(), z.number().int().positive()]).optional(),
+  steps: z
+    .array(z.object({ step: z.number().int().positive(), status: z.string(), actual: z.string().optional() }))
+    .min(1)
+    .optional(),
 });
 const fileSchema = z.array(entrySchema).min(1).max(MAX_RESULTS);
 
@@ -36,11 +43,11 @@ export function registerImport(result: Command): void {
     .description("Add many results to a run in one request from a JSON file")
     .requiredOption(
       "-f, --file <path>",
-      'JSON array of {"case":"C12","status":"failed","comment","defects","elapsed","version","assign"} (- reads stdin)',
+      'JSON array of {"case":"C12","status":"failed","comment","defects","elapsed","version","assign","steps"} (- reads stdin)',
     )
     .addHelpText(
       "after",
-      '\nExample file:\n  [{"case": "C1", "status": "passed", "elapsed": "45s"},\n   {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2"}]',
+      '\nExample file:\n  [{"case": "C1", "status": "passed", "elapsed": "45s"},\n   {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2"},\n   {"case": "C3", "status": "failed", "steps": [{"step": 2, "status": "failed", "actual": "500 page"}]}]',
     )
     .action(async (rawRun: string, opts: ImportOptions, cmd: Command) => {
       const run = runId(rawRun);
@@ -51,6 +58,7 @@ export function registerImport(result: Command): void {
       const statuses = await meta.statuses();
       const assignees = new Map<string, Promise<User>>();
       const users = new UserService();
+      const stepsOf = entries.some((entry) => entry.steps) ? await runSteps(run) : undefined;
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;
@@ -60,10 +68,10 @@ export function registerImport(result: Command): void {
           assignees.set(assign, users.resolve(assign, config.email, `${where}: assign`));
         }
         const assignee = assign === undefined ? undefined : await assignees.get(assign);
-        results.push({
-          case_id: id,
-          ...(await toResultInput({ ...entry, assignedToId: assignee?.id }, meta, where)),
-        });
+        const input = await toResultInput({ ...entry, assignedToId: assignee?.id }, meta, where);
+        if (entry.steps && stepsOf)
+          input.custom_step_results = await stepResults(entry.steps, stepsOf, id, run, meta, where);
+        results.push({ case_id: id, ...input });
       }
       const added = await new ResultService().addForCases(run, results);
       const rows = added.map((item, index) => ({
@@ -85,6 +93,24 @@ export function registerImport(result: Command): void {
         ].join("\n"),
       );
     });
+}
+
+/** Each case's separated steps in the run, from its tests (one paged request). */
+async function runSteps(run: number): Promise<Map<number, Step[] | null | undefined>> {
+  const { items } = await new TestService().list(run, [], Number.MAX_SAFE_INTEGER);
+  return new Map(items.map((test) => [test.case_id, test.custom_steps_separated]));
+}
+
+function stepResults(
+  specs: StepSpec[],
+  stepsOf: Map<number, Step[] | null | undefined>,
+  id: number,
+  run: number,
+  meta: MetaService,
+  where: string,
+) {
+  if (!stepsOf.has(id)) throw new CliError("CASE_NOT_IN_RUN", `${where}: case C${id} is not in run R${run}.`);
+  return toStepResults(specs, stepsOf.get(id), meta, where);
 }
 
 function parseFile(text: string): z.infer<typeof fileSchema> {

@@ -118,6 +118,14 @@ export interface Test extends CaseContent {
   estimate: string | null;
 }
 
+/** One step of a Steps-template result: the case's step, what happened and its status. */
+export interface StepResult {
+  content: string;
+  expected: string;
+  actual: string;
+  status_id: number;
+}
+
 export interface Result {
   id: number;
   test_id: number;
@@ -130,6 +138,8 @@ export interface Result {
   version: string | null;
   created_on: number;
   created_by: number;
+  /** Per-step statuses; only on cases that use the Steps template. */
+  custom_step_results?: StepResult[] | null;
 }
 
 export interface Status {

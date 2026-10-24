@@ -1,7 +1,7 @@
 import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
-import type { Result, Run, Test } from "../core/testrail-types.js";
+import type { Result, Run, StepResult, Test } from "../core/testrail-types.js";
 import { CaseService } from "./case.service.js";
 import { RunService } from "./run.service.js";
 import { TestService } from "./test.service.js";
@@ -15,6 +15,7 @@ export interface ResultInput {
   version?: string;
   /** Reassigns the test. */
   assignedto_id?: number;
+  custom_step_results?: StepResult[];
 }
 
 /** Where a result goes: a test, or a case inside a run. */
