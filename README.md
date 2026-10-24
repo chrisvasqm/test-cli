@@ -80,7 +80,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail project list`                | Active projects; `*` marks yours                                                                               |
 | `testrail project use <P>`             | Make a project (and `-S <S>`) the default                                                                      |
 | `testrail section list`                | Sections and their ids, nested                                                                                 |
-| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-n <limit>`, 50)                                                          |
+| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-T <type>`, `-u <date>`, `-n <limit>`, 50)        |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                              |
 | `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                     |
 | `testrail case edit <C>`               | Change only the fields you pass                                                                                |

@@ -1,17 +1,22 @@
 import type { Command } from "commander";
-import { intInRange, jiraKey, listLimit } from "../../core/args.js";
+import { intInRange, jiraKey, listLimit, sinceDate } from "../../core/args.js";
+import { InputError } from "../../core/errors.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
 import type { Collected } from "../../core/paging.js";
 import type { Case } from "../../core/testrail-types.js";
 import { CaseService, type CaseFilter } from "../../services/case.service.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
+import { idsByName, MetaService, nameOf } from "../../services/meta.service.js";
 import { isoTime } from "../render.js";
 
 interface ListOptions {
   section?: string;
   refs?: string;
+  query?: string;
+  priority?: string;
+  type?: string;
+  updatedSince?: string;
   limit: string;
 }
 
@@ -21,18 +26,42 @@ export function registerList(testCase: Command): void {
     .description("List the cases in the project (and suite) from the config")
     .option("-s, --section <id>", "Only cases in this section")
     .option("-r, --refs <key>", "Only cases linked to this Jira key, e.g. KAN-12")
+    .option("-q, --query <text>", "Only cases whose title contains this text")
+    .option("-p, --priority <names>", "Only these priorities, comma-separated, e.g. High,Critical")
+    .option("-T, --type <names>", "Only these case types, comma-separated, e.g. Functional,Regression")
+    .option("-u, --updated-since <date>", "Only cases updated on or after this date (UTC), e.g. 2026-10-01")
     .option("-n, --limit <n>", "Most cases to show", "50")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
       const sectionId = opts.section === undefined ? undefined : intInRange(opts.section, "--section", 1);
       const key = opts.refs === undefined ? undefined : jiraKey(opts.refs, "--refs");
+      const query = opts.query?.trim();
+      if (query === "") throw new InputError("USAGE", "--query cannot be empty");
+      const updatedAfter =
+        opts.updatedSince === undefined ? undefined : sinceDate(opts.updatedSince, "--updated-since");
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
-      const [{ items, hasMore }, priorities, types] = await Promise.all([
-        listCases({ projectId: config.projectId, suiteId: config.suiteId, sectionId, limit }, key),
-        meta.priorities(),
-        meta.caseTypes(),
-      ]);
+      // Names are resolved before listing; the same tables name each row's priority and type.
+      const [priorities, types] = await Promise.all([meta.priorities(), meta.caseTypes()]);
+      const priorityIds =
+        opts.priority === undefined
+          ? undefined
+          : idsByName(priorities, opts.priority, "UNKNOWN_PRIORITY", "priority");
+      const typeIds =
+        opts.type === undefined ? undefined : idsByName(types, opts.type, "UNKNOWN_TYPE", "case type");
+      const { items, hasMore } = await listCases(
+        {
+          projectId: config.projectId,
+          suiteId: config.suiteId,
+          sectionId,
+          query,
+          priorityIds,
+          typeIds,
+          updatedAfter,
+          limit,
+        },
+        key,
+      );
       const cases = items.map((item) => ({
         id: item.id,
         title: item.title,

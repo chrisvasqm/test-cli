@@ -86,3 +86,10 @@ export function jiraKey(raw: string, flag: string): string {
   if (keys.length > 1) throw new InputError("USAGE", `${flag} takes one Jira key, e.g. KAN-12`);
   return keys[0]!;
 }
+
+/** "2026-10-01" (UTC midnight) or a full ISO time → Unix seconds, for TestRail's *_after filters. */
+export function sinceDate(raw: string, flag: string): number {
+  const ms = /^\d{4}-\d{2}-\d{2}/.test(raw.trim()) ? Date.parse(raw.trim()) : Number.NaN;
+  if (Number.isNaN(ms)) throw new InputError("USAGE", `${flag} must be a date like 2026-10-01`);
+  return Math.floor(ms / 1000);
+}

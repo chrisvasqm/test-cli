@@ -10,6 +10,12 @@ export interface CaseFilter {
   sectionId: number | undefined;
   /** Only cases whose refs match this key (TestRail's own, loose, match). */
   refs?: string;
+  /** Title text (TestRail's `filter`). */
+  query?: string | undefined;
+  priorityIds?: number[] | undefined;
+  typeIds?: number[] | undefined;
+  /** Unix seconds; only cases updated at or after it. */
+  updatedAfter?: number | undefined;
   limit: number;
 }
 
@@ -35,7 +41,15 @@ export class CaseService {
     const page = collectPages<Case>(
       `get_cases/${filter.projectId}`,
       "cases",
-      { suite_id: filter.suiteId, section_id: filter.sectionId, refs: filter.refs },
+      {
+        suite_id: filter.suiteId,
+        section_id: filter.sectionId,
+        refs: filter.refs,
+        filter: filter.query,
+        priority_id: filter.priorityIds?.join(","),
+        type_id: filter.typeIds?.join(","),
+        updated_after: filter.updatedAfter,
+      },
       filter.limit,
       this.http,
     );
