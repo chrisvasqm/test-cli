@@ -32,7 +32,7 @@ export function registerImport(result: Command): void {
     .command("import <run>")
     .description("Add many results to a run in one request from a JSON file")
     .requiredOption(
-      "--file <path>",
+      "-f, --file <path>",
       'JSON array of {"case":"C12","status":"failed","comment","defects","elapsed","version"} (- reads stdin)',
     )
     .addHelpText(

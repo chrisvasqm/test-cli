@@ -14,7 +14,7 @@ export function registerAdd(link: Command): void {
   link
     .command("add <target> <keys...>")
     .description("Link Jira keys to a case or run (refs) or a test (defects), e.g. C12 KAN-1")
-    .option("--no-check", "Don't check with jira-cli that the tickets exist")
+    .option("-N, --no-check", "Don't check with jira-cli that the tickets exist")
     .action(async (rawTarget: string, rawKeys: string[], opts: AddOptions, cmd: Command) => {
       const target = linkTarget(rawTarget);
       const keys = jiraKeys(rawKeys);

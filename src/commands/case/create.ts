@@ -19,10 +19,10 @@ export function registerCreate(testCase: Command): void {
   const cmd = testCase
     .command("create")
     .description("Create a case in a section (section ids: testrail section list)")
-    .requiredOption("--section <id>", "Section to add the case to")
-    .option("--title <title>", "Case title (required unless --from-jira)")
+    .requiredOption("-s, --section <id>", "Section to add the case to")
+    .option("-t, --title <title>", "Case title (required unless --from-jira)")
     .option(
-      "--from-jira <key>",
+      "-J, --from-jira <key>",
       "Title from this Jira ticket's summary, and the key in refs (needs jira-cli)",
     );
   addCaseFieldOptions(cmd).action(async (opts: CreateOptions, command: Command) => {

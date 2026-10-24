@@ -19,8 +19,8 @@ const program = new Command()
   .name("testrail")
   .description("TestRail from the terminal, for humans and agents")
   .version(version, "-v, --version", "Print the version")
-  .option("--json", "Machine-readable output")
-  .option("--config <path>", "Path to a config file (default: nearest .testrail-cli.json)")
+  .option("-j, --json", "Machine-readable output")
+  .option("-c, --config <path>", "Path to a config file (default: nearest .testrail-cli.json)")
   .exitOverride()
   // Commander's own error lines are dropped (printError reports them); help text still prints.
   .configureOutput({ outputError: () => undefined });

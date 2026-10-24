@@ -48,6 +48,29 @@ The CLI looks for a config in this order:
 2. the nearest `.testrail-cli.json`, walking up from the current directory;
 3. the global file.
 
+## Ask your agent
+
+With the skill installed, describe the job in plain words and let the agent pick the commands. Some examples, with the commands the agent runs:
+
+- **"Write test cases for KAN-12: a happy path and a wrong-password case."** It reads the ticket, picks a section and creates each case with steps, linked to the ticket.
+  `jira ticket view KAN-12` → `testrail section list` → `testrail case create -s 4 -t "Login with a valid password" -r KAN-12 -a "Enter a valid email and password::The dashboard opens"`
+- **"Start a test run for KAN-12."** A run named after the ticket with only the cases linked to it.
+  `testrail run create -J KAN-12`
+- **"What failed in R3, and why?"** The failed and retest tests, then the latest results of each.
+  `testrail test list R3 -s failed,retest` → `testrail test view T45 -n 3`
+- **"T45 fails: the login page returns a 500. Mark it failed and file a bug."** One result with the comment, and a Jira bug linked as its defect.
+  `testrail result add T45 -s failed -m "Login returns 500" -B`
+- **"CI finished. Report results.json to R3."** Every result in one request; all land or none do.
+  `testrail result import R3 -f results.json`
+- **"Which cases cover KAN-12? Is anything missing from the acceptance criteria?"** The linked cases, read next to the ticket.
+  `testrail case list -r KAN-12` → `testrail case view C12` → `jira ticket view KAN-12`
+- **"Link KAN-14 to C12 and C13."**
+  `testrail link add C12 KAN-14` → `testrail link add C13 KAN-14`
+- **"The sprint is over. Summarize R3 and close it."** Counts per status, then a close after you confirm.
+  `testrail run view R3` → `testrail run close R3 -y`
+
+Agents add `-j` to every command to read the JSON output. They never pass `-y` (delete or close) unless you asked for it.
+
 ## Commands
 
 Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project and `S1` a suite. The letter is optional, except for `link`.
@@ -55,44 +78,44 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | Command                                | What it does                                                      |
 | -------------------------------------- | ----------------------------------------------------------------- |
 | `testrail project list`                | Active projects; `*` marks yours                                  |
-| `testrail project use <P>`             | Make a project (and `--suite <S>`) the default                    |
+| `testrail project use <P>`             | Make a project (and `-S <S>`) the default                         |
 | `testrail section list`                | Sections and their ids, nested                                    |
-| `testrail case list`                   | Cases (`--section <id>`, `--refs KAN-12`, `--limit <n>`, 50)      |
+| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-n <limit>`, 50)             |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                 |
-| `testrail case create`                 | New case (`--section`, and `--title` or `--from-jira KAN-12`)     |
+| `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)        |
 | `testrail case edit <C>`               | Change only the fields you pass                                   |
 | `testrail case delete <C>`             | Delete a case and its tests in active runs                        |
-| `testrail run list`                    | Open runs, newest first (`--completed`, `--limit <n>`, 25)        |
+| `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)       |
 | `testrail run view <R>`                | Progress per status, refs and description                         |
-| `testrail run create`                  | New run with every case, `--cases C1,C2`, or `--from-jira KEY`    |
+| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`               |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                               |
 | `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission) |
-| `testrail test list <R>`               | Tests in a run (`--status failed,retest`, `--limit <n>`, 100)     |
-| `testrail test view <T>`               | Status, steps and latest results (`--results <0-100>`, 5)         |
-| `testrail result add <T>`              | Add a result (`--create-bug` files a Jira Bug); or `--run --case` |
-| `testrail result import <R> --file <>` | Add many results in one request from a JSON file (`-` is stdin)   |
+| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-n <limit>`, 100)            |
+| `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)        |
+| `testrail result add <T>`              | Add a result (`-B` files a Jira bug); or `-R <R> -C <C>`          |
+| `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)   |
 | `testrail link list <C\|R\|T>`         | Jira keys on a case or run (refs) or a test (result defects)      |
 | `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed          |
 | `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                               |
 | `testrail setup`                       | Create the config (see [Set up](#set-up))                         |
 
 - **Case fields (`create` and `edit`):**
-  - `--title`, `--type <name>`, `--priority <name>`, `--estimate 5m`
-  - `--refs KAN-1,KAN-2` (replaces the refs)
-  - `--preconds <text>`
-  - `--steps <text>` and `--expected <text>` for the text template, or `--step "action::expected"` repeated for the steps template
-- **Result fields:** `--status <name>`, `--comment <text>` or `--file <path>`, `--defects KAN-2`, `--elapsed "1m 30s"`, `--build 1.2.0`. A result needs a status or a comment (defects alone are refused). Results cannot be edited or deleted later.
+  - `-t --title`, `-T --type <name>`, `-p --priority <name>`, `-e --estimate 5m`
+  - `-r --refs KAN-1,KAN-2` (replaces the refs)
+  - `-P --preconds <text>`
+  - `-S --steps <text>` and `-E --expected <text>` for the text template, or `-a --step "action::expected"` repeated for the steps template
+- **Result fields:** `-s --status <name>`, `-m --comment <text>` or `-f --file <path>`, `-d --defects KAN-2`, `-e --elapsed "1m 30s"`, `-b --build 1.2.0`; `-R --run` and `-C --case` instead of a test id; `-B --create-bug`. A result needs a status or a comment (defects alone are refused). Results cannot be edited or deleted later.
 - **`result import` file:** a JSON array such as `[{"case": "C1", "status": "passed", "elapsed": "45s"}, {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2"}]`. Either all results land or none do.
 - **From Jira** (needs [jira-cli](https://github.com/chrisvasqm/jira-cli)): `case create --from-jira KAN-12` takes the title from the ticket's summary and puts the key in refs. `run create --from-jira KAN-12` names the run "KAN-12: summary", puts the key in refs and, without `--cases`, runs only the cases linked to KAN-12. `result add --create-bug` creates a Jira Bug named "T45 failed: title" (the comment and a link to the test are its description; a Task when the project has no Bug type) and adds its key to the result's defects.
 - **Jira links:** `link` needs the id letter. `link add` checks new keys with [jira-cli](https://github.com/chrisvasqm/jira-cli) if `jira` is on your PATH (`--no-check` skips it). If jira-cli is not set up for the directory, it offers to run `jira setup` and then checks again. On a test, a link is a new result with no status, the comment "Linked KAN-1" and the key as a defect, so it cannot be removed.
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
 - **Deletes and `run close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
 
-Run `testrail <command> --help` for every option.
+Every option has a short form. The same letter means the same thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status or a section, `-J` is `--from-jira`, `-y` is `--yes`. Run `testrail <command> --help` for every option.
 
 ## Output
 
-Every command prints readable text by default. Add `--json` to get one line on stdout:
+Every command prints readable text by default. Add `--json` (`-j`) to get one line on stdout:
 
 - on success: `{ "ok": true, "data": … }`
 - on failure: `{ "ok": false, "error": { "code", "message", "details" } }`
@@ -115,7 +138,7 @@ pnpm check          # type-check, bundle, lint, format check
 pnpm add -g .       # once: use your local build as the global `testrail` (then `pnpm build` after changes)
 ```
 
-[AGENTS.md](AGENTS.md) covers the layout and the repo rules.
+[AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs as evidence.
 
 ## Releasing
 

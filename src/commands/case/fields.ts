@@ -27,15 +27,15 @@ const collect = (value: string, previous: string[] = []): string[] => [...previo
 /** Field flags shared by case create and case edit. */
 export function addCaseFieldOptions(cmd: Command): Command {
   return cmd
-    .option("--type <name>", "Case type, e.g. Functional, Regression")
-    .option("--priority <name>", "Priority, e.g. Low, Medium, High, Critical")
-    .option("--refs <keys>", "References, comma-separated (e.g. KAN-1); replaces existing refs")
-    .option("--estimate <time>", "Estimate, e.g. 30s, 5m, 1h")
-    .option("--preconds <text>", "Preconditions (Markdown)")
-    .option("--steps <text>", "Steps as one text (Test Case (Text) template)")
-    .option("--expected <text>", "Expected result (Test Case (Text) template)")
+    .option("-T, --type <name>", "Case type, e.g. Functional, Regression")
+    .option("-p, --priority <name>", "Priority, e.g. Low, Medium, High, Critical")
+    .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1); replaces existing refs")
+    .option("-e, --estimate <time>", "Estimate, e.g. 30s, 5m, 1h")
+    .option("-P, --preconds <text>", "Preconditions (Markdown)")
+    .option("-S, --steps <text>", "Steps as one text (Test Case (Text) template)")
+    .option("-E, --expected <text>", "Expected result (Test Case (Text) template)")
     .option(
-      "--step <action::expected>",
+      "-a, --step <action::expected>",
       `One step; repeat for each (switches the case to the Steps template). Split action and expected with "${STEP_SPLIT}"`,
       collect,
     );

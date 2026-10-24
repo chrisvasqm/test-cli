@@ -19,9 +19,9 @@ export function registerList(testCase: Command): void {
   testCase
     .command("list")
     .description("List the cases in the project (and suite) from the config")
-    .option("--section <id>", "Only cases in this section")
-    .option("--refs <key>", "Only cases linked to this Jira key, e.g. KAN-12")
-    .option("--limit <n>", "Most cases to show", "50")
+    .option("-s, --section <id>", "Only cases in this section")
+    .option("-r, --refs <key>", "Only cases linked to this Jira key, e.g. KAN-12")
+    .option("-n, --limit <n>", "Most cases to show", "50")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
       const sectionId = opts.section === undefined ? undefined : intInRange(opts.section, "--section", 1);
