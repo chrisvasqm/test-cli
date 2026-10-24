@@ -28,11 +28,11 @@ export class RunService {
   }
 
   /** Every run (not in a plan), open or closed, whose refs include `key` (exactly, ignoring case; TestRail's refs_filter is looser). */
-  async withRef(projectId: number, key: string): Promise<Run[]> {
+  async withRef(projectId: number, suiteId: number | undefined, key: string): Promise<Run[]> {
     const { items } = await collectPages<Run>(
       `get_runs/${projectId}`,
       "runs",
-      { refs_filter: key },
+      { refs_filter: key, suite_id: suiteId },
       Number.MAX_SAFE_INTEGER,
       this.http,
     );

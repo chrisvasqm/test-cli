@@ -35,7 +35,7 @@ async function listForKey(config: Config, mode: OutputMode, key: string): Promis
       { projectId: config.projectId, suiteId: config.suiteId, sectionId: undefined },
       key,
     ),
-    new RunService().withRef(config.projectId, key),
+    new RunService().withRef(config.projectId, config.suiteId, key),
   ]);
   const view = {
     target: key,
