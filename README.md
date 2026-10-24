@@ -2,7 +2,7 @@
 
 `test-cli` is a small command-line tool for test management. It works with TestRail today, and is built so other providers (Qase, Xray) can follow. Use it from the terminal or from CI, or let an AI agent use it instead of a TestRail MCP server, for far fewer tokens.
 
-The command is `test-cli`. Version 3 also installs `testrail` as an alias, so scripts from before the rename keep working.
+The command is `test-cli`. Versions 3.x also installed `testrail` as an alias; since 4.0 scripts must call `test-cli`.
 
 ## Install
 

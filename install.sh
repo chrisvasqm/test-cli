@@ -33,7 +33,7 @@ else
   fail "needs shasum or sha256sum to verify the download"
 fi
 
-# The package was called testrail-cli before 3.0.0; both claim the testrail command, so the old one goes first.
+# The package was called testrail-cli before 3.0.0; remove it so its old testrail command does not linger.
 removed_old=""
 if npm ls -g --depth=0 testrail-cli >/dev/null 2>&1; then
   npm uninstall -g testrail-cli >/dev/null || fail "could not remove the old testrail-cli package"

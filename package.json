@@ -1,14 +1,13 @@
 {
   "name": "test-cli",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Small test management CLI (TestRail) for humans and agents",
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "bin": {
-    "test-cli": "./dist/index.js",
-    "testrail": "./dist/index.js"
+    "test-cli": "./dist/index.js"
   },
   "files": [
     "dist",
