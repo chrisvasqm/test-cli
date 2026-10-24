@@ -183,6 +183,8 @@ Exit codes:
 - `130`: cancelled with Ctrl+C
 - `1`: any other error
 
+`NOT_SUPPORTED` (exit 2) means the configured provider lacks the feature (for example milestones). TestRail supports every command.
+
 The [agent skill](https://github.com/chrisvasqm/skills/blob/main/skills/test-cli/SKILL.md) lists the data shapes and every error code.
 
 ## Development
