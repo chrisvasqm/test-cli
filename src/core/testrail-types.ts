@@ -131,3 +131,17 @@ export interface Template {
   i18n_custom_id?: string | null;
   is_default: boolean;
 }
+
+/** One option of a configuration group, e.g. "Chrome" in "Browsers". */
+export interface Config {
+  id: number;
+  name: string;
+  group_id: number;
+}
+
+export interface ConfigGroup {
+  id: number;
+  name: string;
+  project_id: number;
+  configs: Config[];
+}
