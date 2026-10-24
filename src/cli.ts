@@ -1,6 +1,10 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
+import { registerCase } from "./commands/case/index.js";
+import { registerProject } from "./commands/project/index.js";
+import { registerRun } from "./commands/run/index.js";
 import { registerSetup } from "./commands/setup.js";
+import { registerTest } from "./commands/test/index.js";
 import { CliError } from "./core/errors.js";
 import { outputMode } from "./core/bootstrap.js";
 import { printError } from "./core/output.js";
@@ -19,11 +23,23 @@ const program = new Command()
   .configureOutput({ outputError: () => undefined });
 
 registerSetup(program);
+registerProject(program);
+registerCase(program);
+registerRun(program);
+registerTest(program);
 
-/** 130 for Ctrl+C, 2 for bad usage, missing input or a missing --yes, 1 for everything else. */
+const INPUT_ERRORS = new Set(["USAGE", "INPUT_EOF", "CONFIRM_REQUIRED", "UNKNOWN_STATUS"]);
+
+// A reader that stops early (`testrail case list | head`) closes stdout; that is not an error.
+process.stdout.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EPIPE") process.exit(0);
+  throw err;
+});
+
+/** 130 for Ctrl+C, 2 for bad usage, bad input or a missing --yes, 1 for everything else. */
 function exitCode(err: unknown): number {
   if (err instanceof CliError && err.code === "INTERRUPTED") return 130;
-  if (err instanceof CliError && ["USAGE", "INPUT_EOF", "CONFIRM_REQUIRED"].includes(err.code)) return 2;
+  if (err instanceof CliError && INPUT_ERRORS.has(err.code)) return 2;
   return 1;
 }
 

@@ -73,3 +73,24 @@ export function table(rows: ReadonlyArray<readonly [string, string]>): string {
   const width = Math.max(...rows.map(([key]) => key.length));
   return rows.map(([key, value]) => `${key.padEnd(width)}  ${value}`).join("\n");
 }
+
+/** Columns padded to the widest cell; the last column is never padded. */
+export function grid(rows: ReadonlyArray<readonly string[]>): string {
+  const widths: number[] = [];
+  for (const row of rows) {
+    row.forEach((cell, index) => (widths[index] = Math.max(widths[index] ?? 0, cell.length)));
+  }
+  return rows
+    .map((row) =>
+      row
+        .map((cell, index) => (index === row.length - 1 ? cell : cell.padEnd(widths[index]!)))
+        .join("  ")
+        .trimEnd(),
+    )
+    .join("\n");
+}
+
+/** "Showing 50; more exist (raise --limit)" when a list was cut. */
+export function moreHint(shown: number, hasMore: boolean): string {
+  return hasMore ? `\n\nShowing ${shown}; more exist (raise --limit).` : "";
+}
