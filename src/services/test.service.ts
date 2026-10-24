@@ -11,6 +11,11 @@ export class TestService {
     return this.http.get<Test>(`get_test/${id}`).catch(notFound.test(id));
   }
 
+  /** Every test of the run, optionally only those with `statusIds`. */
+  async all(runId: number, statusIds: number[] = []): Promise<Test[]> {
+    return (await this.list(runId, statusIds, Number.MAX_SAFE_INTEGER)).items;
+  }
+
   /** `assignedTo` filters here: get_tests has no assignee filter, so every page is read first. */
   async list(
     runId: number,

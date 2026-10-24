@@ -1,7 +1,6 @@
 import type { Command } from "commander";
-import { dateArg, milestoneId } from "../../core/args.js";
+import { dateArg, milestoneId, requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
@@ -30,9 +29,7 @@ export function registerCreate(milestone: Command): void {
     .option("-M, --parent <milestone>", "Make it a sub-milestone of this milestone, e.g. M3")
     .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
     .action(async (opts: CreateOptions, cmd: Command) => {
-      if (opts.name === undefined || !opts.name.trim()) {
-        throw new InputError("USAGE", "Give the milestone a name with --name");
-      }
+      requireName(opts.name, "milestone");
       const input: MilestoneInput = { name: opts.name };
       if (opts.start !== undefined) input.start_on = dateArg(opts.start, "--start");
       if (opts.due !== undefined) input.due_on = dateArg(opts.due, "--due");

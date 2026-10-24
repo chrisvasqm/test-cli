@@ -5,6 +5,7 @@ import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import { PlanService } from "../../services/plan.service.js";
 import { jiraView } from "../from-jira.js";
+import { assigneeView } from "../render.js";
 import { buildEntry, entryOptions, parseEntry, type EntryOptions } from "./entry.js";
 import { renderEntry, toEntryView } from "./render.js";
 
@@ -28,7 +29,7 @@ export function registerAddRun(plan: Command): void {
       planId: id,
       ...entry,
       includeAll: input.include_all,
-      assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
+      assignedTo: assigneeView(assignee),
       jira: jiraView(ticket),
     };
     printResult(mode, view, () => `Added to R${id}\n\n${renderEntry(entry)}`);

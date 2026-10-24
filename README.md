@@ -66,6 +66,14 @@ With the skill installed, describe the job in plain words and let the agent pick
   `testrail case list -r KAN-12` → `testrail case view C12` → `jira ticket view KAN-12`
 - **"Link KAN-14 to C12 and C13."**
   `testrail link add C12 KAN-14` → `testrail link add C13 KAN-14`
+- **"Rerun what failed in R3, assigned to me."** A new run with only R3's failed, retest and blocked cases.
+  `testrail run create -R R3 -a me`
+- **"T45 failed at step 2. Attach the screenshot."** Per-step statuses and the file on the same result.
+  `testrail result add T45 -s failed -O 1:passed,2:failed -A login.png`
+- **"Plan the 2.0 release: one run per browser."** A plan on the milestone, with one run per configuration.
+  `testrail milestone list` → `testrail plan create -N "Release 2.0" -M M3 -g Chrome,Firefox`
+- **"What has C12 done over the last runs?"** Its results across runs, newest first.
+  `testrail case history C12 -n 10`
 - **"The sprint is over. Summarize R3 and close it."** Counts per status, then a close after you confirm.
   `testrail run view R3` → `testrail run close R3 -y`
 
@@ -115,7 +123,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-F`/`-U` start/due dates, `-M <M>` parent, `-r`)                                                            |
 | `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                                                     |
 | `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                                                          |
-| `testrail result add <T>`              | Add a result (`-O 1:passed,2:failed` step statuses, `-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>`                                   |
+| `testrail result add <T>`              | Add a result (`-O 1:passed,2:failed` step statuses, `-A <file>` attaches, `-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>`             |
 | `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)                                                                                     |
 | `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it                                      |
 | `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                                                            |
@@ -141,7 +149,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
 - **Deletes, `run close`, `run sync` and `plan close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
 
-Every option has a short form. The same letter means the same thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status or a section, `-J` is `--from-jira`, `-y` is `--yes`. Run `testrail <command> --help` for every option.
+Every option has a short form. The same letter means the same thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status or a section, `-N` is a name, `-a` is an assignee (`me`, an email or a user id; on `case create`/`edit` it is a step), `-D` shows closed or completed items, `-J` is `--from-jira`, `-y` is `--yes`, and uppercase `-C`/`-R`/`-S`/`-M` take case, run, suite and milestone ids. Run `testrail <command> --help` for every option.
 
 ## Output
 

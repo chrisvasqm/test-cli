@@ -1,6 +1,6 @@
 import { InputError, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { collectPages, inBatches, type Collected } from "../core/paging.js";
 import type { User } from "../core/testrail-types.js";
 
 /** Most users one list shows. */
@@ -21,6 +21,17 @@ export class UserService {
     return this.http
       .get<User>(`get_user/${id}`)
       .catch(notFoundAs("user_id", "USER_NOT_FOUND", `User ${id} does not exist or you cannot see it.`));
+  }
+
+  /** Names by user id, a few get_user calls at a time; an unknown user is left out. */
+  async names(ids: number[]): Promise<Map<number, string>> {
+    const named = await inBatches([...new Set(ids)], (id) => this.byId(id).catch(() => undefined));
+    return new Map(named.flatMap((user) => (user ? [[user.id, user.name] as const] : [])));
+  }
+
+  /** `resolve` when the flag was given, otherwise undefined. */
+  resolveOptional(assignee: string | undefined, myEmail: string, flag: string): Promise<User | undefined> {
+    return assignee === undefined ? Promise.resolve(undefined) : this.resolve(assignee, myEmail, flag);
   }
 
   /** Users with access to the project; TestRail Cloud needs the project id unless you are an admin. */

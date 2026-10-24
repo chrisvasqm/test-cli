@@ -12,7 +12,7 @@ import { RunService, type RunInput } from "../../services/run.service.js";
 import { TestService } from "../../services/test.service.js";
 import { UserService } from "../../services/user.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
-import { renderCounts, toRunSummary } from "../render.js";
+import { renderCounts, toRunSummary, assigneeView } from "../render.js";
 
 interface CreateOptions {
   name?: string;
@@ -63,16 +63,14 @@ export function registerCreate(run: Command): void {
       // Jira first, alone: it may prompt for `jira setup`. Then the TestRail lookups, all before the
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
       const { ticket, refs } = await loadFromJira(key, opts.refs);
-      const rerun = sourceId === undefined ? undefined : await rerunCases(sourceId, opts.status);
-      const [caseList, statuses, assignee] = await Promise.all([
-        rerun?.caseIds ??
-          cases ??
-          (key === undefined ? undefined : linkedCases(config.projectId, config.suiteId, key)),
-        new MetaService().statuses(),
-        opts.assign === undefined
-          ? undefined
-          : new UserService().resolve(opts.assign, config.email, "--assign"),
+      const meta = new MetaService();
+      const [rerun, linked, statuses, assignee] = await Promise.all([
+        sourceId === undefined ? undefined : rerunCases(sourceId, opts.status, meta),
+        key === undefined || cases ? undefined : linkedCases(config.projectId, config.suiteId, key),
+        meta.statuses(),
+        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
       ]);
+      const caseList = rerun?.caseIds ?? cases ?? linked;
       const source = rerun?.source;
       const name =
         opts.name ?? clip(source ? `${source.name} (rerun)` : `${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
@@ -89,7 +87,7 @@ export function registerCreate(run: Command): void {
       const view = {
         ...toRunSummary(created, statuses),
         includeAll: created.include_all,
-        assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
+        assignedTo: assigneeView(assignee),
         jira: jiraView(ticket),
         fromRun: source ? { id: source.id, name: source.name, planId: source.plan_id } : null,
       };
@@ -139,15 +137,12 @@ function fromRunId(opts: CreateOptions): number | undefined {
 async function rerunCases(
   id: number,
   status: string | undefined,
+  meta: MetaService,
 ): Promise<{ source: Run; caseIds: number[] }> {
   const typed = status ?? RERUN_STATUSES;
-  const [source, statusIds] = await Promise.all([
-    new RunService().get(id),
-    new MetaService().statusIds(typed),
-  ]);
+  const [source, statusIds] = await Promise.all([new RunService().get(id), meta.statusIds(typed)]);
   if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
-  const { items } = await new TestService().list(id, statusIds, Number.MAX_SAFE_INTEGER);
-  const ids = [...new Set(items.map((item) => item.case_id))];
+  const ids = [...new Set((await new TestService().all(id, statusIds)).map((item) => item.case_id))];
   if (ids.length === 0) {
     throw new InputError("NO_MATCHING_TESTS", `Run R${id} has no tests with status ${typed}.`);
   }

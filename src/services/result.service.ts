@@ -1,6 +1,6 @@
 import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { collectPages, inBatches, type Collected } from "../core/paging.js";
 import type { Result, Run, StepResult, Test } from "../core/testrail-types.js";
 import { CaseService } from "./case.service.js";
 import { RunService } from "./run.service.js";
@@ -21,17 +21,9 @@ export interface ResultInput {
 /** Where a result goes: a test, or a case inside a run. */
 export type ResultTarget = { kind: "test"; testId: number } | { kind: "case"; runId: number; caseId: number };
 
-/** Runs `history` asks at once. */
-const HISTORY_BATCH = 5;
-
 export interface RunResult {
   run: Run;
   result: Result;
-}
-
-export interface CaseHistory extends Collected<RunResult> {
-  /** How many of the runs given were asked; the rest were not needed. */
-  scanned: number;
 }
 
 /** A real case outside the run: "No (active) test found for the run/case combination." */
@@ -78,27 +70,15 @@ export class ResultService {
    * are skipped. One get_results_for_case per run: get_tests then get_results would take two.
    * Every run is scanned (a few at a time): an old run can hold the newest result.
    */
-  async history(runs: Run[], caseId: number, limit: number): Promise<CaseHistory> {
-    const found: RunResult[] = [];
-    let scanned = 0;
-    let pageCut = false;
-    while (scanned < runs.length) {
-      const batch = runs.slice(scanned, scanned + HISTORY_BATCH);
-      const pages = await Promise.all(
-        batch.map((run) => this.forCase(run.id, caseId, limit).catch(skipNotInRun)),
-      );
-      batch.forEach((run, index) => {
-        const page = pages[index];
-        pageCut ||= page?.hasMore ?? false;
-        found.push(...(page?.items ?? []).map((result) => ({ run, result })));
-      });
-      scanned += batch.length;
-    }
+  async history(runs: Run[], caseId: number, limit: number): Promise<Collected<RunResult>> {
+    const pages = await inBatches(runs, (run) => this.forCase(run.id, caseId, limit).catch(skipNotInRun));
+    const found = runs.flatMap((run, index) =>
+      (pages[index]?.items ?? []).map((result) => ({ run, result })),
+    );
     found.sort((left, right) => right.result.created_on - left.result.created_on);
     return {
       items: found.slice(0, limit),
-      hasMore: pageCut || found.length > limit,
-      scanned,
+      hasMore: pages.some((page) => page?.hasMore) || found.length > limit,
     };
   }
 
@@ -118,9 +98,9 @@ export class ResultService {
       await new RunService(this.http).open(test.run_id);
       return test;
     }
-    const [, { items }] = await Promise.all([
+    const [, items] = await Promise.all([
       new RunService(this.http).open(target.runId),
-      tests.list(target.runId, [], Number.MAX_SAFE_INTEGER),
+      tests.all(target.runId),
     ]);
     const found = items.find((item) => item.case_id === target.caseId);
     if (found) return found;
