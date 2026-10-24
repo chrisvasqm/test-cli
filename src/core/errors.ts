@@ -49,4 +49,5 @@ export const notFound = {
   milestone: (id: number) =>
     notFoundAs("milestone_id", "MILESTONE_NOT_FOUND", `Milestone M${id} ${cannotSee}`),
   result: (id: number) => notFoundAs("result_id", "RESULT_NOT_FOUND", `Result #${id} ${cannotSee}`),
+  plan: (id: number) => notFoundAs("plan_id", "PLAN_NOT_FOUND", `Plan R${id} ${cannotSee}`),
 };

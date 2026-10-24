@@ -73,7 +73,7 @@ Agents add `-j` to every command to read the JSON output. They never pass `-y` (
 
 ## Commands
 
-Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project, `S1` a suite and `M3` a milestone. The letter is optional, except for `link`.
+Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project, `S1` a suite and `M3` a milestone. Test plans share run ids, so a plan is an `R` id too (`R7`); its runs work with `test list` and `result add` like any run. The letter is optional, except for `link`.
 
 | Command                                | What it does                                                                                                      |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -103,6 +103,12 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail run edit <R>`                | Change an open run (`-N`, `-d`, `-r`, `-M M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-C C1,C2` sets    |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                               |
 | `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                                 |
+| `testrail plan list`                   | Open test plans, newest first (`-D` for closed, `-n <limit>`, 25)                                                 |
+| `testrail plan view <R>`               | Progress per status, milestone, and each entry's runs with configurations                                         |
+| `testrail plan create`                 | New plan (`-N <name>`; `-d`/`-f`, `-M <M>`); run flags as in `add-run` add its first runs                         |
+| `testrail plan add-run <R>`            | Add runs (`-S <S>`, `-N`, `-C C1,C2` or `-J KAN-12`, `-a me`, `-g Chrome,Windows`: one run per combination)       |
+| `testrail plan close <R>`              | Close a plan and its runs (it cannot be reopened)                                                                 |
+| `testrail plan delete <R>`             | Delete a plan with its runs, tests and results                                                                    |
 | `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                             |
 | `testrail milestone view <M>`          | Dates, parent, refs and description                                                                               |
 | `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-a`/`-u` start/due dates, `-M <M>` parent, `-r`)                          |
@@ -131,7 +137,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 - **From Jira** (needs [jira-cli](https://github.com/chrisvasqm/jira-cli)): `case create --from-jira KAN-12` takes the title from the ticket's summary and puts the key in refs. `run create --from-jira KAN-12` names the run "KAN-12: summary", puts the key in refs and, without `--cases`, runs only the cases linked to KAN-12. `result add --create-bug` creates a Jira Bug named "T45 failed: title" (the comment and a link to the test are its description; a Task when the project has no Bug type) and adds its key to the result's defects.
 - **Jira links:** `link` needs the id letter. `link add` checks new keys with [jira-cli](https://github.com/chrisvasqm/jira-cli) if `jira` is on your PATH (`--no-check` skips it). If jira-cli is not set up for the directory, it offers to run `jira setup` and then checks again. On a test, a link is a new result with no status, the comment "Linked KAN-1" and the key as a defect, so it cannot be removed.
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
-- **Deletes and `run close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
+- **Deletes, `run close` and `plan close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
 
 Every option has a short form. The same letter means the same thing across commands: `-n` is how many (`--limit`, `--results`), `-f` reads text from a file, `-r` is refs, `-s` is a status or a section, `-J` is `--from-jira`, `-y` is `--yes`. Run `testrail <command> --help` for every option.
 

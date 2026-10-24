@@ -11,7 +11,7 @@ export function intInRange(raw: string, flag: string, min: number, max = Number.
 
 /**
  * TestRail shows ids with a letter: C12 (case), R3 (run), T45 (test), P2 (project), S1 (suite),
- * M3 (milestone).
+ * M3 (milestone). Test plans share the run ids and show as R ids too (R7).
  * Accepts "C12", "c12" or "12" for that kind; another letter is a usage error. `where` prefixes the
  * error, e.g. "entry 3".
  */
@@ -34,6 +34,7 @@ export const testId = (raw: string): number => prefixedId(raw, "T", "test");
 export const projectId = (raw: string): number => prefixedId(raw, "P", "project");
 export const suiteId = (raw: string): number => prefixedId(raw, "S", "suite");
 export const milestoneId = (raw: string): number => prefixedId(raw, "M", "milestone");
+export const planId = (raw: string): number => prefixedId(raw, "R", "plan");
 
 /** A calendar date "2026-11-30" → Unix seconds at local midnight, as TestRail stores dates. */
 export function dateArg(raw: string, flag: string): number {

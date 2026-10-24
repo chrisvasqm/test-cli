@@ -44,3 +44,17 @@ function findConfig(all: Config[], groups: ConfigGroup[], typed: string): Config
 function configList(groups: ConfigGroup[]): string[] {
   return groups.flatMap((group) => group.configs.map((item) => `${group.name}: ${item.id}  ${item.name}`));
 }
+
+/**
+ * One configuration id list per run: the product across groups of the chosen ids, as TestRail's
+ * plan dialog makes them. Chrome, Firefox and Windows give Chrome+Windows and Firefox+Windows.
+ */
+export function configCombinations(groups: ConfigGroup[], ids: readonly number[]): number[][] {
+  const picked = groups
+    .map((group) => group.configs.filter((item) => ids.includes(item.id)).map((item) => item.id))
+    .filter((options) => options.length > 0);
+  return picked.reduce<number[][]>(
+    (combos, options) => combos.flatMap((combo) => options.map((option) => [...combo, option])),
+    [[]],
+  );
+}

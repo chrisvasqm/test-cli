@@ -1,6 +1,6 @@
 import type { Config } from "../core/config.js";
 import { splitList } from "../core/text.js";
-import type { CaseContent, Result, Run, Status, StepInput } from "../core/testrail-types.js";
+import type { CaseContent, Result, Run, Status, StatusCounts, StepInput } from "../core/testrail-types.js";
 import { nameOf } from "../services/meta.service.js";
 
 const LOCAL_TIME = new Intl.DateTimeFormat("en-CA", {
@@ -77,8 +77,8 @@ export function renderContent(content: ContentView): string[] {
 
 const LAST_SYSTEM_STATUS = 5;
 
-/** Counts per status label, only for statuses that have tests ("Passed 3, Failed 1"). */
-export function runCounts(run: Run, statuses: Status[]): Record<string, number> {
+/** Counts per status label, only for statuses that have tests ("Passed 3, Failed 1"); runs and plans. */
+export function runCounts(run: StatusCounts, statuses: Status[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const status of statuses) {
     // System statuses (ids 1-5) have <name>_count; custom ids 6-12 are custom_status1..7_count.
