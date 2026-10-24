@@ -264,6 +264,20 @@ check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO
 check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
 check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
 check(
+  "coverage --epic",
+  run("coverage", "-K", K2, "-W", "5"),
+  (res) =>
+    okData(res) &&
+    res.out.data.summary.covered === 1 &&
+    res.out.data.tickets[0]?.cases.some((item) => `C${item.id}` === jiraCaseRef),
+);
+check(
+  "coverage --jql (uncovered)",
+  run("coverage", "-Q", `key = ${K1}`, "-W", "1"),
+  (res) => okData(res) && res.out.data.summary.uncovered === 1 && res.out.data.tickets[0]?.cases.length === 0,
+);
+check("coverage -w -K", run("coverage", "-w", "active", "-K", K2), errCode("USAGE", 2));
+check(
   "JIRA_TICKET_NOT_FOUND",
   run("case", "create", "-s", sectionId, "-J", missing),
   errCode("JIRA_TICKET_NOT_FOUND", 2),
