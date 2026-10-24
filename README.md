@@ -97,6 +97,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it |
 | `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                       |
 | `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                                                                            |
+| `testrail configuration list`          | Configuration groups (e.g. browsers, OS) and their ids                                                         |
 | `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                      |
 
 - **Case fields (`create` and `edit`):**
