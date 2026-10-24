@@ -3,39 +3,16 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import { hasRef, splitList } from "../../../core/text.js";
-import type { Case, CaseContent } from "../types.js";
-
-export interface CaseFilter {
-  projectId: number;
-  suiteId: number | undefined;
-  sectionId: number | undefined;
-  /** Only cases whose refs match this key (TestRail's own, loose, match). */
-  refs?: string;
-  /** Title text (TestRail's `filter`). */
-  query?: string | undefined;
-  priorityIds?: number[] | undefined;
-  typeIds?: number[] | undefined;
-  /** Unix seconds; only cases updated at or after it. */
-  updatedAfter?: number | undefined;
-  limit: number;
-}
-
-/** Writable case fields; the custom_* content fields depend on the case's template. */
-export interface CaseInput extends CaseContent {
-  title?: string;
-  template_id?: number;
-  type_id?: number;
-  priority_id?: number;
-  refs?: string;
-  estimate?: string;
-}
+import type { Case } from "../types.js";
+import type { CaseFilter, CaseInput } from "../../types.js";
+import type { Cases } from "../../provider.js";
 
 /**
  * get/add/update/delete_case, get_cases, update_cases, and copy_/move_cases_to_section endpoints.
  * The bulk endpoints answer an unknown case with one 400 for the whole list, so callers check each
  * case with get first to name the missing one.
  */
-export class CaseService {
+export class CaseService implements Cases {
   constructor(private readonly http: HttpClient) {}
 
   /** Every case, a few at a time; the first unknown one fails with CASE_NOT_FOUND. */

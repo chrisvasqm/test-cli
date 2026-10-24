@@ -1,7 +1,7 @@
 import type { Config } from "../../core/config.js";
 import { kindedId } from "../../providers/testrail/ids.js";
 import { sameKey } from "../../core/text.js";
-import type { LinkTarget } from "../../providers/testrail/services/link.service.js";
+import type { LinkTarget } from "../../providers/types.js";
 import { caseUrl, runUrl, testUrl } from "../render.js";
 
 /** "C12", "R3" or "T45"; the letter is required here, since it picks what gets linked. */

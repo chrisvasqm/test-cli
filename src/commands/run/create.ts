@@ -9,7 +9,7 @@ import { jiraTickets, type JiraTicket, type JiraTickets, type TicketSource } fro
 import { info, printResult, table } from "../../core/output.js";
 import { clip, fitRefs, joinRefs, MAX_NAME } from "../../core/text.js";
 import type { Run } from "../../providers/testrail/types.js";
-import type { RunInput } from "../../providers/testrail/services/run.service.js";
+import type { RunInput } from "../../providers/types.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { renderCounts, toRunSummary, assigneeView } from "../render.js";
 

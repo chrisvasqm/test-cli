@@ -1,4 +1,5 @@
 import { CAPABILITIES, type Capability } from "../capability.js";
+import type { Provider } from "../provider.js";
 import { HttpClient, type Credentials } from "./http.js";
 import { AttachmentService } from "./services/attachment.service.js";
 import { CaseService } from "./services/case.service.js";
@@ -17,7 +18,7 @@ import { TestService } from "./services/test.service.js";
 import { UserService } from "./services/user.service.js";
 
 /** One HTTP client for the site, and one instance of each service on it. */
-export function createTestRail(creds: Credentials) {
+export function createTestRail(creds: Credentials): Provider {
   const http = new HttpClient(creds);
   const cases = new CaseService(http);
   const plans = new PlanService(http);
@@ -43,7 +44,5 @@ export function createTestRail(creds: Credentials) {
     suites: new SuiteService(http),
     tests,
     users: new UserService(http),
-  } as const;
+  };
 }
-
-export type TestRailProvider = ReturnType<typeof createTestRail>;

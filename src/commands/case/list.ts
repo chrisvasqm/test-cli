@@ -7,7 +7,7 @@ import { printResult, renderList } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
 import type { Collected } from "../../core/paging.js";
 import type { Case } from "../../providers/testrail/types.js";
-import type { CaseFilter } from "../../providers/testrail/services/case.service.js";
+import type { CaseFilter } from "../../providers/types.js";
 import { idsByName, nameOf } from "../../providers/testrail/lookup.js";
 import { isoTime } from "../render.js";
 

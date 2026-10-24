@@ -7,17 +7,13 @@ import { collectPages } from "../paging.js";
 import { ALL, type Collected } from "../../../core/paging.js";
 import type { Attachment } from "../types.js";
 import type { TestService } from "./test.service.js";
-
-/** What a file can be attached to. A test has no attachments of its own; they go on its results. */
-export type AttachTarget = { kind: "case" | "run" | "result"; id: number };
-
-/** Whose attachments to list; a test's are those on its results. */
-export type AttachmentsOf = { kind: "case" | "run" | "test"; id: number };
+import type { AttachTarget, AttachmentsOf } from "../../types.js";
+import type { Attachments } from "../../provider.js";
 
 const notFoundFor = { case: notFound.case, run: notFound.run, test: notFound.test, result: notFound.result };
 
 /** add_attachment_to_* and get_attachments_for_* endpoints. */
-export class AttachmentService {
+export class AttachmentService implements Attachments {
   constructor(
     private readonly http: HttpClient,
     private readonly tests: TestService,

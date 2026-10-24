@@ -1,15 +1,11 @@
 import { CliError, InputError } from "../core/errors.js";
 import { CAPABILITIES, type Capability } from "./capability.js";
 import type { Credentials } from "./testrail/http.js";
-import { createTestRail, type TestRailProvider } from "./testrail/index.js";
+import type { Provider } from "./provider.js";
+import { createTestRail } from "./testrail/index.js";
 
 export type { Capability } from "./capability.js";
-
-/**
- * The services commands use. TestRail is the only provider, so this is its shape; the second
- * provider (Qase) turns it into an interface with neutral types.
- */
-export type Provider = TestRailProvider;
+export type { Provider } from "./provider.js";
 
 /** What a provider needs to connect: a whole config, or what `setup` has asked for so far. */
 export type Connection = { provider: "testrail" } & Credentials;

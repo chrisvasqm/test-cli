@@ -4,7 +4,7 @@ import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import type { SectionInput } from "../../providers/testrail/services/section.service.js";
+import type { SectionInput } from "../../providers/types.js";
 import { toSectionView } from "./render.js";
 
 interface CreateOptions {

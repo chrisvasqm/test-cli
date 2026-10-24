@@ -3,30 +3,8 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import type { Collected } from "../../../core/paging.js";
 import type { Plan, PlanEntry } from "../types.js";
-
-/** Which cases a run gets and who it is assigned to. */
-export interface PlanRunInput {
-  /** true: every case in the suite; false: only case_ids. */
-  include_all: boolean;
-  case_ids?: number[];
-  assignedto_id?: number;
-  config_ids?: number[];
-}
-
-/** One suite's runs in a plan; `runs` has one item per configuration combination. */
-export interface PlanEntryInput extends PlanRunInput {
-  suite_id: number;
-  /** TestRail names the entry after the suite when omitted. */
-  name?: string;
-  runs?: PlanRunInput[];
-}
-
-export interface PlanInput {
-  name: string;
-  description?: string;
-  milestone_id?: number;
-  entries?: PlanEntryInput[];
-}
+import type { PlanEntryInput, PlanInput } from "../../types.js";
+import type { Plans } from "../../provider.js";
 
 /** The errors an entry's ids can cause, after the path id's own handler. */
 const entryErrors = (input: PlanEntryInput) => [
@@ -42,7 +20,7 @@ function withHandlers<T>(request: Promise<T>, handlers: ReadonlyArray<(err: unkn
 }
 
 /** get_plan(s), add_plan, add_plan_entry, close_plan and delete_plan endpoints. */
-export class PlanService {
+export class PlanService implements Plans {
   constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Plan> {

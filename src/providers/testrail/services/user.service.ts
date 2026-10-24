@@ -4,9 +4,10 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { inBatches, MAX_LIST, type Collected } from "../../../core/paging.js";
 import type { User } from "../types.js";
+import type { Users } from "../../provider.js";
 
 /** get_user(s) and get_user_by_email endpoints. */
-export class UserService {
+export class UserService implements Users {
   constructor(private readonly http: HttpClient) {}
 
   byEmail(email: string): Promise<User> {

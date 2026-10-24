@@ -3,29 +3,15 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import type { Collected } from "../../../core/paging.js";
 import type { Section } from "../types.js";
-
-export interface SectionInput {
-  name: string;
-  description?: string;
-  /** Required when the project has more than one suite. */
-  suite_id?: number;
-  /** Left out: a top-level section. */
-  parent_id?: number;
-}
-
-export interface SectionMove {
-  /** null: the top level. */
-  parent_id?: number | null;
-  /** The sibling to put it after; null: the first place. */
-  after_id?: number | null;
-}
+import type { SectionInput, SectionMove } from "../../types.js";
+import type { Sections } from "../../provider.js";
 
 /** A section named in the body, not the path, that TestRail does not know. */
 const missingSection = (field: string, id: number | null | undefined) =>
   notFoundAs(field, "SECTION_NOT_FOUND", `Section ${id} does not exist or you cannot see it.`);
 
 /** get_section(s), add_section, update_section, move_section and delete_section endpoints. */
-export class SectionService {
+export class SectionService implements Sections {
   constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Section> {
