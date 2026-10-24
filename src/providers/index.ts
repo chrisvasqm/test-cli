@@ -1,4 +1,3 @@
-import type { Config } from "../core/config.js";
 import { CliError, InputError } from "../core/errors.js";
 import type { Capability } from "./capability.js";
 import { createTestRail, type TestRailCredentials, type TestRailProvider } from "./testrail/index.js";
@@ -11,18 +10,28 @@ export type { Capability } from "./capability.js";
  */
 export type Provider = TestRailProvider;
 
+/** What a provider needs to connect: a whole config, or what `setup` has asked for so far. */
+export type Connection = { provider: "testrail" } & TestRailCredentials;
+
+/** The service behind each optional feature; reading it from a provider without the feature fails. */
+const GATED: Record<Capability, keyof Provider> = {
+  suites: "suites",
+  plans: "plans",
+  milestones: "milestones",
+  configurations: "configurations",
+  reports: "reports",
+  attachments: "attachments",
+};
+
 let active: Provider | undefined;
 
-/** Builds the provider the config names; `provider()` returns it from then on. */
-export function configureProvider(config: Config): Provider {
-  active = createTestRail(config);
-  return active;
-}
-
-/** `setup` connects before any config exists, with the credentials it just asked for. */
-export function connectTestRail(creds: TestRailCredentials): Provider {
-  active = createTestRail(creds);
-  return active;
+/** Builds the provider the connection names; `provider()` returns it from then on. */
+export function configureProvider(connection: Connection): Provider {
+  switch (connection.provider) {
+    case "testrail":
+      active = gated(createTestRail(connection));
+      return active;
+  }
 }
 
 export function provider(): Provider {
@@ -37,4 +46,17 @@ export function requireCapability(current: Provider, need: Capability): void {
   if (!current.capabilities.has(need)) {
     throw new InputError("NOT_SUPPORTED", `${current.label} does not support ${need}.`);
   }
+}
+
+/** The provider with each optional service behind its capability, so no call site can skip the check. */
+function gated(built: Provider): Provider {
+  const out = { ...built };
+  for (const [need, key] of Object.entries(GATED) as [Capability, keyof Provider][]) {
+    if (built.capabilities.has(need)) continue;
+    Object.defineProperty(out, key, {
+      get: () => requireCapability(built, need),
+      enumerable: true,
+    });
+  }
+  return out;
 }

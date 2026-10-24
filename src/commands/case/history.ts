@@ -1,12 +1,11 @@
 import type { Command } from "commander";
-import { provider } from "../../providers/index.js";
+import { provider, type Provider } from "../../providers/index.js";
 import { caseId, runId } from "../../providers/testrail/ids.js";
 import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
 import type { Run } from "../../providers/testrail/types.js";
-import { type RunService } from "../../providers/testrail/services/run.service.js";
 import { renderResult, toResult } from "../render.js";
 
 /** Most results, and most runs to scan: one TestRail page each. */
@@ -92,7 +91,7 @@ async function singleRun(run: Run, id: number, limit: number) {
 
 /** The scan skips runs without the case; the case's suite only, since other suites cannot hold it. */
 async function recentRuns(
-  runService: RunService,
+  runService: Provider["runs"],
   projectId: number,
   suiteId: number,
   scan: number,

@@ -207,5 +207,5 @@ Every feature or fix PR ships a release.
 2. **Write a clear squash commit subject** (the PR title), such as "Add run close", and put its Spanish version in an `Es:` trailer of the squash commit body, such as `Es: Agrega run close` (`gh pr merge --squash --body "Es: …"`). The release notes have an English section built from the subjects and a Spanish section built from the trailers; a commit without a trailer repeats its English subject there.
 3. **After the merge, run `pnpm release` on an up-to-date `main`**, before the next code PR merges. Docs-only merges in between are fine.
    - It needs `gh auth login` with push access.
-   - It runs `pnpm check`, packs the CLI, tags the commit, and creates the GitHub release with notes built from the commit subjects, the checksum file `test-cli.tgz.sha256`, `test-cli-X.Y.Z.tgz` and `test-cli.tgz` (the latest-version link), plus `testrail-cli.tgz` and its checksum so install links from before 3.0.0 keep working.
+   - It runs `pnpm check`, packs the CLI, tags the commit, and creates the GitHub release with notes built from the commit subjects, the checksum file `test-cli.tgz.sha256`, `test-cli-X.Y.Z.tgz` and `test-cli.tgz` (the latest-version link).
    - If it fails after tagging, fix the cause and run it again. A rerun also finishes a draft or partial release.

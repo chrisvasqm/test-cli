@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { provider } from "../../providers/index.js";
+import { provider, type Provider } from "../../providers/index.js";
 import { caseIds, milestoneId, runId } from "../../providers/testrail/ids.js";
 import { jiraKey } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
@@ -8,7 +8,6 @@ import { readOptionalText } from "../../core/input.js";
 import { jiraTickets, type JiraTicket, type JiraTickets, type TicketSource } from "../../core/jira.js";
 import { info, printResult, table } from "../../core/output.js";
 import { clip, fitRefs, joinRefs, MAX_NAME } from "../../core/text.js";
-import { type MetaService } from "../../providers/testrail/services/meta.service.js";
 import type { Run } from "../../providers/testrail/types.js";
 import { type RunInput } from "../../providers/testrail/services/run.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
@@ -227,7 +226,7 @@ function fromRunId(opts: CreateOptions): number | undefined {
 async function rerunCases(
   id: number,
   status: string | undefined,
-  meta: MetaService,
+  meta: Provider["meta"],
 ): Promise<{ source: Run; caseIds: number[] }> {
   const typed = status ?? RERUN_STATUSES;
   const [source, statusIds] = await Promise.all([provider().runs.get(id), meta.statusIds(typed)]);

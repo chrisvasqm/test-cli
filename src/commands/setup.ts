@@ -1,12 +1,13 @@
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import type { Command } from "commander";
-import { connectTestRail } from "../providers/index.js";
+import { configureProvider } from "../providers/index.js";
 import { z } from "zod";
 import { globalOptions, outputMode } from "../core/bootstrap.js";
 import {
   CONFIG_FILE,
   GLOBAL_CONFIG,
+  LEGACY_CONFIG_FILE,
   configSchema,
   isGitignored,
   saveConfig,
@@ -61,9 +62,18 @@ export function registerSetup(program: Command): void {
       if (opts.global && all.config)
         throw new InputError("USAGE", "Use either --global or --config, not both.");
       const target = opts.global ? GLOBAL_CONFIG : resolve(all.config ?? CONFIG_FILE);
+      // A config under the old name here would be shadowed by the new file, key and all, so it is replaced too.
+      const legacy = opts.global || all.config ? undefined : resolve(LEGACY_CONFIG_FILE);
+      const replaced = [target, legacy].filter(
+        (path): path is string => path !== undefined && existsSync(path),
+      );
       // Ask before anything else: replacing a config throws away its key and project.
-      if (existsSync(target) && !opts.yes) await confirm(`${target} already exists. Replace it?`);
+      if (replaced.length > 0 && !opts.yes)
+        await confirm(
+          `${replaced.join(" and ")} already ${replaced.length > 1 ? "exist" : "exists"}. Replace it?`,
+        );
       await runSetup(target, mode);
+      if (legacy && existsSync(legacy)) rmSync(legacy);
     });
 }
 
@@ -84,7 +94,7 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
     "API key cannot be empty",
   );
 
-  const { projects, users } = connectTestRail({ baseUrl, email, apiKey });
+  const { projects, users } = configureProvider({ provider: "testrail", baseUrl, email, apiKey });
   // Listing projects proves the credentials. Only then look up the name, so a wrong key
   // costs one failed login (repeated failures can lock the account), not two.
   const { items: active, hasMore } = await projects.listActive();

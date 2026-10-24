@@ -37,13 +37,15 @@ try {
   if ($expected -ne $actual) { Fail "checksum mismatch; the download was not installed" }
 
   # The package was called testrail-cli before 3.0.0; both claim the testrail command, so the old one goes first.
+  $removedOld = ""
   npm ls -g --depth=0 testrail-cli | Out-Null
   if ($LASTEXITCODE -eq 0) {
     npm uninstall -g testrail-cli | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "could not remove the old testrail-cli package" }
+    $removedOld = " The old testrail-cli was already removed; fix the error and run this script again."
   }
   npm install -g $tarball | Out-Null
-  if ($LASTEXITCODE -ne 0) { Fail "npm install failed (see the error above)" }
+  if ($LASTEXITCODE -ne 0) { Fail "npm install failed (see the error above).$removedOld" }
 
   # Report the binary npm just installed, not whichever test-cli comes first on PATH.
   $prefix = (npm prefix -g).Trim()

@@ -1,10 +1,10 @@
+import type { Provider } from "../../providers/index.js";
 import type { Command } from "commander";
 import { InputError } from "../../core/errors.js";
 import { joinRefs } from "../../core/text.js";
 import type { StepInput } from "../../providers/testrail/types.js";
 import type { CaseInput } from "../../providers/testrail/services/case.service.js";
 import { idByName } from "../../providers/testrail/lookup.js";
-import { type MetaService } from "../../providers/testrail/services/meta.service.js";
 
 /** Stable key of the built-in "Test Case (Steps)" template; its name can be renamed. */
 const STEPS_TEMPLATE = "templates_test_case_steps";
@@ -48,7 +48,7 @@ export function addCaseFieldOptions(cmd: Command): Command {
  */
 export async function toCaseInput(
   opts: CaseFieldOptions,
-  meta: MetaService,
+  meta: Provider["meta"],
   projectId: number,
 ): Promise<{ input: CaseInput; changed: string[] }> {
   if (opts.step !== undefined && (opts.steps !== undefined || opts.expected !== undefined)) {
@@ -90,7 +90,7 @@ function parseStep(raw: string): StepInput {
   return { content: content.trim(), expected: rest.join(STEP_SPLIT).trim() };
 }
 
-async function stepsTemplate(meta: MetaService, projectId: number): Promise<number> {
+async function stepsTemplate(meta: Provider["meta"], projectId: number): Promise<number> {
   const templates = await meta.templates(projectId);
   const found =
     templates.find((item) => item.i18n_custom_id === STEPS_TEMPLATE) ??

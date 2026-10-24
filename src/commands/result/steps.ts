@@ -1,7 +1,7 @@
+import type { Provider } from "../../providers/index.js";
 import { InputError } from "../../core/errors.js";
 import type { Step, StepResult } from "../../providers/testrail/types.js";
 import { splitList } from "../../core/text.js";
-import type { MetaService } from "../../providers/testrail/services/meta.service.js";
 
 /** One step's outcome as typed: its 1-based number in the case, a status name and what happened. */
 export interface StepSpec {
@@ -31,7 +31,7 @@ export function parseStepList(raw: string): StepSpec[] {
 export async function toStepResults(
   specs: StepSpec[],
   caseSteps: Step[] | null | undefined,
-  meta: MetaService,
+  meta: Provider["meta"],
   where: string,
 ): Promise<StepResult[]> {
   const steps = caseSteps ?? [];
