@@ -8,6 +8,7 @@ import { registerResult } from "./commands/result/index.js";
 import { registerRun } from "./commands/run/index.js";
 import { registerSection } from "./commands/section/index.js";
 import { registerSetup } from "./commands/setup.js";
+import { registerSuite } from "./commands/suite/index.js";
 import { registerTest } from "./commands/test/index.js";
 import { CliError, InputError } from "./core/errors.js";
 import { outputMode } from "./core/bootstrap.js";
@@ -28,6 +29,7 @@ const program = new Command()
 
 registerSetup(program);
 registerProject(program);
+registerSuite(program);
 registerSection(program);
 registerCase(program);
 registerRun(program);

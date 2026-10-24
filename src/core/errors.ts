@@ -45,4 +45,5 @@ export const notFound = {
   case: (id: number) => notFoundAs("case_id", "CASE_NOT_FOUND", `Case C${id} ${cannotSee}`),
   run: (id: number) => notFoundAs("run_id", "RUN_NOT_FOUND", `Run R${id} ${cannotSee}`),
   test: (id: number) => notFoundAs("test_id", "TEST_NOT_FOUND", `Test T${id} ${cannotSee}`),
+  suite: (id: number) => notFoundAs("suite_id", "SUITE_NOT_FOUND", `Suite S${id} ${cannotSee}`),
 };
