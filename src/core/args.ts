@@ -55,9 +55,9 @@ export function listLimit(raw: string): number {
 }
 
 /** "C1,C2,3" → [1, 2, 3]. */
-export function caseIds(raw: string): number[] {
+export function caseIds(raw: string, flag = "--cases"): number[] {
   const ids = splitList(raw).map((part) => caseId(part));
-  if (ids.length === 0) throw new InputError("USAGE", "--cases needs at least one case id, e.g. C1,C2");
+  if (ids.length === 0) throw new InputError("USAGE", `${flag} needs at least one case id, e.g. C1,C2`);
   return ids;
 }
 
