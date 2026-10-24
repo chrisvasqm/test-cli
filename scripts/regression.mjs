@@ -14,13 +14,18 @@ let failures = 0;
 // Jira is the real `jira` CLI on PATH, against its configured project: the run creates its own
 // tickets (tagged with `tag`) and deletes them, and every bug it files, when it exits.
 const tag = `rg${Date.now()}`;
+/** Every ticket this run made, in order; deleted on exit. */
 const tickets = [];
 
 /** Runs `jira --json …`; returns the parsed JSON line. */
 function jira(...args) {
   try {
     return parseLine(
-      execFileSync("jira", ["--json", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }),
+      execFileSync("jira", ["--json", ...args], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 60_000,
+      }),
     );
   } catch (err) {
     return parseLine(err.stdout ?? "");
@@ -41,14 +46,20 @@ function ticket(summary) {
   return key;
 }
 
-/** How many tickets carry this run's tag (bugs are named after the tagged case titles). */
-const tagged = () =>
-  jira("board", "view", "--sprint", "all", "--jql", `summary ~ "${tag}"`).data?.total ?? -1;
+/** The key Jira gives the next ticket after `key`: it must not exist while no ticket was filed. */
+const nextKey = (key) => key.replace(/\d+$/, (num) => String(Number(num) + 1));
+const noTicket = (key) => jira("ticket", "view", key, "--comments", "0").error?.code === "TICKET_NOT_FOUND";
 
 process.on("exit", () => {
-  for (const key of tickets) jira("ticket", "delete", key, "--yes");
-  console.log(`deleted Jira tickets: ${tickets.join(", ") || "none"}`);
+  const left = tickets.filter((key) => jira("ticket", "delete", key, "--yes").ok !== true);
+  console.log(`deleted Jira tickets: ${tickets.filter((key) => !left.includes(key)).join(", ") || "none"}`);
+  if (left.length > 0) {
+    console.log(`FAIL could not delete Jira tickets: ${left.join(", ")}`);
+    process.exitCode = 1;
+  }
 });
+// Ctrl+C or a kill still runs the exit handler, so no ticket is left behind.
+for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => process.exit(130));
 
 const story = `Regression ${tag} story (delete me)`;
 const K1 = ticket(`Regression ${tag} one (delete me)`);
@@ -230,7 +241,6 @@ check(
   run("case", "create", "-s", sectionId, "-J", missing),
   errCode("JIRA_TICKET_NOT_FOUND", 2),
 );
-const before = tagged();
 const bug = check(
   "result add --create-bug (Bug, or Task when the project has no Bug type)",
   run("result", "add", "-R", jiraRunRef, "-C", jiraCaseRef, "-s", "failed", "-m", "regression", "-B"),
@@ -249,14 +259,14 @@ check(
 check(
   "--create-bug, case not in run: no bug",
   run("result", "add", "-R", runRef, "-C", jiraCaseRef, "-s", "failed", "-B"),
-  (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && tagged() === before + 1,
+  (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && noTicket(nextKey(bug ?? missing)),
 );
 const jiraTest = run("test", "list", jiraRunRef).out?.data?.tests?.[0]?.id;
 check("close the from-jira run", run("run", "close", jiraRunRef, "-y"), okData);
 check(
   "--create-bug, closed run: no bug",
   run("result", "add", `T${jiraTest}`, "-s", "failed", "-B"),
-  (res) => errCode("RUN_CLOSED", 2)(res) && tagged() === before + 1,
+  (res) => errCode("RUN_CLOSED", 2)(res) && noTicket(nextKey(bug ?? missing)),
 );
 check("delete the from-jira case", run("case", "delete", jiraCaseRef, "-y"), okData);
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));
