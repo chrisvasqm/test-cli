@@ -37,14 +37,18 @@ export class AttachmentService {
     const ids: (number | string)[] = [];
     for (const upload of uploads) {
       const id = await this.add(target, upload).catch((err: unknown) => {
-        if (ids.length === 0 || !(err instanceof CliError)) throw err;
+        if (ids.length === 0) throw err;
         const done = uploads.slice(0, ids.length).map((item) => item.name);
+        const known =
+          err instanceof CliError
+            ? err
+            : new CliError("UPLOAD_FAILED", String(err instanceof Error ? err.message : err));
         throw new CliError(
-          err.code,
-          `${err.message} Already attached: ${done.join(", ")}; retry only the rest.`,
-          { attached: ids, error: err.details },
-          err.status,
-          err.field,
+          known.code,
+          `${known.message} Already attached: ${done.join(", ")}; retry only the rest.`,
+          { attached: ids, error: known.details },
+          known.status,
+          known.field,
         );
       });
       ids.push(id);
@@ -52,14 +56,20 @@ export class AttachmentService {
     return ids;
   }
 
-  list(of: AttachmentsOf, limit: number): Promise<Collected<Attachment>> {
-    return collectPages<Attachment>(
+  async list(of: AttachmentsOf, limit: number): Promise<Collected<Attachment>> {
+    const found = await collectPages<Attachment & { attachment_id?: number }>(
       `get_attachments_for_${of.kind}/${of.id}`,
       "attachments",
       {},
       limit,
       this.http,
     ).catch(notFoundFor[of.kind](of.id));
+    // Servers before 7.1 name the id attachment_id.
+    const items = found.items.map(({ attachment_id: legacyId, ...item }) => ({
+      ...item,
+      id: item.id ?? legacyId ?? 0,
+    }));
+    return { items, hasMore: found.hasMore };
   }
 
   /** The id of a test's newest result, or of `resultId` after checking it belongs to the test. */

@@ -111,7 +111,12 @@ export function jiraKey(raw: string, flag: string): string {
 
 /** "2026-10-01" (UTC midnight) or a full ISO time → Unix seconds, for TestRail's *_after filters. */
 export function sinceDate(raw: string, flag: string): number {
-  const ms = /^\d{4}-\d{2}-\d{2}/.test(raw.trim()) ? Date.parse(raw.trim()) : Number.NaN;
-  if (Number.isNaN(ms)) throw new InputError("USAGE", `${flag} must be a date like 2026-10-01`);
+  const typed = raw.trim();
+  if (!typed.includes("T")) return dateArg(typed, flag);
+  // A time without Z or an offset would silently use this machine's zone.
+  const ms = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:\d{2})$/.test(typed) ? Date.parse(typed) : Number.NaN;
+  if (Number.isNaN(ms)) {
+    throw new InputError("USAGE", `${flag} must be a date like 2026-10-01 or a time like 2026-10-01T10:00Z`);
+  }
   return Math.floor(ms / 1000);
 }

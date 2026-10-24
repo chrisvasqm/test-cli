@@ -16,7 +16,7 @@ export function registerMove(section: Command): void {
     .command("move <section>")
     .description("Move a section, with its child sections and cases, to another parent or place")
     .option("-s, --parent <id>", 'New parent section, or "top" for the top level')
-    .option("-A, --after <id>", 'Put it after this sibling section, or "first" for the first place')
+    .option("-L, --after <id>", 'Put it after this sibling section, or "first" for the first place')
     .action(async (rawId: string, opts: MoveOptions, cmd: Command) => {
       const id = intInRange(rawId, "<section>", 1);
       const input: SectionMove = {};

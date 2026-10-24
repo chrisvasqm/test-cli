@@ -12,6 +12,21 @@ export interface Collected<T> {
   hasMore: boolean;
 }
 
+/** How many GETs one command sends at once, so a long list of ids stays under TestRail's rate limit. */
+export const BATCH_SIZE = 5;
+
+/** `fn` over `items`, BATCH_SIZE at a time; results keep the order of `items`. */
+export async function inBatches<Item, Out>(
+  items: readonly Item[],
+  fn: (item: Item) => Promise<Out>,
+): Promise<Out[]> {
+  const out: Out[] = [];
+  for (let start = 0; start < items.length; start += BATCH_SIZE) {
+    out.push(...(await Promise.all(items.slice(start, start + BATCH_SIZE).map(fn))));
+  }
+  return out;
+}
+
 /** Follow `_links.next` until `limit` items or the last page; each page asks only for what is still needed. */
 export async function collectPages<T>(
   endpoint: string,

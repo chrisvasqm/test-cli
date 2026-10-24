@@ -286,7 +286,7 @@ check("configuration list", run("configuration", "list"), okData);
 check("report list", run("report", "list"), okData);
 const milestone = check(
   "milestone create",
-  run("milestone", "create", "-N", `Regression ${tag}`, "-u", "2030-01-31", "-r", K1),
+  run("milestone", "create", "-N", `Regression ${tag}`, "-U", "2030-01-31", "-r", K1),
   okData,
 );
 const msRef = `M${milestone?.id}`;
@@ -342,8 +342,8 @@ check(
 const attachFile = join(mkdtempSync(join(tmpdir(), "testrail-regression-")), "evidence.txt");
 writeFileSync(attachFile, `regression ${tag}\n`);
 check(
-  "result add -a -P -A",
-  run("result", "add", testRef, "-s", "passed", "-a", "me", "-P", "1:passed,2:failed", "-A", attachFile),
+  "result add -a -O -A",
+  run("result", "add", testRef, "-s", "passed", "-a", "me", "-O", "1:passed,2:failed", "-A", attachFile),
   okData,
 );
 check(

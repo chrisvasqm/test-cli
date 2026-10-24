@@ -29,7 +29,10 @@ export function registerList(testCase: Command): void {
     .option("-q, --query <text>", "Only cases whose title contains this text")
     .option("-p, --priority <names>", "Only these priorities, comma-separated, e.g. High,Critical")
     .option("-T, --type <names>", "Only these case types, comma-separated, e.g. Functional,Regression")
-    .option("-u, --updated-since <date>", "Only cases updated on or after this date (UTC), e.g. 2026-10-01")
+    .option(
+      "-u, --updated-since <date>",
+      "Only cases updated on or after this date (local midnight), e.g. 2026-10-01",
+    )
     .option("-n, --limit <n>", "Most cases to show", "50")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
