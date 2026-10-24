@@ -1,5 +1,7 @@
 import type { Config } from "../core/config.js";
-import type { Run, Status, Step } from "../core/testrail-types.js";
+import { splitRefs } from "../core/text.js";
+import type { Result, Run, Status, Step } from "../core/testrail-types.js";
+import { nameOf } from "../services/meta.service.js";
 
 const LOCAL_TIME = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
@@ -95,4 +97,34 @@ export function runCounts(run: Run, statuses: Status[]): Record<string, number> 
 export function renderCounts(counts: Record<string, number>): string {
   const parts = Object.entries(counts).map(([label, count]) => `${label} ${count}`);
   return parts.length > 0 ? parts.join(", ") : "no tests";
+}
+
+export interface ResultView {
+  id: number;
+  status: string | null;
+  comment: string | null;
+  defects: string[];
+  elapsed: string | null;
+  version: string | null;
+  created: string | null;
+}
+
+export function toResult(result: Result, statuses: Status[]): ResultView {
+  return {
+    id: result.id,
+    status: nameOf(statuses, result.status_id),
+    comment: result.comment,
+    defects: splitRefs(result.defects),
+    elapsed: result.elapsed,
+    version: result.version,
+    created: isoTime(result.created_on),
+  };
+}
+
+/** "Failed · 2026-10-23 14:05 GMT-4 · defects KAN-2" followed by the comment. */
+export function renderResult(result: ResultView): string {
+  const head = [result.status ?? "Comment", localTime(result.created)];
+  if (result.elapsed) head.push(result.elapsed);
+  if (result.defects.length > 0) head.push(`defects ${result.defects.join(", ")}`);
+  return result.comment ? `${head.join(" · ")}\n${result.comment}` : head.join(" · ");
 }
