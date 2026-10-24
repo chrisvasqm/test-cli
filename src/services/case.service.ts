@@ -1,6 +1,7 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
+import { splitList } from "../core/text.js";
 import type { Case, CaseContent, Section } from "../core/testrail-types.js";
 
 export interface CaseFilter {
@@ -38,6 +39,20 @@ export class CaseService {
     );
     // Only a filtered list can miss its section; any other 404 stays NOT_FOUND.
     return filter.sectionId === undefined ? page : page.catch(notFound.section(filter.sectionId));
+  }
+
+  /** Every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
+  async linkedTo(projectId: number, suiteId: number | undefined, key: string): Promise<Case[]> {
+    const { items } = await collectPages<Case>(
+      `get_cases/${projectId}`,
+      "cases",
+      { suite_id: suiteId, refs: key },
+      Number.MAX_SAFE_INTEGER,
+      this.http,
+    );
+    return items.filter((item) =>
+      splitList(item.refs).some((ref) => ref.toUpperCase() === key.toUpperCase()),
+    );
   }
 
   section(id: number): Promise<Section> {
