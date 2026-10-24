@@ -48,12 +48,12 @@ export class PlanService {
     return this.http.get<Plan>(`get_plan/${id}`).catch(notFound.plan(id));
   }
 
-  /** Open plans, or completed ones when `completed`; get_plans leaves out the entries. */
-  list(projectId: number, completed: boolean, limit: number): Promise<Collected<Plan>> {
+  /** Open plans, or completed ones when `completed`, optionally only a milestone's; get_plans leaves out the entries. */
+  list(projectId: number, completed: boolean, limit: number, milestoneId?: number): Promise<Collected<Plan>> {
     return collectPages<Plan>(
       `get_plans/${projectId}`,
       "plans",
-      { is_completed: completed },
+      { is_completed: completed, milestone_id: milestoneId },
       limit,
       this.http,
     );

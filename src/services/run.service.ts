@@ -1,8 +1,15 @@
 import { InputError, notFound, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
-import type { Run } from "../core/testrail-types.js";
+import { collectPages, inBatches, type Collected } from "../core/paging.js";
+import type { Plan, PlanRun, Run } from "../core/testrail-types.js";
 import { hasRef } from "../core/text.js";
+import { PlanService } from "./plan.service.js";
+
+/** A run with the plan it belongs to (null outside plans). */
+export interface OpenRun {
+  run: Run | PlanRun;
+  plan: Plan | null;
+}
 
 export interface RunInput {
   name: string;
@@ -24,8 +31,34 @@ export class RunService {
     return this.http.get<Run>(`get_run/${id}`).catch(notFound.run(id));
   }
 
-  list(projectId: number, completed: boolean, limit: number): Promise<Collected<Run>> {
-    return collectPages<Run>(`get_runs/${projectId}`, "runs", { is_completed: completed }, limit, this.http);
+  /** Runs not in a plan, open or completed, optionally only a milestone's. */
+  list(projectId: number, completed: boolean, limit: number, milestoneId?: number): Promise<Collected<Run>> {
+    return collectPages<Run>(
+      `get_runs/${projectId}`,
+      "runs",
+      { is_completed: completed, milestone_id: milestoneId },
+      limit,
+      this.http,
+    );
+  }
+
+  /** Every open run, those inside open plans too (get_runs leaves them out), newest first. */
+  async allOpen(projectId: number, milestoneId?: number): Promise<OpenRun[]> {
+    const plans = new PlanService(this.http);
+    const all = Number.MAX_SAFE_INTEGER;
+    const [runs, planList] = await Promise.all([
+      this.list(projectId, false, all, milestoneId),
+      plans.list(projectId, false, all, milestoneId),
+    ]);
+    // get_plans leaves out the entries, so each plan is read on its own.
+    const full = await inBatches(planList.items, (item) => plans.get(item.id));
+    const inPlans = full.flatMap((plan) =>
+      (plan.entries ?? []).flatMap((entry) => entry.runs.map((run) => ({ run, plan }))),
+    );
+    const open = [...runs.items.map((run) => ({ run, plan: null })), ...inPlans];
+    return open
+      .filter((item) => !item.run.is_completed)
+      .toSorted((left, right) => right.run.id - left.run.id);
   }
 
   /** The latest runs (not in a plan), open and closed, newest first; only the suite's when one is given. */

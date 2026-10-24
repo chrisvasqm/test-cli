@@ -449,6 +449,11 @@ check(
   (res) => okData(res) && res.out.data.tests.length === 1,
 );
 check(
+  "test todo -s passed",
+  run("test", "todo", "-s", "passed"),
+  hasRows("tests", (item) => `T${item.id}` === testRef),
+);
+check(
   "test view (steps)",
   run("test", "view", testRef, "-n", "1"),
   (res) => okData(res) && res.out.data.results.shown[0].steps.length === 2,
@@ -492,6 +497,11 @@ const plan = check(
 );
 const planRef = `R${plan?.id}`;
 check("plan add-run", run("plan", "add-run", planRef, "-C", caseRef, "-a", "me"), okData);
+check(
+  "test todo -M (plan run)",
+  run("test", "todo", "-M", msRef),
+  hasRows("tests", (item) => item.planId === plan?.id && item.status === "Untested"),
+);
 check("plan view", run("plan", "view", planRef), (res) => okData(res) && res.out.data.entries.length === 2);
 check(
   "plan list",

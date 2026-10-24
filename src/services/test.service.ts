@@ -1,6 +1,6 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { collectPages, inBatches, type Collected } from "../core/paging.js";
 import type { Result, Test } from "../core/testrail-types.js";
 
 /** get_test(s) and get_results endpoints. A test is one case inside one run. */
@@ -35,6 +35,16 @@ export class TestService {
     if (assignedTo === undefined) return page;
     const items = page.items.filter((item) => item.assignedto_id === assignedTo);
     return { items: items.slice(0, limit), hasMore: items.length > limit };
+  }
+
+  /** The tests assigned to `assignedTo` with `statusIds` in each of `runIds`, a few runs at a time, in the order of `runIds`. */
+  async assigned(runIds: readonly number[], statusIds: number[], assignedTo: number): Promise<Test[]> {
+    const all = Number.MAX_SAFE_INTEGER;
+    const perRun = await inBatches(
+      runIds,
+      async (id) => (await this.list(id, statusIds, all, assignedTo)).items,
+    );
+    return perRun.flat();
   }
 
   /** Newest first, as TestRail returns them. */

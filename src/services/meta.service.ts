@@ -38,6 +38,16 @@ export class MetaService {
     );
   }
 
+  /** Statuses not yet done (TestRail's To-Do): not is_final, or Untested and Retest on servers without it. */
+  async openStatusIds(): Promise<number[]> {
+    const statuses = await this.statuses();
+    const hasFinal = statuses.some((item) => item.is_final !== undefined);
+    const open = hasFinal
+      ? statuses.filter((item) => item.is_final === false)
+      : statuses.filter((item) => item.is_untested || item.name === "retest");
+    return open.map((item) => item.id);
+  }
+
   /** "failed,retest" → status ids. */
   statusIds(typed: string): Promise<number[]> {
     return Promise.all(splitList(typed).map(async (name) => (await this.status(name)).id));
