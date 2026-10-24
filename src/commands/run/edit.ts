@@ -60,13 +60,10 @@ export function registerEdit(run: Command): void {
       }
       const { config, mode } = bootstrap(cmd);
       const runs = new RunService();
-      const found = await runs.open(id);
-      if (found.plan_id !== null) {
-        throw new InputError(
-          "RUN_IN_PLAN",
-          `Run R${id} is part of plan R${found.plan_id}; TestRail changes its runs only through the plan.`,
-        );
-      }
+      const target = await runs.editable(id);
+      const found = target.run;
+      // Before resolving users or asking about removals.
+      runs.assertChangeable(target, input);
       const [assignee, current] = await Promise.all([
         new UserService().resolveOptional(opts.assign, config.email, "--assign"),
         change === undefined ? undefined : runCases(id),
@@ -85,7 +82,7 @@ export function registerEdit(run: Command): void {
       if (Object.keys(input).length === 0) {
         throw new InputError("USAGE", "The run already has exactly those cases; nothing to change");
       }
-      const updated = await runs.update(id, input);
+      const updated = await runs.update(target, input);
       const view = {
         id: updated.id,
         name: updated.name,

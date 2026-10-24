@@ -25,8 +25,8 @@ export function registerRemove(link: Command): void {
       const { linked: removed, unlinked: notLinked } = partition(keys, loaded.keys);
       const left = partition(loaded.keys, removed).unlinked;
       if (removed.length > 0) {
-        await links.assertWritable(target, loaded);
-        await links.setRefs(target, left);
+        await links.assertWritable(loaded);
+        await links.setRefs(target, left, loaded.run);
       }
       const name = targetName(target);
       const view = { target: name, keys: left, removed, notLinked, url: targetUrl(config, target) };

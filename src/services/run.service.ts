@@ -1,7 +1,7 @@
-import { InputError, notFound, notFoundAs } from "../core/errors.js";
+import { CliError, InputError, notFound, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, inBatches, type Collected } from "../core/paging.js";
-import type { Plan, PlanRun, Run } from "../core/testrail-types.js";
+import type { Plan, PlanEntry, PlanRun, Run } from "../core/testrail-types.js";
 import { hasRef } from "../core/text.js";
 import { PlanService } from "./plan.service.js";
 
@@ -9,6 +9,20 @@ import { PlanService } from "./plan.service.js";
 export interface OpenRun {
   run: Run | PlanRun;
   plan: Plan | null;
+}
+
+/** Which runs to list; a field left out matches every run. */
+export interface RunFilter {
+  /** true: only closed runs; false: only open ones. */
+  completed?: boolean | undefined;
+  milestoneId?: number | undefined;
+  suiteId?: number | undefined;
+}
+
+/** An open run and, inside a test plan, its plan entry, which decides how TestRail changes it. */
+export interface EditableRun {
+  run: Run;
+  entry: PlanEntry | null;
 }
 
 export interface RunInput {
@@ -23,7 +37,12 @@ export interface RunInput {
   case_ids?: number[];
 }
 
-/** get_run(s), add_run, update_run and close_run endpoints. Runs inside test plans are listed by get_plans, not here. */
+export type RunChange = Partial<Omit<RunInput, "suite_id">>;
+
+/**
+ * get_run(s), add_run, update_run and close_run endpoints, plus update_plan_entry and
+ * update_run_in_plan_entry for runs inside test plans. get_runs leaves out runs in plans.
+ */
 export class RunService {
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -31,12 +50,12 @@ export class RunService {
     return this.http.get<Run>(`get_run/${id}`).catch(notFound.run(id));
   }
 
-  /** Runs not in a plan, open or completed, optionally only a milestone's. */
-  list(projectId: number, completed: boolean, limit: number, milestoneId?: number): Promise<Collected<Run>> {
+  /** Runs not in a plan, newest first, matching the filter. */
+  list(projectId: number, limit: number, filter: RunFilter = {}): Promise<Collected<Run>> {
     return collectPages<Run>(
       `get_runs/${projectId}`,
       "runs",
-      { is_completed: completed, milestone_id: milestoneId },
+      { is_completed: filter.completed, milestone_id: filter.milestoneId, suite_id: filter.suiteId },
       limit,
       this.http,
     ).catch(notFound.project(projectId));
@@ -47,7 +66,7 @@ export class RunService {
     const plans = new PlanService(this.http);
     const all = Number.MAX_SAFE_INTEGER;
     const [runs, planList] = await Promise.all([
-      this.list(projectId, false, all, milestoneId),
+      this.list(projectId, all, { completed: false, milestoneId }),
       plans.list(projectId, false, all, milestoneId),
     ]);
     // get_plans leaves out the entries, so each plan is read on its own.
@@ -59,11 +78,6 @@ export class RunService {
     return open
       .filter((item) => !item.run.is_completed)
       .toSorted((left, right) => right.run.id - left.run.id);
-  }
-
-  /** The latest runs (not in a plan), open and closed, newest first; only the suite's when one is given. */
-  recent(projectId: number, suiteId: number | undefined, limit: number): Promise<Collected<Run>> {
-    return collectPages<Run>(`get_runs/${projectId}`, "runs", { suite_id: suiteId }, limit, this.http);
   }
 
   /** Every run (not in a plan), open or closed, whose refs include `key` (exactly, ignoring case; TestRail's refs_filter is looser). */
@@ -96,21 +110,79 @@ export class RunService {
     return run;
   }
 
+  /** The open run with its plan entry (null outside plans); get_run leaves out the entry, so the plan is read. */
+  async editable(id: number, known?: Run): Promise<EditableRun> {
+    const run = await this.open(id, known);
+    if (run.plan_id === null) return { run, entry: null };
+    const plan = await new PlanService(this.http).get(run.plan_id);
+    const entry = plan.entries?.find((item) => item.runs.some((planRun) => planRun.id === id));
+    if (!entry)
+      throw new CliError("RUN_NOT_FOUND", `Run R${id} is not in the entries of plan R${run.plan_id}.`);
+    return { run, entry };
+  }
+
   /**
    * Only the fields given change. TestRail refuses changes to a closed run. `case_ids` is the whole
    * new list (with include_all false): cases left out lose their tests and results.
    */
-  update(id: number, input: Partial<Omit<RunInput, "suite_id">>): Promise<Run> {
-    return this.http
-      .post<Run>(`update_run/${id}`, input)
-      .catch(notFound.run(id))
+  async update(target: EditableRun, input: RunChange): Promise<Run> {
+    this.assertChangeable(target, input);
+    const { run, entry } = target;
+    const request = entry
+      ? this.updateInPlan(run, entry, input)
+      : this.http.post<Run>(`update_run/${run.id}`, input);
+    return request
+      .catch(notFound.run(run.id))
       .catch(notFoundAs("case_ids", "CASE_NOT_FOUND", "Some case ids are not cases in this run's suite."))
       .catch(notFoundAs("milestone_id", "MILESTONE_NOT_FOUND", "The milestone is not one in this project."));
   }
 
-  /** Closing archives the run: TestRail cannot reopen it, and its results can no longer change. */
-  close(id: number): Promise<Run> {
+  /**
+   * Fails with RUN_IN_PLAN for the changes TestRail cannot make to a run in a plan: its milestone is
+   * the plan's, and a run with sibling configuration runs is renamed only with them.
+   */
+  assertChangeable(target: EditableRun, input: RunChange): void {
+    const { run, entry } = target;
+    if (!entry) return;
+    const where = `Run R${run.id} is part of plan R${run.plan_id}`;
+    if (input.milestone_id !== undefined) {
+      throw new InputError("RUN_IN_PLAN", `${where}; its milestone is the plan's.`);
+    }
+    if (input.name !== undefined && entry.runs.length > 1) {
+      throw new InputError(
+        "RUN_IN_PLAN",
+        `${where} with other configuration runs; TestRail renames them only together.`,
+      );
+    }
+  }
+
+  /**
+   * update_run refuses runs in plans. The entry's only run changes with update_plan_entry
+   * (update_run_in_plan_entry fails with a 500 there); a run with sibling configuration runs
+   * changes alone with update_run_in_plan_entry.
+   */
+  private async updateInPlan(run: Run, entry: PlanEntry, input: RunChange): Promise<Run> {
+    if (entry.runs.length > 1) return this.http.post<Run>(`update_run_in_plan_entry/${run.id}`, input);
+    const updated = await this.http.post<PlanEntry>(`update_plan_entry/${run.plan_id}/${entry.id}`, input);
+    return updated.runs.find((item) => item.id === run.id) ?? { ...run, ...input };
+  }
+
+  /**
+   * Closing archives the run: TestRail cannot reopen it, and its results can no longer change.
+   * A run in a plan closes only with its plan. `known` skips reading the run.
+   */
+  async close(id: number, known?: Run): Promise<Run> {
+    this.assertClosable(known ?? (await this.get(id)));
     return this.http.post<Run>(`close_run/${id}`).catch(notFound.run(id));
+  }
+
+  /** close_run refuses runs in plans ("cannot be closed independently"): they close with the plan. */
+  assertClosable(run: Run): void {
+    if (run.plan_id === null) return;
+    throw new InputError(
+      "RUN_IN_PLAN",
+      `Run R${run.id} is part of plan R${run.plan_id}; TestRail closes it only with the plan (plan close R${run.plan_id}).`,
+    );
   }
 
   /** Deletes the run with its tests and results. Never with `soft=1`: on Cloud it deletes too. */

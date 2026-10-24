@@ -520,6 +520,17 @@ const plan = check(
 );
 const planRef = `R${plan?.id}`;
 check("plan add-run", run("plan", "add-run", planRef, "-ca", caseRef, "-a", "me"), okData);
+// A run in a plan changes through its plan entry; its milestone and closing are the plan's.
+const planRunRef = `R${plan?.entries?.[0]?.runs?.[0]?.id}`;
+check(
+  "run edit (plan run)",
+  run("run", "edit", planRunRef, "-na", `Regression ${tag} plan run`, "-d", "edited", "-r", K1, "-a", "me", "-i", copyRef),
+  (res) => okData(res) && res.out.data.added.length === 1,
+);
+check("run edit -x (plan run)", run("run", "edit", planRunRef, "-x", copyRef, "-y"), okData);
+check("RUN_IN_PLAN on run edit -ml", run("run", "edit", planRunRef, "-ml", msRef), errCode("RUN_IN_PLAN", 2));
+check("RUN_IN_PLAN on run close", run("run", "close", planRunRef, "-y"), errCode("RUN_IN_PLAN", 2));
+check("link add (plan run)", run("link", "add", planRunRef, K2, "-nc"), keysAre(`${K1},${K2}`));
 check(
   "test todo -ml (plan run)",
   run("test", "todo", "-ml", msRef),

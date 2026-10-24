@@ -21,13 +21,13 @@ export function registerClose(run: Command): void {
       const { mode } = bootstrap(cmd);
       const runs = new RunService();
       const statuses = new MetaService().statuses();
-      if (!opts.yes) {
-        const found = await runs.get(id);
-        await confirm(`Close R${id} "${found.name}"? It cannot be reopened.`);
-      }
+      const found = await runs.get(id);
+      // A run in a plan fails here, before the question.
+      runs.assertClosable(found);
+      if (!opts.yes) await confirm(`Close R${id} "${found.name}"? It cannot be reopened.`);
       // Statuses before the write: a failed lookup after it would hide that the run was closed.
       const counted = await statuses;
-      const view = toRunSummary(await runs.close(id), counted);
+      const view = toRunSummary(await runs.close(id, found), counted);
       printResult(
         mode,
         view,
