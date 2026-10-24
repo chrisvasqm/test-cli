@@ -79,6 +79,11 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `testrail project list`                | Active projects; `*` marks yours                                                                               |
 | `testrail project use <P>`             | Make a project (and `-S <S>`) the default                                                                      |
+| `testrail suite list`                  | Suites in your project; `*` marks yours                                                                        |
+| `testrail suite view <S>`              | Name, description, state and URL                                                                               |
+| `testrail suite create`                | New suite (`-N <name>`, `-d <text>` or `-f <file>`); multi-suite projects only                                 |
+| `testrail suite edit <S>`              | Change the name (`-N`) or description (`-d`, `-f`)                                                             |
+| `testrail suite delete <S>`            | Delete a suite with its sections, cases and tests                                                              |
 | `testrail section list`                | Sections and their ids, nested                                                                                 |
 | `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-T <type>`, `-u <date>`, `-n <limit>`, 50)        |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                              |
