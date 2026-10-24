@@ -258,7 +258,5 @@ check(
 check("case gone", run("case", "view", caseRef), errCode("CASE_NOT_FOUND", 1));
 
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
-console.log(
-  `left behind: closed runs ${runRef}, ${jiraRunRef} (kept in TestRail as evidence)`,
-);
+console.log(`left behind: closed runs ${runRef}, ${jiraRunRef} (kept in TestRail as evidence)`);
 process.exit(failures === 0 ? 0 : 1);
