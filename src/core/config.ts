@@ -43,7 +43,17 @@ function walkUp(start: string): string | undefined {
 
 function findConfigPath(explicit?: string): string | undefined {
   if (explicit) return resolve(explicit);
-  return walkUp(process.cwd()) ?? [GLOBAL_CONFIG, LEGACY_GLOBAL_CONFIG].find(existsSync);
+  return walkUp(process.cwd()) ?? globalConfigFile();
+}
+
+/** The existing global config: the new path, else the old one. */
+export function globalConfigFile(): string | undefined {
+  return [GLOBAL_CONFIG, LEGACY_GLOBAL_CONFIG].find(existsSync);
+}
+
+/** Whether `path` is the global config (under either name), which lives outside any repo. */
+export function isGlobalConfig(path: string): boolean {
+  return path === GLOBAL_CONFIG || path === LEGACY_GLOBAL_CONFIG;
 }
 
 export function loadConfig(explicit?: string): { path: string; config: Config } {
