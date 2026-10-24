@@ -7,12 +7,8 @@ import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import type { Test } from "../../core/testrail-types.js";
-import {
-  ResultService,
-  type ResultInput,
-  type ResultTarget as Target,
-} from "../../services/result.service.js";
-import { clip, joinRefs, splitList } from "../../core/text.js";
+import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
+import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
@@ -78,7 +74,7 @@ export function registerAdd(result: Command): void {
     });
 }
 
-const MAX_SUMMARY = 255;
+type Target = ResultTarget;
 
 function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
   const byCase = opts.run !== undefined || opts.case !== undefined;

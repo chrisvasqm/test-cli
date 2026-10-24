@@ -123,7 +123,7 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `JIRA_CLI_MISSING`: `--from-jira` and `--create-bug` need jira-cli. Tell the user; don't install it yourself.
 - `JIRA_ERROR`: jira-cli refused (`details` is its error, e.g. `CONFIG_MISSING`; ask the user to run `jira setup` for setup errors), or answered in an unexpected shape (`details.code` is `INVALID_RESPONSE`, with `details.issues`). Nothing was created in TestRail. For `--create-bug`, an `INVALID_RESPONSE` or a timeout means the bug may exist in Jira: check there before retrying.
 - `NO_LINKED_CASES`: no case has that key in its refs. Link cases first (`link add`) or pass `--cases`.
-- `RUN_CLOSED`: the run is closed, so TestRail refuses the change (`link add|remove R…`). `--create-bug` checks first that the run is open and (with `--run --case`) that the case is in it (`CASE_NOT_IN_RUN`), so no bug is filed for a result TestRail would refuse.
+- `RUN_CLOSED`: the run is closed, so TestRail refuses the change (`link add|remove R…`, `link add T…` for a test in it). `--create-bug` checks first that the run is open and (with `--run --case`) that the case is in it (`CASE_NOT_IN_RUN`), so no bug is filed for a result TestRail would refuse.
 - After `--create-bug`, if the TestRail result then fails, the error message and `details.bug` name the bug that was created. Retry with `--defects <that key>`, not `--create-bug`, or you get a second bug.
 - `RUN_IN_PLAN`: the run belongs to a test plan; `link add|remove` cannot change its refs. Edit it in TestRail.
 - `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.

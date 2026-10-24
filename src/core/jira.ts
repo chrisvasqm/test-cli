@@ -191,23 +191,32 @@ function runJira(args: string[], input?: string): Promise<JiraReply | undefined>
 }
 
 /**
- * How to start jira-cli without a shell. On Windows npm installs a `jira.cmd` shim, which Node can
- * only run through cmd.exe, where ticket text could act as commands; so the shim's script runs
- * with node instead. A real `jira.exe` (e.g. a Volta shim) runs as it is.
+ * How to start jira-cli without a shell, found once per process. On Windows npm installs a
+ * `jira.cmd` shim, which Node can only run through cmd.exe, where ticket text could act as
+ * commands; so the shim's script runs with node instead. Only when no such shim exists is a
+ * `jira.exe` (e.g. a Volta shim) used: another tool named jira (the Go jira-cli) ships as one too.
  */
+let found: { file: string; prefix: string[] } | undefined | null = null;
+
 function jiraCommand(): { file: string; prefix: string[] } | undefined {
   if (process.platform !== "win32") return { file: "jira", prefix: [] };
-  for (const dir of (process.env["PATH"] ?? "").split(delimiter)) {
-    if (!dir) continue;
-    const exe = join(dir, "jira.exe");
-    if (existsSync(exe)) return { file: exe, prefix: [] };
-    const shim = join(dir, "jira.cmd");
-    if (!existsSync(shim)) continue;
-    const script = /"%~?dp0%?\\([^"]+\.[cm]?js)"/i.exec(readFileSync(shim, "utf8"))?.[1];
-    const path = script ? join(dirname(shim), script) : undefined;
-    if (path && existsSync(path)) return { file: process.execPath, prefix: [path] };
-  }
-  return undefined;
+  if (found !== null) return found;
+  const dirs = (process.env["PATH"] ?? "").split(delimiter).filter(Boolean);
+  found = dirs.map(shimScript).find(Boolean) ?? exeIn(dirs);
+  return found;
+}
+
+function shimScript(dir: string): { file: string; prefix: string[] } | undefined {
+  const shim = join(dir, "jira.cmd");
+  if (!existsSync(shim)) return undefined;
+  const script = /"%~?dp0%?\\([^"]+\.[cm]?js)"/i.exec(readFileSync(shim, "utf8"))?.[1];
+  const path = script ? join(dirname(shim), script) : undefined;
+  return path && existsSync(path) ? { file: process.execPath, prefix: [path] } : undefined;
+}
+
+function exeIn(dirs: string[]): { file: string; prefix: string[] } | undefined {
+  const exe = dirs.map((dir) => join(dir, "jira.exe")).find((path) => existsSync(path));
+  return exe ? { file: exe, prefix: [] } : undefined;
 }
 
 function parseReply(stdout: string): JiraReply {

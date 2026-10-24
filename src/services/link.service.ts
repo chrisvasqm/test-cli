@@ -64,14 +64,16 @@ export class LinkService {
     else await this.runs.update(target.id, input);
   }
 
-  /** Before a write: update_run refuses closed runs and runs inside test plans. Cases always pass. */
+  /** Before a write: TestRail refuses changes in closed runs, and update_run runs inside test plans. */
   async assertWritable(target: LinkTarget): Promise<void> {
-    if (target.kind !== "run") return;
-    const run = this.fetched.get(target.id) ?? (await this.runs.get(target.id));
+    if (target.kind === "case") return;
+    // A test's link is a result, which a closed run refuses too.
+    const runId = target.kind === "run" ? target.id : (await this.tests.get(target.id)).run_id;
+    const run = this.fetched.get(runId) ?? (await this.runs.get(runId));
     if (run.is_completed) {
       throw new InputError("RUN_CLOSED", `Run R${run.id} is closed; TestRail cannot change it.`);
     }
-    if (run.plan_id) {
+    if (target.kind === "run" && run.plan_id) {
       throw new InputError(
         "RUN_IN_PLAN",
         `R${run.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,

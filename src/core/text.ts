@@ -20,17 +20,17 @@ export function sameKey(left: string, right: string): boolean {
 
 /** Longest TestRail run name or case title. */
 export const MAX_NAME = 250;
+/** Longest Jira summary. */
+export const MAX_SUMMARY = 255;
 
 /** Text cut to `max` characters, ending in "…" when cut (TestRail names and titles hold 250). */
 export function clip(text: string, max: number): string {
-  // By code point, so an emoji is never cut in half.
-  const chars = Array.from(text);
-  return chars.length <= max
-    ? text
-    : `${chars
-        .slice(0, max - 1)
-        .join("")
-        .trimEnd()}…`;
+  if (text.length <= max) return text;
+  // Counted in UTF-16 units, as Jira (Java) counts; a cut emoji loses its lone high surrogate.
+  return `${text
+    .slice(0, max - 1)
+    .replace(/[\uD800-\uDBFF]$/, "")
+    .trimEnd()}…`;
 }
 
 /** Keys without repeats, compared ignoring case; the first spelling wins. */
