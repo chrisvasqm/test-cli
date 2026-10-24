@@ -4,7 +4,7 @@ import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import type { SectionMove } from "../../providers/testrail/services/section.service.js";
+import type { SectionMove } from "../../providers/types.js";
 import { toSectionView } from "./render.js";
 
 interface MoveOptions {

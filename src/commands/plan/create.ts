@@ -5,7 +5,7 @@ import { requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import type { PlanInput } from "../../providers/testrail/services/plan.service.js";
+import type { PlanInput } from "../../providers/types.js";
 import { jiraView } from "../from-jira.js";
 import { buildEntry, entryOptions, hasEntry, parseEntry, type EntryOptions } from "./entry.js";
 import { renderPlan, toPlanView } from "./render.js";

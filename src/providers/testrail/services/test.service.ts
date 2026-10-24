@@ -3,9 +3,10 @@ import type { HttpClient } from "../http.js";
 import { collectPages, findInPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import type { Result, Test } from "../types.js";
+import type { Tests } from "../../provider.js";
 
 /** get_test(s) and get_results endpoints. A test is one case inside one run. */
-export class TestService {
+export class TestService implements Tests {
   constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Test> {

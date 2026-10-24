@@ -8,7 +8,7 @@ import { jiraTicket, type JiraTicket } from "../../core/jira.js";
 import { clip, MAX_NAME } from "../../core/text.js";
 import type { User } from "../../providers/testrail/types.js";
 import { configCombinations, configIds } from "../../providers/testrail/lookup.js";
-import type { PlanEntryInput, PlanRunInput } from "../../providers/testrail/services/plan.service.js";
+import type { PlanEntryInput, PlanRunInput } from "../../providers/types.js";
 import { linkedCases } from "../run/create.js";
 
 /** The flags that describe one plan entry (add-run, and the optional first entry of create). */

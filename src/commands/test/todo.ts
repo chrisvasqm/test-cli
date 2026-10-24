@@ -5,7 +5,7 @@ import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { grid, moreHint, printResult } from "../../core/output.js";
 import { nameOf } from "../../providers/testrail/lookup.js";
-import type { OpenRun } from "../../providers/testrail/services/run.service.js";
+import type { OpenRun } from "../../providers/types.js";
 import { assigneeView } from "../render.js";
 
 interface TodoOptions {

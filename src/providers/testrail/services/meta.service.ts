@@ -2,9 +2,10 @@ import type { HttpClient } from "../http.js";
 import { sameName, splitList } from "../../../core/text.js";
 import { findByName } from "../lookup.js";
 import type { Named, Status, Template } from "../types.js";
+import type { Meta } from "../../provider.js";
 
 /** Lookup tables (statuses, priorities, case types, templates). Statuses are fetched once per command. */
-export class MetaService {
+export class MetaService implements Meta {
   private statusList: Promise<Status[]> | undefined;
 
   constructor(private readonly http: HttpClient) {}

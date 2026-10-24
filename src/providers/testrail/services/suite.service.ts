@@ -1,14 +1,11 @@
 import { notFound } from "../errors.js";
 import type { HttpClient } from "../http.js";
 import type { Suite } from "../types.js";
-
-export interface SuiteInput {
-  name: string;
-  description?: string;
-}
+import type { SuiteInput } from "../../types.js";
+import type { Suites } from "../../provider.js";
 
 /** get_suite, add_suite, update_suite and delete_suite endpoints. get_suites is ProjectService.suites. */
-export class SuiteService {
+export class SuiteService implements Suites {
   constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Suite> {

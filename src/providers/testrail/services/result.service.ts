@@ -3,30 +3,12 @@ import { CliError, InputError } from "../../../core/errors.js";
 import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
-import type { Result, Run, StepResult, Test } from "../types.js";
+import type { Result, Run, Test } from "../types.js";
 import type { CaseService } from "./case.service.js";
 import type { RunService } from "./run.service.js";
 import type { TestService } from "./test.service.js";
-
-/** Fields of a new result; TestRail needs a status, a comment or an assignee (defects alone are refused). */
-export interface ResultInput {
-  status_id?: number;
-  comment?: string;
-  defects?: string;
-  elapsed?: string;
-  version?: string;
-  /** Reassigns the test. */
-  assignedto_id?: number;
-  custom_step_results?: StepResult[];
-}
-
-/** Where a result goes: a test, or a case inside a run. */
-export type ResultTarget = { kind: "test"; testId: number } | { kind: "case"; runId: number; caseId: number };
-
-export interface RunResult {
-  run: Run;
-  result: Result;
-}
+import type { ResultInput, ResultTarget, RunResult } from "../../types.js";
+import type { Results } from "../../provider.js";
 
 /** A real case outside the run: "No (active) test found for the run/case combination." */
 function notInRun(runId: number, caseId: number): (err: unknown) => never {
@@ -44,7 +26,7 @@ function skipNotInRun(err: unknown): undefined {
 }
 
 /** add_result(s) and get_results_for_case endpoints. Results are append-only: TestRail has no edit or delete for them. */
-export class ResultService {
+export class ResultService implements Results {
   constructor(
     private readonly http: HttpClient,
     private readonly tests: TestService,

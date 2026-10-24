@@ -3,49 +3,17 @@ import { CliError, InputError } from "../../../core/errors.js";
 import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
-import type { Plan, PlanEntry, PlanRun, Run } from "../types.js";
+import type { PlanEntry, Run } from "../types.js";
 import { hasRef } from "../../../core/text.js";
 import type { PlanService } from "./plan.service.js";
-
-/** A run with the plan it belongs to (null outside plans). */
-export interface OpenRun {
-  run: Run | PlanRun;
-  plan: Plan | null;
-}
-
-/** Which runs to list; a field left out matches every run. */
-export interface RunFilter {
-  /** true: only closed runs; false: only open ones. */
-  completed?: boolean | undefined;
-  milestoneId?: number | undefined;
-  suiteId?: number | undefined;
-}
-
-/** An open run and, inside a test plan, its plan entry, which decides how TestRail changes it. */
-export interface EditableRun {
-  run: Run;
-  entry: PlanEntry | null;
-}
-
-export interface RunInput {
-  name: string;
-  suite_id?: number;
-  description?: string;
-  milestone_id?: number;
-  refs?: string;
-  assignedto_id?: number;
-  /** true: every case in the suite; false: only case_ids. */
-  include_all: boolean;
-  case_ids?: number[];
-}
-
-export type RunChange = Partial<Omit<RunInput, "suite_id">>;
+import type { OpenRun, RunFilter, EditableRun, RunInput, RunChange } from "../../types.js";
+import type { Runs } from "../../provider.js";
 
 /**
  * get_run(s), add_run, update_run and close_run endpoints, plus update_plan_entry and
  * update_run_in_plan_entry for runs inside test plans. get_runs leaves out runs in plans.
  */
-export class RunService {
+export class RunService implements Runs {
   constructor(
     private readonly http: HttpClient,
     private readonly plans: PlanService,

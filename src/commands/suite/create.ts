@@ -4,7 +4,7 @@ import { requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import type { SuiteInput } from "../../providers/testrail/services/suite.service.js";
+import type { SuiteInput } from "../../providers/types.js";
 
 interface CreateOptions {
   name?: string;

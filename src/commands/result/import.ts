@@ -7,7 +7,7 @@ import { InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
 import type { Step } from "../../providers/testrail/types.js";
-import type { ResultInput } from "../../providers/testrail/services/result.service.js";
+import type { ResultInput } from "../../providers/types.js";
 import type { User } from "../../providers/testrail/types.js";
 import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";

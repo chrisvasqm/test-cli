@@ -5,14 +5,11 @@ import type { CaseService } from "./case.service.js";
 import type { ResultService } from "./result.service.js";
 import type { RunService } from "./run.service.js";
 import type { TestService } from "./test.service.js";
-
-/** What a Jira key is linked to: a case's or run's refs, or a test's result defects. */
-export type LinkTarget = RefsTarget | { kind: "test"; id: number };
-/** Targets whose links are a refs field, so they can also be removed. */
-export type RefsTarget = { kind: "case" | "run"; id: number };
+import type { LinkTarget, RefsTarget } from "../../types.js";
+import type { Links } from "../../provider.js";
 
 /** Jira keys on cases and runs (the refs field) and on tests (defects of their results). */
-export class LinkService {
+export class LinkService implements Links {
   constructor(
     private readonly cases: CaseService,
     private readonly runs: RunService,

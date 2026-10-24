@@ -6,7 +6,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
-import type { MilestoneInput } from "../../providers/testrail/services/milestone.service.js";
+import type { MilestoneInput } from "../../providers/types.js";
 import { milestoneRows, toMilestoneView } from "./render.js";
 
 interface CreateOptions {

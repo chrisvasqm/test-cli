@@ -4,9 +4,10 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { MAX_LIST, type Collected } from "../../../core/paging.js";
 import type { Project, Suite } from "../types.js";
+import type { Projects } from "../../provider.js";
 
 /** get_project(s) and get_suites endpoints. */
-export class ProjectService {
+export class ProjectService implements Projects {
   constructor(private readonly http: HttpClient) {}
 
   /** Active projects only; completed ones are archived. `hasMore` is true past MAX_LIST. */

@@ -3,26 +3,11 @@ import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import type { Collected } from "../../../core/paging.js";
 import type { Milestone } from "../types.js";
-
-export interface MilestoneInput {
-  name: string;
-  description?: string;
-  /** Unix seconds. */
-  start_on?: number;
-  /** Unix seconds. */
-  due_on?: number;
-  parent_id?: number;
-  refs?: string;
-}
-
-/** update_milestone fields: any of add_milestone's, plus the started and completed flags. */
-export interface MilestoneUpdate extends Partial<MilestoneInput> {
-  is_started?: boolean;
-  is_completed?: boolean;
-}
+import type { MilestoneInput, MilestoneUpdate } from "../../types.js";
+import type { Milestones } from "../../provider.js";
 
 /** get_milestone(s), add_milestone, update_milestone and delete_milestone endpoints. */
-export class MilestoneService {
+export class MilestoneService implements Milestones {
   constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Milestone> {

@@ -5,7 +5,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import type { SuiteInput } from "../../providers/testrail/services/suite.service.js";
+import type { SuiteInput } from "../../providers/types.js";
 
 interface EditOptions {
   name?: string;

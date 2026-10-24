@@ -39,8 +39,7 @@
                   "**/providers/testrail/index.js",
                   "**/providers/testrail/services/*"
                 ],
-                "allowTypeImports": true,
-                "message": "Commands and core reach TestRail through provider() from providers/index.js; only types, ids and lookups are imported directly."
+                "message": "Commands and core reach TestRail through provider() from providers/index.js; service inputs come from providers/types.js; only TestRail's record types, ids and lookups are imported directly."
               }
             ]
           }
