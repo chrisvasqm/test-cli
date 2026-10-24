@@ -4,6 +4,7 @@ import { registerDelete } from "./delete.js";
 import { registerEdit } from "./edit.js";
 import { registerHistory } from "./history.js";
 import { registerList } from "./list.js";
+import { registerCopy, registerMove } from "./transfer.js";
 import { registerView } from "./view.js";
 
 export function registerCase(program: Command): void {
@@ -13,5 +14,7 @@ export function registerCase(program: Command): void {
   registerHistory(testCase);
   registerCreate(testCase);
   registerEdit(testCase);
+  registerCopy(testCase);
+  registerMove(testCase);
   registerDelete(testCase);
 }

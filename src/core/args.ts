@@ -61,6 +61,13 @@ export function caseIds(raw: string): number[] {
   return ids;
 }
 
+/** Case ids given as separate arguments and/or comma-separated ("C1 C2,C3") → [1, 2, 3], duplicates dropped. */
+export function caseIdList(raw: readonly string[]): number[] {
+  const ids = raw.flatMap((part) => splitList(part)).map((part) => caseId(part));
+  if (ids.length === 0) throw new InputError("USAGE", "Give at least one case id, e.g. C1 C2");
+  return [...new Set(ids)];
+}
+
 /** A case, run or test id; the letter is required, since it says which kind is meant. */
 export function kindedId(raw: string): { kind: "case" | "run" | "test"; id: number } {
   const letter = raw.trim()[0]?.toUpperCase();
