@@ -82,12 +82,9 @@ export function registerAdd(result: Command): void {
       const added = await addResult(target, input).catch((err: unknown) => {
         // The bug exists now; say so, or a retry files a second one.
         if (!bug || !(err instanceof CliError)) throw err;
-        throw new CliError(
-          err.code,
-          `${err.message} Jira bug ${bug.key} was already created (${bug.url}); retry with --defects ${bug.key}, not --create-bug.`,
+        throw err.withNote(
+          `Jira bug ${bug.key} was already created (${bug.url}); retry with --defects ${bug.key}, not --create-bug.`,
           { bug, error: err.details },
-          err.status,
-          err.field,
         );
       });
       const ids = await attachTo(added.id, added.test_id, uploads);
@@ -141,12 +138,9 @@ async function attachTo(resultId: number, test: number, uploads: readonly Upload
   if (uploads.length === 0) return [];
   return new AttachmentService().addAll({ kind: "result", id: resultId }, uploads).catch((err: unknown) => {
     if (!(err instanceof CliError)) throw err;
-    throw new CliError(
-      err.code,
-      `${err.message} Result #${resultId} was saved; attach the files with testrail attachment add T${test} -rs ${resultId}, not result add.`,
+    throw err.withNote(
+      `Result #${resultId} was saved; attach the files with testrail attachment add T${test} -rs ${resultId}, not result add.`,
       { resultId, testId: test, error: err.details },
-      err.status,
-      err.field,
     );
   });
 }

@@ -1,10 +1,7 @@
 import { InputError, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, inBatches, type Collected } from "../core/paging.js";
+import { collectPages, inBatches, MAX_LIST, type Collected } from "../core/paging.js";
 import type { User } from "../core/testrail-types.js";
-
-/** Most users one list shows. */
-const MAX_USERS = 1000;
 
 /** get_user(s) and get_user_by_email endpoints. */
 export class UserService {
@@ -36,10 +33,10 @@ export class UserService {
 
   /** Users with access to the project; TestRail Cloud needs the project id unless you are an admin. */
   async list(projectId: number): Promise<Collected<User>> {
-    const inProject = await collectPages<User>(`get_users/${projectId}`, "users", {}, MAX_USERS, this.http);
+    const inProject = await collectPages<User>(`get_users/${projectId}`, "users", {}, MAX_LIST, this.http);
     if (inProject.items.length > 0) return inProject;
     // On Cloud, get_users/<project> can come back empty for projects open to everyone; an admin may still list all.
-    return collectPages<User>("get_users", "users", {}, MAX_USERS, this.http).catch(() => inProject);
+    return collectPages<User>("get_users", "users", {}, MAX_LIST, this.http).catch(() => inProject);
   }
 
   /**

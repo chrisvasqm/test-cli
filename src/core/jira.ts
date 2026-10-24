@@ -268,11 +268,7 @@ function createJiraTicket(type: string, summary: string, description: string): P
   return callJira(args, createdSchema, undefined, description).catch((err: unknown) => {
     // No JSON answer (timeout, crash): the ticket may exist, so a blind retry could file two.
     if (err instanceof CliError && err.code === "JIRA_ERROR" && isNoAnswer(err.details)) {
-      throw new CliError(
-        "JIRA_ERROR",
-        `${err.message} The bug may have been created; check Jira before retrying.`,
-        err.details,
-      );
+      throw err.withNote("The bug may have been created; check Jira before retrying.");
     }
     throw err;
   });

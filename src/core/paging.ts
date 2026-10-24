@@ -1,6 +1,12 @@
 import { CliError } from "./errors.js";
 import type { HttpClient, Params } from "./http.js";
 
+/** The `limit` that reads every page, for sweeps that must see everything (e.g. matching refs). */
+export const ALL = Number.MAX_SAFE_INTEGER;
+
+/** Most items one list reads: the --limit ceiling, and the cap for lists of projects, suites and users. */
+export const MAX_LIST = 1000;
+
 /** TestRail's largest (and default) page for bulk GETs. */
 const PAGE_SIZE = 250;
 
