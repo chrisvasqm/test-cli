@@ -12,11 +12,15 @@ export const configSchema = z.object({
   baseUrl: z
     .url({ protocol: /^https$/, error: "Use the https:// address of your TestRail site" })
     // A pasted browser link such as https://acme.testrail.io/index.php?/dashboard keeps only the site.
-    .transform((url) => url.replace(/\/index\.php.*$/, "").replace(/\/+$/, "")),
+    .transform((raw) => {
+      const url = new URL(raw);
+      const path = url.pathname.replace(/\/index\.php.*$/, "").replace(/\/+$/, "");
+      return `${url.origin}${path}`;
+    }),
   email: z.email(),
   apiKey: z.string().min(1),
   projectId: z.number().int().positive(),
-  /** Set only for projects with several suites; single-suite projects need none. */
+  /** Set for multi-suite and baseline projects; single-suite projects need none. */
   suiteId: z.number().int().positive().optional(),
 });
 

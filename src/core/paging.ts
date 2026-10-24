@@ -21,16 +21,21 @@ export async function collectPages<T>(
 ): Promise<Collected<T>> {
   const items: T[] = [];
   let next: string | null | undefined;
+  let page: T[] = [];
   let response = await http.get<BulkResponse | T[]>(endpoint, {
     ...params,
     limit: Math.min(PAGE_SIZE, limit),
   });
   for (;;) {
-    const page = Array.isArray(response) ? response : ((response[key] ?? []) as T[]);
+    page = Array.isArray(response) ? response : ((response[key] ?? []) as T[]);
     items.push(...page);
     next = Array.isArray(response) ? null : response._links?.next;
     if (!next || page.length === 0 || items.length >= limit) break;
     response = await http.getLink<BulkResponse>(next);
   }
-  return { items: items.slice(0, limit), hasMore: items.length > limit || Boolean(next) };
+  // An empty page ends the walk even when TestRail still sends a next link.
+  return {
+    items: items.slice(0, limit),
+    hasMore: items.length > limit || (Boolean(next) && page.length > 0),
+  };
 }

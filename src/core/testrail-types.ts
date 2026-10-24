@@ -1,5 +1,5 @@
 /** suite_mode 1: one suite, 2: one suite plus baselines, 3: several suites. */
-export const SUITE_MODE_MULTIPLE = 3;
+export const SUITE_MODE_SINGLE = 1;
 
 export interface Project {
   id: number;

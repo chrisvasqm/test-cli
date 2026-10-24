@@ -9,7 +9,7 @@ import { CliError } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { info, printResult, table, type OutputMode } from "../core/output.js";
 import { ask, askSecret } from "../core/prompt.js";
-import { SUITE_MODE_MULTIPLE, type Suite } from "../core/testrail-types.js";
+import { SUITE_MODE_SINGLE, type Suite } from "../core/testrail-types.js";
 import { ProjectService } from "../services/project.service.js";
 import { UserService } from "../services/user.service.js";
 
@@ -37,7 +37,7 @@ async function pick<T>(items: T[], label: (item: T) => string, what: string): Pr
   info(items.map((item, index) => `${String(index + 1).padStart(3)}  ${label(item)}`).join("\n"));
   const choice = await askValid(
     () => ask(`Pick a ${what} number`, "1"),
-    z.coerce.number().int().min(1).max(items.length),
+    z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(items.length)),
     `Enter a number between 1 and ${items.length}`,
   );
   return items[choice - 1]!;
@@ -80,20 +80,21 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
 
   HttpClient.configure({ baseUrl, email, apiKey });
   const projects = new ProjectService();
-  // Listing projects proves the credentials; the user's name is only for the summary.
-  const [active, me] = await Promise.all([
-    projects.listActive(),
-    new UserService().byEmail(email).catch(() => undefined),
-  ]);
+  // Listing projects proves the credentials. Only then look up the name, so a wrong key
+  // costs one failed login (repeated failures can lock the account), not two.
+  const active = await projects.listActive();
+  const me = await new UserService().byEmail(email).catch(() => undefined);
   info(`Authenticated as ${me?.name ?? email}`);
   if (active.length === 0) throw new CliError("NO_PROJECTS", "This account can see no active projects.");
   const project = await pick(active, (item) => `${item.name} (P${item.id})`, "project");
 
   let suite: Suite | undefined;
-  if (project.suite_mode === SUITE_MODE_MULTIPLE) {
+  // Multi-suite and baseline projects both need a suite_id for cases and runs.
+  if (project.suite_mode !== SUITE_MODE_SINGLE) {
     const suites = (await projects.suites(project.id)).filter((item) => !item.is_completed);
     if (suites.length === 0) throw new CliError("NO_SUITES", `Project ${project.name} has no active suites.`);
-    suite = await pick(suites, (item) => `${item.name} (S${item.id})`, "suite");
+    suite =
+      suites.length === 1 ? suites[0] : await pick(suites, (item) => `${item.name} (S${item.id})`, "suite");
   }
 
   const config = configSchema.parse({ baseUrl, email, apiKey, projectId: project.id, suiteId: suite?.id });

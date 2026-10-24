@@ -20,10 +20,10 @@ const program = new Command()
 
 registerSetup(program);
 
-/** 130 for Ctrl+C, 2 for bad usage or missing input, 1 for everything else. */
+/** 130 for Ctrl+C, 2 for bad usage, missing input or a missing --yes, 1 for everything else. */
 function exitCode(err: unknown): number {
   if (err instanceof CliError && err.code === "INTERRUPTED") return 130;
-  if (err instanceof CliError && (err.code === "USAGE" || err.code === "INPUT_EOF")) return 2;
+  if (err instanceof CliError && ["USAGE", "INPUT_EOF", "CONFIRM_REQUIRED"].includes(err.code)) return 2;
   return 1;
 }
 

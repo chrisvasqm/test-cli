@@ -18,8 +18,15 @@ const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Longest Retry-After wait the client honors. TestRail Cloud allows 180-300 requests a minute. */
 const MAX_RETRY_AFTER_MS = 60_000;
-/** TestRail answers an unknown id with 400 and a message like "Field :case_id is not a valid test case." */
-const NOT_FOUND_400 = /is not a valid|does not exist/i;
+/** Longest raw (non-JSON) error body kept in error details, e.g. a proxy's HTML page. */
+const MAX_RAW_DETAIL_CHARS = 500;
+
+interface Reply {
+  status: number;
+  ok: boolean;
+  retryAfter: string | null;
+  text: string;
+}
 
 /** Single networking entry point: auth header, JSON encoding, retries with exponential backoff. */
 export class HttpClient {
@@ -75,60 +82,66 @@ export class HttpClient {
 
     for (let attempt = 0; ; attempt++) {
       const more = attempt < MAX_RETRIES;
-      const res = await this.attempt(url, init, idempotent && more);
-      if (res === undefined) {
+      const reply = await this.attempt(url, init, idempotent && more);
+      if (reply === undefined) {
         await sleep(this.backoff(attempt));
         continue;
       }
-      const retryable = res.status === 429 || (idempotent && RETRYABLE_STATUS.has(res.status));
+      const retryable = reply.status === 429 || (idempotent && RETRYABLE_STATUS.has(reply.status));
       if (more && retryable) {
-        await res.body?.cancel();
-        await sleep(this.backoff(attempt, res.headers.get("Retry-After")));
+        await sleep(this.backoff(attempt, reply.retryAfter));
         continue;
       }
-      return this.decode<T>(res, method, path);
+      return this.decode<T>(reply, method, path);
     }
   }
 
-  /** Returns undefined when the network failed and a retry is allowed. */
-  private async attempt(url: string, init: RequestInit, canRetry: boolean): Promise<Response | undefined> {
+  /**
+   * Sends and reads the whole body: the timeout covers both, so a stalled body is a network error too.
+   * Returns undefined when the network failed and a retry is allowed.
+   */
+  private async attempt(url: string, init: RequestInit, canRetry: boolean): Promise<Reply | undefined> {
     try {
-      return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      const text = await res.text();
+      return { status: res.status, ok: res.ok, retryAfter: res.headers.get("Retry-After"), text };
     } catch (err) {
       if (canRetry) return undefined;
       throw new CliError("NETWORK_ERROR", `Could not reach ${this.creds.baseUrl}`, networkReason(err));
     }
   }
 
-  private async decode<T>(res: Response, method: string, path: string): Promise<T> {
-    const text = await res.text();
+  private decode<T>(reply: Reply, method: string, path: string): T {
+    const { status, text } = reply;
     const parsed = parseJson(text);
     const reason = errorText(parsed);
-    if (res.status === 401) {
+    if (status === 401) {
       throw new CliError(
         "AUTH_FAILED",
         "TestRail rejected the credentials (check email, API key, and URL).",
         reason ?? "Repeated failed logins can lock the TestRail account.",
-        res.status,
+        status,
       );
     }
-    if (res.status === 403) {
+    if (status === 403) {
       throw new CliError(
         "FORBIDDEN",
         reason ?? `Your account lacks permission for ${method} ${path}`,
         "If the API is off, an admin can enable it under Administration > Site Settings > API.",
-        res.status,
+        status,
       );
     }
-    if (res.status === 404 || (res.status === 400 && reason !== undefined && NOT_FOUND_400.test(reason))) {
-      throw new CliError("NOT_FOUND", reason ?? `TestRail has no resource at ${path}`, undefined, res.status);
+    if (status === 404) {
+      throw new CliError("NOT_FOUND", reason ?? `TestRail has no resource at ${path}`, undefined, status);
     }
-    if (!res.ok) {
+    if (!reply.ok) {
+      // A 400 for an unknown id ("Field :case_id is not a valid test case.") stays TESTRAIL_ERROR here;
+      // services turn it into a domain code with notFoundAs, which knows which field is the path id.
       throw new CliError(
         "TESTRAIL_ERROR",
-        reason ?? `${method} ${path} returned ${res.status}`,
-        reason === undefined ? text : undefined,
-        res.status,
+        reason ?? `${method} ${path} returned ${status}`,
+        reason === undefined ? text.slice(0, MAX_RAW_DETAIL_CHARS) : undefined,
+        status,
       );
     }
     if (text.trim() === "") return undefined as T;
