@@ -1,4 +1,4 @@
-import { CliError, notFound } from "../core/errors.js";
+import { CliError, InputError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, inBatches, type Collected } from "../core/paging.js";
 import type { Result, Run, StepResult, Test } from "../core/testrail-types.js";
@@ -30,7 +30,7 @@ export interface RunResult {
 function notInRun(runId: number, caseId: number): (err: unknown) => never {
   return (err: unknown) => {
     if (err instanceof CliError && err.status === 400 && /no \(active\) test found/i.test(err.message)) {
-      throw new CliError("CASE_NOT_IN_RUN", `Case C${caseId} is not in run R${runId}.`, err.message);
+      throw new InputError("CASE_NOT_IN_RUN", `Case C${caseId} is not in run R${runId}.`, err.message);
     }
     throw err;
   };
@@ -119,6 +119,6 @@ export class ResultService {
     ]);
     if (found) return found;
     await this.cases.get(target.caseId);
-    throw new CliError("CASE_NOT_IN_RUN", `Case C${target.caseId} is not in run R${target.runId}.`);
+    throw new InputError("CASE_NOT_IN_RUN", `Case C${target.caseId} is not in run R${target.runId}.`);
   }
 }

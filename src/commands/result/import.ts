@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { z } from "zod";
 import { caseId, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { CliError, InputError } from "../../core/errors.js";
+import { InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -111,7 +111,8 @@ function stepResults(
   meta: MetaService,
   where: string,
 ) {
-  if (!stepsOf.has(id)) throw new CliError("CASE_NOT_IN_RUN", `${where}: case C${id} is not in run R${run}.`);
+  if (!stepsOf.has(id))
+    throw new InputError("CASE_NOT_IN_RUN", `${where}: case C${id} is not in run R${run}.`);
   return toStepResults(specs, stepsOf.get(id), meta, where);
 }
 
