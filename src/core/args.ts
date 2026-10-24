@@ -1,5 +1,5 @@
 import { InputError } from "./errors.js";
-import { splitList } from "./text.js";
+import { splitList, uniqueRefs } from "./text.js";
 
 /** Whole number between min and max (inclusive), written as plain digits. */
 export function intInRange(raw: string, flag: string, min: number, max = Number.MAX_SAFE_INTEGER): number {
@@ -45,4 +45,29 @@ export function caseIds(raw: string): number[] {
   const ids = splitList(raw).map((part) => caseId(part));
   if (ids.length === 0) throw new InputError("USAGE", "--cases needs at least one case id, e.g. C1,C2");
   return ids;
+}
+
+/** A case, run or test id; the letter is required, since it says which kind is meant. */
+export function kindedId(raw: string): { kind: "case" | "run" | "test"; id: number } {
+  const letter = raw.trim()[0]?.toUpperCase();
+  if (letter === "C") return { kind: "case", id: caseId(raw) };
+  if (letter === "R") return { kind: "run", id: runId(raw) };
+  if (letter === "T") return { kind: "test", id: testId(raw) };
+  throw new InputError("USAGE", `"${raw}" is not a case, run or test id like C12, R3 or T45`);
+}
+
+/** "KAN-1 KAN-2" or "KAN-1,KAN-2" → ["KAN-1", "KAN-2"], upper-cased, duplicates dropped. */
+export function jiraKeys(raw: readonly string[]): string[] {
+  const keys = raw.flatMap((part) => splitList(part)).map((key) => key.toUpperCase());
+  const bad = keys.filter((key) => !/^[A-Z][A-Z0-9_]*-[1-9]\d*$/.test(key));
+  if (bad.length > 0) throw new InputError("USAGE", `Not a Jira key like KAN-12: ${bad.join(", ")}`);
+  if (keys.length === 0) throw new InputError("USAGE", "Give at least one Jira key, e.g. KAN-12");
+  return uniqueRefs(keys);
+}
+
+/** One Jira key, for a flag such as --from-jira. */
+export function jiraKey(raw: string, flag: string): string {
+  const keys = jiraKeys([raw]);
+  if (keys.length > 1) throw new InputError("USAGE", `${flag} takes one Jira key, e.g. KAN-12`);
+  return keys[0]!;
 }

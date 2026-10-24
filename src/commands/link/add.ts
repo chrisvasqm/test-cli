@@ -3,7 +3,8 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { checkJiraKeys } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { LinkService } from "../../services/link.service.js";
-import { jiraKeys, linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
+import { jiraKeys } from "../../core/args.js";
+import { linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
 
 interface AddOptions {
   check: boolean;
@@ -19,12 +20,16 @@ export function registerAdd(link: Command): void {
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
       const links = new LinkService();
-      const current = await links.keys(target);
+      const loaded = await links.load(target);
+      const current = loaded.keys;
       const { linked: already, unlinked: added } = partition(keys, current);
-      if (added.length > 0) await links.assertWritable(target);
-      // Only new keys are checked; the check runs before any write.
-      const checked = added.length > 0 && opts.check ? await checkJiraKeys(added) : false;
-      if (added.length > 0) await links.add(target, current, added);
+      let checked = false;
+      if (added.length > 0) {
+        // In turn, not in parallel: the Jira check may prompt for `jira setup`. Both finish before the write.
+        await links.assertWritable(target, loaded);
+        checked = opts.check ? await checkJiraKeys(added) : false;
+        await links.add(target, current, added);
+      }
       const name = targetName(target);
       const view = {
         target: name,

@@ -1,13 +1,11 @@
 import type { Command } from "commander";
 import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
-import { jiraTicket } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
-import { clip, MAX_NAME, splitList, uniqueRefs } from "../../core/text.js";
+import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
-import { jiraKey } from "../link/target.js";
+import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { caseUrl } from "../render.js";
 import { addCaseFieldOptions, toCaseInput, type CaseFieldOptions } from "./fields.js";
 
@@ -29,16 +27,13 @@ export function registerCreate(testCase: Command): void {
     );
   addCaseFieldOptions(cmd).action(async (opts: CreateOptions, command: Command) => {
     const sectionId = intInRange(opts.section, "--section", 1);
-    const key = opts.fromJira === undefined ? undefined : jiraKey(opts.fromJira, "--from-jira");
-    if (key === undefined && opts.title === undefined) {
-      throw new InputError("USAGE", "Give --title, or --from-jira KAN-12 to take it from Jira");
-    }
+    const key = fromJiraKey(opts.fromJira, opts.title, "--title");
     const { config, mode } = bootstrap(command);
-    const ticket = key === undefined ? undefined : await jiraTicket(key);
+    const { ticket, refs } = await loadFromJira(key, opts.refs);
     const fields: CaseFieldOptions = { ...opts };
     if (ticket) {
       fields.title = opts.title ?? clip(ticket.summary, MAX_NAME);
-      fields.refs = uniqueRefs([ticket.key, ...splitList(opts.refs)]).join(",");
+      fields.refs = joinRefs(refs);
     }
     const { input } = await toCaseInput(fields, new MetaService(), config.projectId);
     const created = await new CaseService().add(sectionId, { ...input, title: input.title ?? "" });
@@ -46,7 +41,7 @@ export function registerCreate(testCase: Command): void {
       id: created.id,
       title: created.title,
       sectionId: created.section_id,
-      jira: ticket ? { key: ticket.key, url: ticket.url } : null,
+      jira: jiraView(ticket),
       url: caseUrl(config, created.id),
     };
     printResult(mode, view, () => `Created C${view.id}  ${view.title}\n${view.url}`);

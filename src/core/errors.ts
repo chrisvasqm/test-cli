@@ -16,21 +16,20 @@ export class CliError extends Error {
 /** A problem with what the user typed or piped in: exits 2, and retrying it unchanged fails again. */
 export class InputError extends CliError {}
 
+/** "run_id" and "run" name the same field. */
+const bare = (name: string | undefined): string | undefined => name?.replace(/_id$/, "");
+
 /**
  * Catch handler that turns "this id does not exist" into a specific error. TestRail answers an
  * unknown path id with 404, or with 400 naming the field ("Field :case_id is not a valid test case.").
  * Only that field counts, so a bad value elsewhere (e.g. :priority_id) stays a TESTRAIL_ERROR.
+ * Some endpoints drop the "_id" (get_run: "Field :run is not a valid test run."), so it is ignored.
  */
-export function notFoundAs(
-  field: string | readonly string[],
-  code: string,
-  message: string,
-): (err: unknown) => never {
-  const fields = typeof field === "string" ? [field] : field;
+export function notFoundAs(field: string, code: string, message: string): (err: unknown) => never {
   return (err: unknown) => {
     const missing =
       err instanceof CliError &&
-      (err.code === "NOT_FOUND" || (err.status === 400 && fields.includes(err.field ?? "")));
+      (err.code === "NOT_FOUND" || (err.status === 400 && bare(err.field) === bare(field)));
     if (missing) throw new CliError(code, message, err.message);
     throw err;
   };
@@ -44,7 +43,6 @@ export const notFound = {
   section: (id: number | undefined) =>
     notFoundAs("section_id", "SECTION_NOT_FOUND", `Section ${id} ${cannotSee}`),
   case: (id: number) => notFoundAs("case_id", "CASE_NOT_FOUND", `Case C${id} ${cannotSee}`),
-  // get_run names it ":run" ("Field :run is not a valid test run."), other endpoints ":run_id".
-  run: (id: number) => notFoundAs(["run_id", "run"], "RUN_NOT_FOUND", `Run R${id} ${cannotSee}`),
+  run: (id: number) => notFoundAs("run_id", "RUN_NOT_FOUND", `Run R${id} ${cannotSee}`),
   test: (id: number) => notFoundAs("test_id", "TEST_NOT_FOUND", `Test T${id} ${cannotSee}`),
 };
