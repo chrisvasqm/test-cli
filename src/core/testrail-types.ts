@@ -89,6 +89,46 @@ export interface Run {
   url: string;
 }
 
+/** Tests per system status; custom statuses add custom_status1..7_count. */
+export interface StatusCounts {
+  passed_count: number;
+  blocked_count: number;
+  untested_count: number;
+  retest_count: number;
+  failed_count: number;
+}
+
+/** A run inside a test plan: one per configuration combination of its entry. */
+export interface PlanRun extends Run {
+  entry_id: string;
+  /** "Chrome, Windows"; null without configurations. */
+  config: string | null;
+  config_ids: number[];
+}
+
+/** A group of runs for one suite in a plan; its id is a GUID, not a number. */
+export interface PlanEntry {
+  id: string;
+  suite_id: number;
+  name: string;
+  runs: PlanRun[];
+}
+
+/** Plans and runs share one id sequence; TestRail shows both as R ids. */
+export interface Plan extends StatusCounts {
+  id: number;
+  name: string;
+  description: string | null;
+  milestone_id: number | null;
+  assignedto_id: number | null;
+  is_completed: boolean;
+  completed_on: number | null;
+  created_on: number;
+  url: string;
+  /** Only get_plan (and add_plan, close_plan) return the entries. */
+  entries?: PlanEntry[];
+}
+
 export interface Milestone {
   id: number;
   name: string;

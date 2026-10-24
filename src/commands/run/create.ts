@@ -83,7 +83,11 @@ export function registerCreate(run: Command): void {
 }
 
 /** Ids of the cases linked to the key; a run of none would be empty. */
-async function linkedCases(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
+export async function linkedCases(
+  projectId: number,
+  suiteId: number | undefined,
+  key: string,
+): Promise<number[]> {
   const ids = await new CaseService().linkedTo(projectId, suiteId, key);
   if (ids.length === 0) {
     throw new InputError(
