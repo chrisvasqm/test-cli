@@ -72,6 +72,34 @@ export function jiraTicket(key: string): Promise<JiraTicket> {
   return callJira(viewArgs(key), ticketSchema, key);
 }
 
+/** A ticket's current status name, e.g. "In Progress". */
+export async function jiraStatus(key: string): Promise<string> {
+  return (await callJira(viewArgs(key), z.object({ status: z.string() }), key)).status;
+}
+
+/** Adds a comment to a ticket; the text goes through stdin, not the command line. */
+export async function addJiraComment(key: string, text: string): Promise<void> {
+  await callJira(["--json", "comment", "add", key, "--file", "-"], z.object({ key: z.string() }), key, text);
+}
+
+/** Moves a ticket to a status, transition or board column (jira-cli matches it); returns the new status. */
+export async function moveJiraTicket(key: string, target: string): Promise<string> {
+  const moved = await callJira(
+    ["--json", "ticket", "move", key, target],
+    z.object({ status: z.string() }),
+    key,
+  );
+  return moved.status;
+}
+
+/** Errors that every later jira-cli call would repeat: not installed, or not set up. */
+export function isJiraUnusable(err: unknown): boolean {
+  if (!(err instanceof CliError)) return false;
+  if (err.code === "JIRA_CLI_MISSING") return true;
+  const details = err.details as { code?: unknown } | undefined;
+  return err.code === "JIRA_ERROR" && typeof details?.code === "string" && NEEDS_SETUP.has(details.code);
+}
+
 /**
  * A new Bug in jira-cli's configured project, or a Task when the project has no Bug type. Bug is
  * tried first every time, so adding the type to the project switches back without a change here.

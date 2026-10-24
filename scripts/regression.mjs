@@ -261,6 +261,22 @@ check(
   run("result", "add", "-R", runRef, "-C", jiraCaseRef, "-s", "failed", "-B"),
   (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && noTicket(nextKey(bug ?? missing)),
 );
+check("run sync without --yes", run("run", "sync", jiraRunRef), errCode("CONFIRM_REQUIRED", 2));
+check(
+  "run sync (comments; a failed test keeps the run's ticket in place)",
+  run("run", "sync", jiraRunRef, "-y", "-o", "Done"),
+  (res) => {
+    const linked = res.out.data.tickets.find((item) => item.key === K2);
+    return (
+      okData(res) &&
+      linked.scope === "run" &&
+      linked.commented &&
+      linked.moved === null &&
+      linked.tests.notPassed.length > 0 &&
+      res.out.data.tickets.every((item) => item.error === null)
+    );
+  },
+);
 const jiraTest = run("test", "list", jiraRunRef).out?.data?.tests?.[0]?.id;
 check("close the from-jira run", run("run", "close", jiraRunRef, "-y"), okData);
 check(
