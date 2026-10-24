@@ -1,10 +1,10 @@
 import type { Command } from "commander";
 import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { grid, moreHint, printResult } from "../../core/output.js";
+import { printResult, renderList } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService } from "../../services/run.service.js";
-import { isoTime, renderCounts, runCounts } from "../render.js";
+import { isoTime, renderCounts, toRunSummary } from "../render.js";
 
 interface ListOptions {
   completed?: boolean;
@@ -25,21 +25,16 @@ export function registerList(run: Command): void {
         new MetaService().statuses(),
       ]);
       const runs = items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        completed: item.is_completed,
+        ...toRunSummary(item, statuses),
         planId: item.plan_id,
-        counts: runCounts(item, statuses),
         created: isoTime(item.created_on),
-        url: item.url,
       }));
       printResult(mode, { runs, hasMore }, () =>
-        runs.length === 0
-          ? opts.completed
-            ? "No closed runs."
-            : "No open runs."
-          : grid(runs.map((item) => [`R${item.id}`, item.name, renderCounts(item.counts)])) +
-            moreHint(runs.length, hasMore),
+        renderList(
+          runs.map((item) => [`R${item.id}`, item.name, renderCounts(item.counts)]),
+          opts.completed ? "No closed runs." : "No open runs.",
+          hasMore,
+        ),
       );
     });
 }

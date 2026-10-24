@@ -37,7 +37,21 @@ export interface Step {
   expected: string | null;
 }
 
-export interface Case {
+/** A step as the CLI shows and sends it. */
+export interface StepInput {
+  content: string;
+  expected: string;
+}
+
+/** Fields shared by cases and tests that describe how to test; which ones are used depends on the template. */
+export interface CaseContent {
+  custom_preconds?: string | null | undefined;
+  custom_steps?: string | null | undefined;
+  custom_expected?: string | null | undefined;
+  custom_steps_separated?: Step[] | null | undefined;
+}
+
+export interface Case extends CaseContent {
   id: number;
   title: string;
   section_id: number;
@@ -50,10 +64,6 @@ export interface Case {
   estimate: string | null;
   created_on: number;
   updated_on: number;
-  custom_preconds?: string | null;
-  custom_steps?: string | null;
-  custom_expected?: string | null;
-  custom_steps_separated?: Step[] | null;
 }
 
 export interface Run {
@@ -74,10 +84,9 @@ export interface Run {
   failed_count: number;
   created_on: number;
   url: string;
-  [customCount: `custom_status${number}_count`]: number;
 }
 
-export interface Test {
+export interface Test extends CaseContent {
   id: number;
   case_id: number;
   run_id: number;
@@ -87,10 +96,6 @@ export interface Test {
   priority_id: number;
   refs: string | null;
   estimate: string | null;
-  custom_preconds?: string | null;
-  custom_steps?: string | null;
-  custom_expected?: string | null;
-  custom_steps_separated?: Step[] | null;
 }
 
 export interface Result {

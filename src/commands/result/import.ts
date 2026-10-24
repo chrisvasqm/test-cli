@@ -2,11 +2,12 @@ import type { Command } from "commander";
 import { z } from "zod";
 import { caseId, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { CliError } from "../../core/errors.js";
+import { InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
+import { MetaService } from "../../services/meta.service.js";
 import { ResultService, type ResultInput } from "../../services/result.service.js";
+import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";
 
 /** Most results one import sends; keeps a single request a reasonable size. */
@@ -43,19 +44,20 @@ export function registerImport(result: Command): void {
       const entries = parseFile(await readText(undefined, opts.file, "results file"));
       const { mode } = bootstrap(cmd);
       const meta = new MetaService();
+      // Statuses before the write: a failed lookup after it would hide that the results were saved.
+      const statuses = await meta.statuses();
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;
-        const id = typeof entry.case === "number" ? entry.case : caseIdAt(entry.case, where);
+        const id = typeof entry.case === "number" ? entry.case : caseId(entry.case, where);
         results.push({ case_id: id, ...(await toResultInput(entry, meta, where)) });
       }
       const added = await new ResultService().addForCases(run, results);
-      const statuses = await meta.statuses();
       const rows = added.map((item, index) => ({
         id: item.id,
         testId: item.test_id,
         caseId: results[index]?.case_id ?? null,
-        status: nameOf(statuses, item.status_id),
+        status: toResult(item, statuses).status,
       }));
       printResult(mode, { runId: run, added: rows }, () =>
         [
@@ -77,23 +79,15 @@ function parseFile(text: string): z.infer<typeof fileSchema> {
   try {
     raw = JSON.parse(text);
   } catch (err) {
-    throw new CliError("USAGE", "The results file is not valid JSON", String(err));
+    throw new InputError("USAGE", "The results file is not valid JSON", String(err));
   }
   const parsed = fileSchema.safeParse(raw);
   if (!parsed.success) {
-    throw new CliError(
+    throw new InputError(
       "USAGE",
       `The results file must be a JSON array of 1 to ${MAX_RESULTS} results`,
       parsed.error.issues.map((issue) => `${issue.path.join(".") || "file"}: ${issue.message}`),
     );
   }
   return parsed.data;
-}
-
-function caseIdAt(raw: string, where: string): number {
-  try {
-    return caseId(raw);
-  } catch {
-    throw new CliError("USAGE", `${where}: "${raw}" is not a case id like C12`);
-  }
 }

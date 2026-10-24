@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { text as readStream } from "node:stream/consumers";
-import { CliError } from "./errors.js";
+import { InputError } from "./errors.js";
 import { info } from "./output.js";
 
 /**
@@ -13,12 +13,12 @@ export async function readText(
   what: string,
 ): Promise<string> {
   if (inline !== undefined && file !== undefined) {
-    throw new CliError("USAGE", `Give the ${what} as text or with --file, not both`);
+    throw new InputError("USAGE", `Give the ${what} as text or with --file, not both`);
   }
   const raw = inline ?? (file === undefined ? undefined : await readSource(file));
   if (raw === undefined)
-    throw new CliError("USAGE", `Give the ${what} as text, or with --file <path> (- reads stdin)`);
-  if (!raw.trim()) throw new CliError("USAGE", `The ${what} is empty`);
+    throw new InputError("USAGE", `Give the ${what} as text, or with --file <path> (- reads stdin)`);
+  if (!raw.trim()) throw new InputError("USAGE", `The ${what} is empty`);
   return raw;
 }
 
@@ -28,7 +28,7 @@ async function readSource(file: string): Promise<string> {
     return readStream(process.stdin);
   }
   return readFile(file, "utf8").catch((err: unknown) => {
-    throw new CliError(
+    throw new InputError(
       "FILE_ERROR",
       `Cannot read ${file}: ${err instanceof Error ? err.message : String(err)}`,
     );

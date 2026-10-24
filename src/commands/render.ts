@@ -1,6 +1,6 @@
 import type { Config } from "../core/config.js";
-import { splitRefs } from "../core/text.js";
-import type { Result, Run, Status, Step } from "../core/testrail-types.js";
+import { splitList } from "../core/text.js";
+import type { CaseContent, Result, Run, Status, StepInput } from "../core/testrail-types.js";
 import { nameOf } from "../services/meta.service.js";
 
 const LOCAL_TIME = new Intl.DateTimeFormat("en-CA", {
@@ -33,21 +33,13 @@ export const caseUrl = (config: Config, id: number): string =>
 export const testUrl = (config: Config, id: number): string =>
   `${config.baseUrl}/index.php?/tests/view/${id}`;
 
-/** Fields shared by cases and tests that describe how to test. */
-export interface CaseContent {
-  custom_preconds?: string | null | undefined;
-  custom_steps?: string | null | undefined;
-  custom_expected?: string | null | undefined;
-  custom_steps_separated?: Step[] | null | undefined;
-}
-
 export interface ContentView {
   preconditions: string | null;
   /** Text-template steps; null when the case uses separated steps. */
   steps: string | null;
   expected: string | null;
   /** Steps-template steps, in order. */
-  stepList: { content: string; expected: string }[];
+  stepList: StepInput[];
 }
 
 export function toContent(item: CaseContent): ContentView {
@@ -114,7 +106,7 @@ export function toResult(result: Result, statuses: Status[]): ResultView {
     id: result.id,
     status: nameOf(statuses, result.status_id),
     comment: result.comment,
-    defects: splitRefs(result.defects),
+    defects: splitList(result.defects),
     elapsed: result.elapsed,
     version: result.version,
     created: isoTime(result.created_on),
@@ -127,4 +119,35 @@ export function renderResult(result: ResultView): string {
   if (result.elapsed) head.push(result.elapsed);
   if (result.defects.length > 0) head.push(`defects ${result.defects.join(", ")}`);
   return result.comment ? `${head.join(" · ")}\n${result.comment}` : head.join(" · ");
+}
+
+/** The fields every run output shares; commands add what they need. */
+export function toRunSummary(run: Run, statuses: Status[]) {
+  return {
+    id: run.id,
+    name: run.name,
+    url: run.url,
+    completed: run.is_completed,
+    completedOn: isoTime(run.completed_on),
+    counts: runCounts(run, statuses),
+  };
+}
+
+/** What setup and project use print after saving the config: the same data and rows for both. */
+export function savedConfig(
+  path: string,
+  project: { id: number; name: string },
+  suite: { id: number; name: string } | undefined,
+) {
+  const rows: [string, string][] = [
+    ["Config", path],
+    ["Project", `${project.name} (P${project.id})`],
+  ];
+  if (suite) rows.push(["Suite", `${suite.name} (S${suite.id})`]);
+  const data = {
+    path,
+    project: { id: project.id, name: project.name },
+    suite: suite ? { id: suite.id, name: suite.name } : null,
+  };
+  return { data, rows };
 }

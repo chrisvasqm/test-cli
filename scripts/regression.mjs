@@ -6,8 +6,9 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const cli = new URL("../dist/index.js", import.meta.url).pathname;
+const cli = fileURLToPath(new URL("../dist/index.js", import.meta.url));
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 let failures = 0;
 
@@ -18,17 +19,31 @@ function run(...args) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
-    return { code: 0, out: JSON.parse(stdout) };
+    return { code: 0, out: parseLine(stdout) };
   } catch (err) {
-    return { code: err.status, out: JSON.parse(err.stdout || "{}") };
+    return { code: err.status, out: parseLine(err.stdout ?? "") };
+  }
+}
+
+/** A crash can leave non-JSON on stdout; keep it as a failure instead of aborting before cleanup. */
+function parseLine(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { ok: false, raw: text.slice(0, 300) };
   }
 }
 
 function check(name, result, expect) {
-  const ok = expect(result);
+  let ok = false;
+  try {
+    ok = Boolean(expect(result));
+  } catch {
+    // A missing field in an unexpected answer is a failed check, not a crash: cleanup still runs.
+  }
   if (!ok) failures += 1;
   console.log(`${ok ? "ok  " : "FAIL"} ${name}${ok ? "" : `  ${JSON.stringify(result.out)}`}`);
-  return result.out.data;
+  return result.out?.data;
 }
 
 const okData = (result) => result.code === 0 && result.out.ok === true;

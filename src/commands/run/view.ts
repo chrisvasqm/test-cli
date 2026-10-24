@@ -2,10 +2,10 @@ import type { Command } from "commander";
 import { runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
-import { splitRefs } from "../../core/text.js";
+import { splitList } from "../../core/text.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService } from "../../services/run.service.js";
-import { isoTime, localTime, renderCounts, runCounts } from "../render.js";
+import { isoTime, localTime, renderCounts, toRunSummary } from "../render.js";
 
 export function registerView(run: Command): void {
   run
@@ -16,17 +16,12 @@ export function registerView(run: Command): void {
       const { mode } = bootstrap(cmd);
       const [found, statuses] = await Promise.all([new RunService().get(id), new MetaService().statuses()]);
       const view = {
-        id: found.id,
-        name: found.name,
-        url: found.url,
+        ...toRunSummary(found, statuses),
         description: found.description,
         suiteId: found.suite_id,
         planId: found.plan_id,
         includeAll: found.include_all,
-        completed: found.is_completed,
-        completedOn: isoTime(found.completed_on),
-        refs: splitRefs(found.refs),
-        counts: runCounts(found, statuses),
+        refs: splitList(found.refs),
         created: isoTime(found.created_on),
       };
       printResult(mode, view, () => {

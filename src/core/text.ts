@@ -5,10 +5,15 @@ export function sameName(name: string | undefined, typed: string): boolean {
   return name !== undefined && collator.compare(name, typed) === 0;
 }
 
-/** "KAN-1, KAN-2" (TestRail's refs and defects fields) as a list. */
-export function splitRefs(raw: string | null | undefined): string[] {
+/** "KAN-1, KAN-2" (refs, defects, ids, status names) as a list, blanks dropped. */
+export function splitList(raw: string | null | undefined): string[] {
   return (raw ?? "")
     .split(",")
-    .map((ref) => ref.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
+}
+
+/** Refs or defects as TestRail stores them: "KAN-1,KAN-2". */
+export function joinRefs(refs: string | readonly string[] | undefined): string {
+  return (typeof refs === "string" || refs === undefined ? splitList(refs) : refs).join(",");
 }

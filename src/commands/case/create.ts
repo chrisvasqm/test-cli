@@ -21,7 +21,7 @@ export function registerCreate(testCase: Command): void {
   addCaseFieldOptions(cmd).action(async (opts: CreateOptions, command: Command) => {
     const sectionId = intInRange(opts.section, "--section", 1);
     const { config, mode } = bootstrap(command);
-    const input = await toCaseInput(opts, new MetaService(), config.projectId);
+    const { input } = await toCaseInput(opts, new MetaService(), config.projectId);
     const created = await new CaseService().add(sectionId, { ...input, title: input.title ?? opts.title });
     const view = {
       id: created.id,

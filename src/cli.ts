@@ -7,7 +7,7 @@ import { registerRun } from "./commands/run/index.js";
 import { registerSection } from "./commands/section/index.js";
 import { registerSetup } from "./commands/setup.js";
 import { registerTest } from "./commands/test/index.js";
-import { CliError } from "./core/errors.js";
+import { CliError, InputError } from "./core/errors.js";
 import { outputMode } from "./core/bootstrap.js";
 import { printError } from "./core/output.js";
 import { closePrompts } from "./core/prompt.js";
@@ -32,25 +32,10 @@ registerRun(program);
 registerTest(program);
 registerResult(program);
 
-const INPUT_ERRORS = new Set([
-  "USAGE",
-  "INPUT_EOF",
-  "CONFIRM_REQUIRED",
-  "UNKNOWN_STATUS",
-  "UNKNOWN_PRIORITY",
-  "UNKNOWN_TYPE",
-]);
-
-// A reader that stops early (`testrail case list | head`) closes stdout; that is not an error.
-process.stdout.on("error", (err: NodeJS.ErrnoException) => {
-  if (err.code === "EPIPE") process.exit(0);
-  throw err;
-});
-
 /** 130 for Ctrl+C, 2 for bad usage, bad input or a missing --yes, 1 for everything else. */
 function exitCode(err: unknown): number {
   if (err instanceof CliError && err.code === "INTERRUPTED") return 130;
-  if (err instanceof CliError && INPUT_ERRORS.has(err.code)) return 2;
+  if (err instanceof InputError) return 2;
   return 1;
 }
 
@@ -64,7 +49,7 @@ function isHelp(err: unknown): err is CommanderError {
 
 function toCliError(err: unknown): unknown {
   if (err instanceof CommanderError) {
-    return new CliError("USAGE", err.message.replace(/^error: /, ""));
+    return new InputError("USAGE", err.message.replace(/^error: /, ""));
   }
   return err;
 }

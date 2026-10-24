@@ -23,7 +23,8 @@ out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
 # The squash commit that set this version; later commits may only touch docs.
-bump_commit=$(git log -1 --format=%H -G'"version":' -- package.json)
+# Only the top-level "version" (two-space indent), not devEngines.packageManager.version.
+bump_commit=$(git log -1 --format=%H -G'^  "version":' -- package.json)
 shipped_changes=$(git diff --name-only "$bump_commit" HEAD -- src package.json pnpm-lock.yaml tsconfig.json README.md)
 [ -z "$shipped_changes" ] ||
   die "code changed after the $tag bump ($shipped_changes); those changes need their own version bump"
@@ -38,6 +39,8 @@ changes=$(git log --no-merges --format='- %s' "$range")
 cambios=""
 missing=0
 while IFS=$'\x1f' read -r subject es; do
+  # A trailer ends with its own newline, which leaves an empty line between commits.
+  [ -n "$subject" ] || continue
   pr=$(grep -oE ' \(#[0-9]+\)$' <<<"$subject" || true)
   if [ -z "$es" ]; then
     es="$subject"
