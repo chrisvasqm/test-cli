@@ -11,8 +11,7 @@ import { registerView } from "./view.js";
 export function registerRun(program: Command): void {
   const run = program
     .command("run")
-    .description("Read, create, edit, close and delete test runs; retest fixed bugs");
-    .description("Read, create, edit, close and delete test runs, and sync results to Jira");
+    .description("Read, create, edit, close and delete test runs; sync results to Jira; retest fixed bugs");
   registerView(run);
   registerList(run);
   registerCreate(run);
