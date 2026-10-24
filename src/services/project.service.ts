@@ -5,6 +5,8 @@ import type { Project, Suite } from "../core/testrail-types.js";
 
 /** Most projects one account can list at once. */
 const MAX_PROJECTS = 1000;
+/** Most suites one project lists at once. */
+const MAX_SUITES = 1000;
 
 /** get_project(s) and get_suites endpoints. */
 export class ProjectService {
@@ -25,8 +27,16 @@ export class ProjectService {
     return this.http.get<Project>(`get_project/${id}`).catch(notFound.project(id));
   }
 
-  suites(projectId: number): Promise<Suite[]> {
-    return this.http.get<Suite[]>(`get_suites/${projectId}`).catch(notFound.project(projectId));
+  /** get_suites is paged on newer servers (`{suites: [...]}`) and a bare array on older ones. */
+  async suites(projectId: number): Promise<Suite[]> {
+    const { items } = await collectPages<Suite>(
+      `get_suites/${projectId}`,
+      "suites",
+      {},
+      MAX_SUITES,
+      this.http,
+    ).catch(notFound.project(projectId));
+    return items;
   }
 
   /** Suites that are not completed; NO_SUITES when there are none. */

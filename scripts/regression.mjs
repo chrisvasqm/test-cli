@@ -269,6 +269,142 @@ check(
   (res) => errCode("RUN_CLOSED", 2)(res) && noTicket(nextKey(bug ?? missing)),
 );
 check("delete the from-jira case", run("case", "delete", jiraCaseRef, "-y"), okData);
+// Plans, milestones, suites, sections, assignment, attachments, steps, history and filters.
+const hasRows = (key, test) => (res) => okData(res) && res.out.data[key].some(test);
+check(
+  "user list",
+  run("user", "list"),
+  hasRows("users", (item) => item.me),
+);
+const suites = check(
+  "suite list",
+  run("suite", "list"),
+  (res) => okData(res) && res.out.data.suites.length > 0,
+);
+check("suite view", run("suite", "view", `S${suites?.suites[0]?.id}`), okData);
+check("configuration list", run("configuration", "list"), okData);
+check("report list", run("report", "list"), okData);
+const milestone = check(
+  "milestone create",
+  run("milestone", "create", "-N", `Regression ${tag}`, "-u", "2030-01-31", "-r", K1),
+  okData,
+);
+const msRef = `M${milestone?.id}`;
+check(
+  "milestone view",
+  run("milestone", "view", msRef),
+  (res) => okData(res) && res.out.data.id === milestone?.id,
+);
+check(
+  "milestone list",
+  run("milestone", "list", "-n", "250"),
+  hasRows("milestones", (item) => item.id === milestone?.id),
+);
+const section = check(
+  "section create",
+  run("section", "create", "-N", `Regression ${tag}`, "-s", sectionId, "-d", "regression"),
+  okData,
+);
+const newSection = String(section?.id);
+check("section edit", run("section", "edit", newSection, "-N", `Regression ${tag} edited`), okData);
+check("case copy", run("case", "copy", caseRef, "-s", newSection), okData);
+const copies = check(
+  "case list (copied case)",
+  run("case", "list", "-s", newSection),
+  (res) => okData(res) && res.out.data.cases.length === 1,
+);
+const copyRef = `C${copies?.cases[0]?.id}`;
+check("case move", run("case", "move", copyRef, "-s", sectionId), okData);
+check("case edit (several)", run("case", "edit", caseRef, copyRef, "-p", "medium"), okData);
+check("case edit (several) -t", run("case", "edit", caseRef, copyRef, "-t", "x"), errCode("USAGE", 2));
+check(
+  "case list -q -p",
+  run("case", "list", "-q", tag, "-p", "medium"),
+  (res) => okData(res) && res.out.data.cases.length >= 2,
+);
+check("section move", run("section", "move", newSection, "-s", "top"), okData);
+check(
+  "CONFIRM_REQUIRED on section delete",
+  run("section", "delete", newSection),
+  errCode("CONFIRM_REQUIRED", 2),
+);
+check("section delete", run("section", "delete", newSection, "-y"), okData);
+check(
+  "run edit",
+  run("run", "edit", runRef, "-N", `Regression ${tag} edited`, "-a", "me", "-M", msRef, "-i", copyRef),
+  okData,
+);
+check(
+  "run edit -x",
+  run("run", "edit", runRef, "-x", copyRef, "-y"),
+  (res) => okData(res) && run("test", "list", runRef).out.data.tests.length === 1,
+);
+const attachFile = join(mkdtempSync(join(tmpdir(), "testrail-regression-")), "evidence.txt");
+writeFileSync(attachFile, `regression ${tag}\n`);
+check(
+  "result add -a -P -A",
+  run("result", "add", testRef, "-s", "passed", "-a", "me", "-P", "1:passed,2:failed", "-A", attachFile),
+  okData,
+);
+check(
+  "test list -a me",
+  run("test", "list", runRef, "-a", "me"),
+  (res) => okData(res) && res.out.data.tests.length === 1,
+);
+check(
+  "test view (steps)",
+  run("test", "view", testRef, "-n", "1"),
+  (res) => okData(res) && res.out.data.results.shown[0].steps.length === 2,
+);
+check(
+  "attachment list (test)",
+  run("attachment", "list", testRef),
+  (res) => okData(res) && res.out.data.attachments.length >= 1,
+);
+check("attachment add (case)", run("attachment", "add", caseRef, attachFile), okData);
+check(
+  "attachment list (case)",
+  run("attachment", "list", caseRef),
+  (res) => okData(res) && res.out.data.attachments.length >= 1,
+);
+check(
+  "case history -R",
+  run("case", "history", caseRef, "-R", runRef),
+  (res) => okData(res) && res.out.data.results.length >= 4,
+);
+check(
+  "case history",
+  run("case", "history", caseRef, "-n", "2"),
+  (res) => okData(res) && res.out.data.results.length === 2,
+);
+const rerun = check(
+  "run create -R (rerun)",
+  run("run", "create", "-R", runRef, "-s", "passed"),
+  (res) => okData(res) && res.out.data.counts.Untested === 1,
+);
+const rerunRef = `R${rerun?.id}`;
+check(
+  "NO_MATCHING_TESTS",
+  run("run", "create", "-R", runRef, "-s", "blocked"),
+  errCode("NO_MATCHING_TESTS", 2),
+);
+const plan = check(
+  "plan create",
+  run("plan", "create", "-N", `Regression ${tag}`, "-M", msRef, "-C", caseRef),
+  okData,
+);
+const planRef = `R${plan?.id}`;
+check("plan add-run", run("plan", "add-run", planRef, "-C", caseRef, "-a", "me"), okData);
+check("plan view", run("plan", "view", planRef), (res) => okData(res) && res.out.data.entries.length === 2);
+check(
+  "plan list",
+  run("plan", "list"),
+  hasRows("plans", (item) => item.id === plan?.id),
+);
+check("CONFIRM_REQUIRED on plan close", run("plan", "close", planRef), errCode("CONFIRM_REQUIRED", 2));
+check("plan close", run("plan", "close", planRef, "-y"), okData);
+check("close the rerun", run("run", "close", rerunRef, "-y"), okData);
+check("delete the copied case", run("case", "delete", copyRef, "-y"), okData);
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));
 check("CASE_NOT_FOUND", run("case", "view", "C999999999"), errCode("CASE_NOT_FOUND", 1));
 check("UNKNOWN_STATUS", run("test", "list", runRef, "-s", "nope"), errCode("UNKNOWN_STATUS", 2));
@@ -288,5 +424,7 @@ check(
 check("case gone", run("case", "view", caseRef), errCode("CASE_NOT_FOUND", 1));
 
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
-console.log(`left behind: closed runs ${runRef}, ${jiraRunRef} (kept in TestRail as evidence)`);
+console.log(
+  `left behind: closed runs ${runRef}, ${jiraRunRef}, ${rerunRef}, closed plan ${planRef} and milestone ${msRef} (kept in TestRail as evidence)`,
+);
 process.exit(failures === 0 ? 0 : 1);
