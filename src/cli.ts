@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
+import { registerAttachment } from "./commands/attachment/index.js";
 import { registerCase } from "./commands/case/index.js";
 import { registerConfiguration } from "./commands/configuration/index.js";
 import { registerLink } from "./commands/link/index.js";
@@ -43,6 +44,7 @@ registerLink(program);
 registerConfiguration(program);
 registerReport(program);
 registerUser(program);
+registerAttachment(program);
 
 /** 130 for Ctrl+C, 2 for bad usage, bad input or a missing --yes, 1 for everything else. */
 function exitCode(err: unknown): number {

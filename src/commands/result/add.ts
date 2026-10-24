@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { caseId, runId, testId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { CliError, InputError } from "../../core/errors.js";
-import { readOptionalText } from "../../core/input.js";
+import { checkUploads, readOptionalText, type Upload } from "../../core/input.js";
 import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -16,8 +16,11 @@ import { renderResult, testUrl, toResult } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
 import { parseStepList, toStepResults } from "./steps.js";
+import { AttachmentService } from "../../services/attachment.service.js";
+import { attached, renderAttached } from "../attachment/files.js";
 
 interface AddOptions {
+  attach: string[];
   status?: string;
   comment?: string;
   file?: string;
@@ -46,10 +49,18 @@ export function registerAdd(result: Command): void {
     .option("-a, --assign <user>", "Reassign the test: me, an email or a user id")
     .option("-P, --steps <list>", "Step statuses by step number, e.g. 1:passed,2:failed (others Untested)")
     .option("-B, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
+    .option(
+      "-A, --attach <files>",
+      "Attach files to the new result, comma-separated or repeated (up to 256 MB each)",
+      (value: string, previous: string[]) => [...previous, ...splitList(value)],
+      [],
+    )
     .action(async (rawTest: string | undefined, opts: AddOptions, cmd: Command) => {
       const target = parseTarget(rawTest, opts);
       const comment = await readOptionalText(opts.comment, opts.file, "comment");
       const steps = opts.steps === undefined ? undefined : parseStepList(opts.steps);
+      // Checked before the result exists: results are append-only, so a retry would add a second one.
+      const uploads = opts.attach.length > 0 ? await checkUploads(opts.attach) : [];
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
       // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
@@ -81,17 +92,21 @@ export function registerAdd(result: Command): void {
           err.field,
         );
       });
+      const ids = await attachTo(added.id, added.test_id, uploads);
       const view = {
         ...toResult(added, statuses),
         testId: added.test_id,
         bug: bug ? { key: bug.key, url: bug.url } : null,
         assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
+        attachments: attached(uploads, ids),
         url: testUrl(config, added.test_id),
       };
       printResult(mode, view, () => {
         const filed = view.bug ? `\nCreated Jira bug ${view.bug.key}  ${view.bug.url}` : "";
         const assigned = view.assignedTo ? `\nAssigned to ${view.assignedTo.name}` : "";
-        return `Added result #${view.id} to T${view.testId}${filed}${assigned}\n${renderResult(view)}\n${view.url}`;
+        const files =
+          view.attachments.length > 0 ? `\n${renderAttached(`#${view.id}`, view.attachments)}` : "";
+        return `Added result #${view.id} to T${view.testId}${filed}${assigned}\n${renderResult(view)}${files}\n${view.url}`;
       });
     });
 }
@@ -121,6 +136,21 @@ function addResult(target: ResultTarget, input: ResultInput) {
   return target.kind === "test"
     ? results.addForTest(target.testId, input)
     : results.addForCase(target.runId, target.caseId, input);
+}
+
+/** Uploads --attach files to the saved result; a failure says so, or a retry adds a second result. */
+async function attachTo(resultId: number, test: number, uploads: readonly Upload[]) {
+  if (uploads.length === 0) return [];
+  return new AttachmentService().addAll({ kind: "result", id: resultId }, uploads).catch((err: unknown) => {
+    if (!(err instanceof CliError)) throw err;
+    throw new CliError(
+      err.code,
+      `${err.message} Result #${resultId} was saved; attach the files with testrail attachment add T${test} -i ${resultId}, not result add.`,
+      { resultId, testId: test, error: err.details },
+      err.status,
+      err.field,
+    );
+  });
 }
 
 /** A Jira Bug named after the test, with the comment and a link back to TestRail. */

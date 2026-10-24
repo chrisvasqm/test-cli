@@ -16,6 +16,8 @@ const MAX_DELAY_MS = 8000;
 const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 /** A request that gets no answer in this time fails (and a GET is retried). */
 const REQUEST_TIMEOUT_MS = 30_000;
+/** An upload (up to TestRail's 256 MB per file) gets longer than a JSON request. */
+const UPLOAD_TIMEOUT_MS = 600_000;
 /** Longest Retry-After wait the client honors. TestRail Cloud allows 180-300 requests a minute. */
 const MAX_RETRY_AFTER_MS = 60_000;
 /** Wait after a 429 that has no Retry-After header. */
@@ -64,28 +66,37 @@ export class HttpClient {
     return this.send<T>("POST", apiPath(endpoint, params), body);
   }
 
+  /** A multipart POST (attachments): the same auth, retry rule and error mapping, with a longer timeout. */
+  postForm<T>(endpoint: string, form: FormData): Promise<T> {
+    return this.send<T>("POST", apiPath(endpoint), form, UPLOAD_TIMEOUT_MS);
+  }
+
   /** Follows a pagination link from `_links.next`, e.g. "/api/v2/get_cases/1&limit=250&offset=250". */
   getLink<T>(link: string): Promise<T> {
     return this.send<T>("GET", link.startsWith("/") ? link : `/${link}`);
   }
 
-  private async send<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+  private async send<T>(
+    method: "GET" | "POST",
+    path: string,
+    body?: unknown,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+  ): Promise<T> {
     // Only GETs are safe to repeat after a lost answer; writes are retried only on 429, which TestRail never applied.
     const idempotent = method === "GET";
     // TestRail routes through index.php's query string, so filters follow with "&", not "?".
     const url = `${this.creds.baseUrl}/index.php?${path}`;
-    // TestRail needs the JSON content type on every request, GET included.
-    const headers = {
-      Authorization: this.authHeader,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    };
+    // TestRail needs the JSON content type on every request, GET included. A form gets fetch's own
+    // multipart type, which carries the boundary; a file-backed form can be sent again on a 429.
+    const form = body instanceof FormData;
+    const headers: Record<string, string> = { Authorization: this.authHeader, Accept: "application/json" };
+    if (!form) headers["Content-Type"] = "application/json";
     const init: RequestInit = { method, headers };
-    if (body !== undefined) init.body = JSON.stringify(body);
+    if (body !== undefined) init.body = form ? body : JSON.stringify(body);
 
     for (let attempt = 0; ; attempt++) {
       const more = attempt < MAX_RETRIES;
-      const reply = await this.attempt(url, init, idempotent, more);
+      const reply = await this.attempt(url, init, idempotent, more, timeoutMs);
       if (reply === undefined) {
         await sleep(this.backoff(attempt));
         continue;
@@ -108,9 +119,10 @@ export class HttpClient {
     init: RequestInit,
     idempotent: boolean,
     more: boolean,
+    timeoutMs: number,
   ): Promise<Reply | undefined> {
     try {
-      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
       const text = await res.text();
       return { status: res.status, retryAfter: res.headers.get("Retry-After"), text };
     } catch (err) {
@@ -119,7 +131,7 @@ export class HttpClient {
       const message = idempotent
         ? `Could not reach ${this.creds.baseUrl}`
         : `Lost the connection to ${this.creds.baseUrl}; the change may or may not have been saved. Check before retrying.`;
-      throw new CliError("NETWORK_ERROR", message, networkReason(err));
+      throw new CliError("NETWORK_ERROR", message, networkReason(err, timeoutMs));
     }
   }
 
@@ -209,9 +221,9 @@ function retryAfterMs(header: string | null | undefined): number | undefined {
 }
 
 /** undici reports "fetch failed"; the real reason (DNS, TLS, refused) is in `cause`. */
-function networkReason(err: unknown): string {
+function networkReason(err: unknown, timeoutMs: number): string {
   if (err instanceof Error && err.name === "TimeoutError") {
-    return `No answer after ${REQUEST_TIMEOUT_MS / 1000}s`;
+    return `No answer after ${timeoutMs / 1000}s`;
   }
   const cause = err instanceof Error ? err.cause : undefined;
   if (cause instanceof Error) return `${err instanceof Error ? err.message : String(err)}: ${cause.message}`;

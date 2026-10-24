@@ -142,6 +142,15 @@ export interface Result {
   custom_step_results?: StepResult[] | null;
 }
 
+/** Legacy servers use number ids; TestRail Cloud 7.1+ uses UUID strings and adds filename and entity fields. */
+export interface Attachment {
+  id: number | string;
+  name: string;
+  size: number;
+  created_on: number;
+  user_id: number;
+}
+
 export interface Status {
   id: number;
   name: string;
