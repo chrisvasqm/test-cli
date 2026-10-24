@@ -28,6 +28,11 @@ export function localTime(iso: string | null): string {
   return `${part["year"]}-${part["month"]}-${part["day"]} ${part["hour"]}:${part["minute"]} ${part["timeZoneName"]}`;
 }
 
+/** A date without time (milestone start and due dates), e.g. "2026-11-30". */
+export function localDate(iso: string | null): string {
+  return iso === null ? "none" : localTime(iso).slice(0, 10);
+}
+
 export const caseUrl = (config: Config, id: number): string =>
   `${config.baseUrl}/index.php?/cases/view/${id}`;
 export const runUrl = (config: Config, id: number): string => `${config.baseUrl}/index.php?/runs/view/${id}`;
