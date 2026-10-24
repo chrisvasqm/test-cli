@@ -7,7 +7,7 @@ import { MetaService } from "../../services/meta.service.js";
 import { PlanService, type PlanInput } from "../../services/plan.service.js";
 import { jiraView } from "../from-jira.js";
 import { buildEntry, entryOptions, hasEntry, parseEntry, type EntryOptions } from "./entry.js";
-import { renderPlan, toPlanView } from "./view.js";
+import { renderPlan, toPlanView } from "./render.js";
 
 interface CreateOptions extends EntryOptions {
   name?: string;
