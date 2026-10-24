@@ -78,7 +78,7 @@ To install exactly this version: \`npm install -g https://github.com/chrisvasqm/
 
 ---
 
-# Spanish
+# Español
 
 ## Cambios
 
