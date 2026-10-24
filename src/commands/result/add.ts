@@ -6,13 +6,16 @@ import { readOptionalText } from "../../core/input.js";
 import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
-import type { Test } from "../../core/testrail-types.js";
+import type { Step, Test } from "../../core/testrail-types.js";
+import { CaseService } from "../../services/case.service.js";
 import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
 import { UserService } from "../../services/user.service.js";
+import { TestService } from "../../services/test.service.js";
 import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
+import { parseStepList, toStepResults } from "./steps.js";
 
 interface AddOptions {
   status?: string;
@@ -25,6 +28,7 @@ interface AddOptions {
   case?: string;
   createBug?: boolean;
   assign?: string;
+  steps?: string;
 }
 
 export function registerAdd(result: Command): void {
@@ -40,10 +44,12 @@ export function registerAdd(result: Command): void {
     .option("-R, --run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
     .option("-C, --case <case>", "Case in that run, e.g. C12")
     .option("-a, --assign <user>", "Reassign the test: me, an email or a user id")
+    .option("-P, --steps <list>", "Step statuses by step number, e.g. 1:passed,2:failed (others Untested)")
     .option("-B, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
     .action(async (rawTest: string | undefined, opts: AddOptions, cmd: Command) => {
       const target = parseTarget(rawTest, opts);
       const comment = await readOptionalText(opts.comment, opts.file, "comment");
+      const steps = opts.steps === undefined ? undefined : parseStepList(opts.steps);
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
       // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
@@ -58,6 +64,8 @@ export function registerAdd(result: Command): void {
         meta,
         "result",
       );
+      if (steps)
+        input.custom_step_results = await toStepResults(steps, await caseSteps(target), meta, "--steps");
       const bug = opts.createBug
         ? await fileBug(config, await new ResultService().openTest(target), comment)
         : undefined;
@@ -97,6 +105,15 @@ function parseTarget(rawTest: string | undefined, opts: AddOptions): ResultTarge
     throw new InputError("USAGE", "Give a test id (T45), or both --run R3 and --case C12");
   }
   return { kind: "case", runId: runId(opts.run), caseId: caseId(opts.case) };
+}
+
+/** The separated steps of the case behind the target, to fill each step result's content. */
+async function caseSteps(target: ResultTarget): Promise<Step[] | null | undefined> {
+  const content =
+    target.kind === "test"
+      ? await new TestService().get(target.testId)
+      : await new CaseService().get(target.caseId);
+  return content.custom_steps_separated;
 }
 
 function addResult(target: ResultTarget, input: ResultInput) {

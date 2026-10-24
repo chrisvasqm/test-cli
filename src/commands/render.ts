@@ -105,6 +105,15 @@ export interface ResultView {
   elapsed: string | null;
   version: string | null;
   created: string | null;
+  /** Step results, in step order; empty unless the case uses the Steps template. */
+  steps: StepResultView[];
+}
+
+export interface StepResultView {
+  content: string;
+  expected: string;
+  actual: string | null;
+  status: string | null;
 }
 
 export function toResult(result: Result, statuses: Status[]): ResultView {
@@ -116,6 +125,12 @@ export function toResult(result: Result, statuses: Status[]): ResultView {
     elapsed: result.elapsed,
     version: result.version,
     created: isoTime(result.created_on),
+    steps: (result.custom_step_results ?? []).map((step) => ({
+      content: step.content,
+      expected: step.expected,
+      actual: step.actual || null,
+      status: nameOf(statuses, step.status_id),
+    })),
   };
 }
 
@@ -124,7 +139,13 @@ export function renderResult(result: ResultView): string {
   const head = [result.status ?? "Comment", localTime(result.created)];
   if (result.elapsed) head.push(result.elapsed);
   if (result.defects.length > 0) head.push(`defects ${result.defects.join(", ")}`);
-  return result.comment ? `${head.join(" · ")}\n${result.comment}` : head.join(" · ");
+  const lines = [head.join(" · ")];
+  if (result.comment) lines.push(result.comment);
+  for (const [index, step] of result.steps.entries()) {
+    lines.push(`  ${index + 1}. ${step.status ?? "Untested"} · ${step.content}`);
+    if (step.actual) lines.push(`     Actual: ${step.actual}`);
+  }
+  return lines.join("\n");
 }
 
 /** The fields every run output shares; commands add what they need. */
