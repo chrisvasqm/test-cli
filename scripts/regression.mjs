@@ -243,6 +243,8 @@ check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));
 check("CASE_NOT_FOUND", run("case", "view", "C999999999"), errCode("CASE_NOT_FOUND", 1));
 check("UNKNOWN_STATUS", run("test", "list", runRef, "--status", "nope"), errCode("UNKNOWN_STATUS", 2));
 check("CONFIRM_REQUIRED on close", run("run", "close", runRef), errCode("CONFIRM_REQUIRED", 2));
+// Runs are never deleted here: they stay in TestRail as evidence.
+check("CONFIRM_REQUIRED on run delete", run("run", "delete", runRef), errCode("CONFIRM_REQUIRED", 2));
 check(
   "run close",
   run("run", "close", runRef, "--yes"),
@@ -256,7 +258,5 @@ check(
 check("case gone", run("case", "view", caseRef), errCode("CASE_NOT_FOUND", 1));
 
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
-console.log(
-  `left behind: closed runs ${runRef}, ${jiraRunRef} (TestRail keeps closed runs; the CLI has no run delete)`,
-);
+console.log(`left behind: closed runs ${runRef}, ${jiraRunRef} (kept in TestRail as evidence)`);
 process.exit(failures === 0 ? 0 : 1);

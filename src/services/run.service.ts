@@ -53,4 +53,9 @@ export class RunService {
   close(id: number): Promise<Run> {
     return this.http.post<Run>(`close_run/${id}`).catch(notFound.run(id));
   }
+
+  /** Deletes the run with its tests and results. Never with `soft=1`: on Cloud it deletes too. */
+  async remove(id: number): Promise<void> {
+    await this.http.post<undefined>(`delete_run/${id}`).catch(notFound.run(id));
+  }
 }
