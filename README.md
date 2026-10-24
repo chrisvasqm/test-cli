@@ -75,29 +75,29 @@ Agents add `-j` to every command to read the JSON output. They never pass `-y` (
 
 Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project and `S1` a suite. The letter is optional, except for `link`.
 
-| Command                                | What it does                                                      |
-| -------------------------------------- | ----------------------------------------------------------------- |
-| `testrail project list`                | Active projects; `*` marks yours                                  |
-| `testrail project use <P>`             | Make a project (and `-S <S>`) the default                         |
-| `testrail section list`                | Sections and their ids, nested                                    |
-| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-n <limit>`, 50)             |
-| `testrail case view <C>`               | Fields, preconditions, steps and expected results                 |
-| `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)        |
-| `testrail case edit <C>`               | Change only the fields you pass                                   |
-| `testrail case delete <C>`             | Delete a case and its tests in active runs                        |
-| `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)       |
-| `testrail run view <R>`                | Progress per status, refs and description                         |
-| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`               |
-| `testrail run close <R>`               | Close a run (it cannot be reopened)                               |
-| `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission) |
-| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-n <limit>`, 100)            |
-| `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)        |
-| `testrail result add <T>`              | Add a result (`-B` files a Jira bug); or `-R <R> -C <C>`          |
-| `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)   |
-| `testrail link list <C\|R\|T>`         | Jira keys on a case or run (refs) or a test (result defects)      |
-| `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed          |
-| `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                               |
-| `testrail setup`                       | Create the config (see [Set up](#set-up))                         |
+| Command                                | What it does                                                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `testrail project list`                | Active projects; `*` marks yours                                                                               |
+| `testrail project use <P>`             | Make a project (and `-S <S>`) the default                                                                      |
+| `testrail section list`                | Sections and their ids, nested                                                                                 |
+| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-n <limit>`, 50)                                                          |
+| `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                              |
+| `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                     |
+| `testrail case edit <C>`               | Change only the fields you pass                                                                                |
+| `testrail case delete <C>`             | Delete a case and its tests in active runs                                                                     |
+| `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)                                                    |
+| `testrail run view <R>`                | Progress per status, refs and description                                                                      |
+| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`                                                            |
+| `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                            |
+| `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                              |
+| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-n <limit>`, 100)                                                         |
+| `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                     |
+| `testrail result add <T>`              | Add a result (`-B` files a Jira bug); or `-R <R> -C <C>`                                                       |
+| `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)                                                |
+| `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it |
+| `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                       |
+| `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                                                                            |
+| `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                      |
 
 - **Case fields (`create` and `edit`):**
   - `-t --title`, `-T --type <name>`, `-p --priority <name>`, `-e --estimate 5m`

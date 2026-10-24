@@ -194,6 +194,16 @@ const jiraRun = check(
   (res) => okData(res) && res.out.data.name === "REG-2: Fake summary" && res.out.data.counts.Untested === 2,
 );
 const jiraRunRef = `R${jiraRun?.id}`;
+check(
+  "link list <jira key>",
+  run("link", "list", "reg-2"),
+  (res) =>
+    okData(res) &&
+    res.out.data.target === "REG-2" &&
+    [created?.id, fromJira?.id].every((id) => res.out.data.cases.some((item) => item.id === id)) &&
+    res.out.data.runs.some((item) => item.id === jiraRun?.id),
+);
+check("link list <bad key>", run("link", "list", "KAN-0"), errCode("USAGE", 2));
 check("NO_LINKED_CASES", run("run", "create", "-J", "REG-999"), errCode("NO_LINKED_CASES", 2));
 check(
   "JIRA_TICKET_NOT_FOUND",

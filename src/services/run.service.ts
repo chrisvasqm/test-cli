@@ -2,6 +2,7 @@ import { InputError, notFound, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
 import type { Run } from "../core/testrail-types.js";
+import { hasRef } from "../core/text.js";
 
 export interface RunInput {
   name: string;
@@ -24,6 +25,18 @@ export class RunService {
 
   list(projectId: number, completed: boolean, limit: number): Promise<Collected<Run>> {
     return collectPages<Run>(`get_runs/${projectId}`, "runs", { is_completed: completed }, limit, this.http);
+  }
+
+  /** Every run (not in a plan), open or closed, whose refs include `key` (exactly, ignoring case; TestRail's refs_filter is looser). */
+  async withRef(projectId: number, suiteId: number | undefined, key: string): Promise<Run[]> {
+    const { items } = await collectPages<Run>(
+      `get_runs/${projectId}`,
+      "runs",
+      { refs_filter: key, suite_id: suiteId },
+      Number.MAX_SAFE_INTEGER,
+      this.http,
+    );
+    return items.filter((item) => hasRef(item.refs, key));
   }
 
   add(projectId: number, input: RunInput): Promise<Run> {

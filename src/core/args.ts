@@ -56,6 +56,21 @@ export function kindedId(raw: string): { kind: "case" | "run" | "test"; id: numb
   throw new InputError("USAGE", `"${raw}" is not a case, run or test id like C12, R3 or T45`);
 }
 
+/** A case, run or test id (C12, R3, T45), or a Jira key (KAN-12): a Jira key has a dash. */
+export function idOrJiraKey(
+  raw: string,
+): { kind: "case" | "run" | "test"; id: number } | { kind: "key"; key: string } {
+  if (!raw.includes("-")) {
+    const letter = raw.trim()[0]?.toUpperCase();
+    if (letter === "C" || letter === "R" || letter === "T") return kindedId(raw);
+    throw new InputError(
+      "USAGE",
+      `"${raw}" is not a case, run or test id like C12, R3 or T45, or a Jira key like KAN-12`,
+    );
+  }
+  return { kind: "key", key: jiraKey(raw, "<target>") };
+}
+
 /** "KAN-1 KAN-2" or "KAN-1,KAN-2" → ["KAN-1", "KAN-2"], upper-cased, duplicates dropped. */
 export function jiraKeys(raw: readonly string[]): string[] {
   const keys = raw.flatMap((part) => splitList(part)).map((key) => key.toUpperCase());
