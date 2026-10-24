@@ -200,6 +200,25 @@ check(
   run("project", "list"),
   (res) => okData(res) && res.out.data.projects.some((item) => item.current),
 );
+check(
+  "project view",
+  run("project", "view"),
+  (res) =>
+    okData(res) &&
+    res.out.data.project.current &&
+    res.out.data.runs.some((item) => item.id === runData?.id && item.total === 1) &&
+    res.out.data.totals.total >= 1,
+);
+check(
+  "project view -n 1",
+  run("project", "view", "-n", "1"),
+  (res) =>
+    okData(res) &&
+    res.out.data.runs.length <= 1 &&
+    res.out.data.plans.length <= 1 &&
+    res.out.data.milestones.filter((item) => item.parentId === null).length <= 1,
+);
+check("PROJECT_NOT_FOUND", run("project", "view", "P999999999"), errCode("PROJECT_NOT_FOUND", 1));
 const keysAre = (keys) => (res) => okData(res) && res.out.data.keys.join() === keys;
 check("link add case", run("link", "add", caseRef, K2, K1.toLowerCase()), keysAre(`${K1},${K2}`));
 check("link add missing ticket", run("link", "add", caseRef, missing), errCode("JIRA_TICKET_NOT_FOUND", 2));

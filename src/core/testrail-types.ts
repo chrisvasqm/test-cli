@@ -4,6 +4,9 @@ export const SUITE_MODE_SINGLE = 1;
 export interface Project {
   id: number;
   name: string;
+  /** HTML; TestRail shows it on the overview page only when show_announcement is true. */
+  announcement: string | null;
+  show_announcement: boolean;
   is_completed: boolean;
   suite_mode: number;
   url: string;
@@ -143,6 +146,8 @@ export interface Milestone {
   is_completed: boolean;
   completed_on: number | null;
   url: string;
+  /** Sub-milestones; get_milestones and get_milestone nest them under their parent. */
+  milestones?: Milestone[];
 }
 
 export interface Test extends CaseContent {
