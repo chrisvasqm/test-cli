@@ -1,12 +1,13 @@
 {
-  "name": "testrail-cli",
+  "name": "test-cli",
   "version": "2.1.0",
-  "description": "Small TestRail CLI for humans and agents",
+  "description": "Small test management CLI (TestRail) for humans and agents",
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "bin": {
+    "test-cli": "./dist/index.js",
     "testrail": "./dist/index.js"
   },
   "files": [

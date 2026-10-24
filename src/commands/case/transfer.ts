@@ -31,7 +31,7 @@ function registerTransfer(testCase: Command, verb: "copy" | "move", done: string
   testCase
     .command(`${verb} <cases...>`)
     .description(description)
-    .requiredOption("-sc, --section <id>", "Section to put the cases in (ids: testrail section list)")
+    .requiredOption("-sc, --section <id>", "Section to put the cases in (ids: test-cli section list)")
     .action(async (rawIds: string[], opts: TransferOptions, cmd: Command) => {
       const ids = caseIdList(rawIds);
       const sectionId = intInRange(opts.section, "--section", 1);

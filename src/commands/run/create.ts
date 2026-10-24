@@ -153,7 +153,7 @@ export async function linkedCases(
   if (ids.length === 0) {
     throw new InputError(
       "NO_LINKED_CASES",
-      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or give \`testrail ${command}\` the cases with --cases.`,
+      `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`test-cli link add C12 ${key}\`, or give \`test-cli ${command}\` the cases with --cases.`,
     );
   }
   return ids;
@@ -188,7 +188,7 @@ async function ticketCases(projectId: number, suiteId: number | undefined, found
         : `has no ticket linked to a case in this project${suiteId === undefined ? "" : " and suite"}`;
     throw new InputError(
       "NO_LINKED_CASES",
-      `${found.kind === "sprint" ? "Sprint" : "Epic"} ${found.name} ${what}. Link cases with \`testrail link add C12 KAN-12\`.`,
+      `${found.kind === "sprint" ? "Sprint" : "Epic"} ${found.name} ${what}. Link cases with \`test-cli link add C12 KAN-12\`.`,
     );
   }
   const ids = [...new Set([...byKey.values()].flat().map((item) => item.id))];
