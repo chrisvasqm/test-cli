@@ -8,7 +8,7 @@ The agent guide is the `testrail-cli` skill in [chrisvasqm/skills](https://githu
 
 When a command, flag, data shape or error code changes, update the README command table in the same PR, and open a matching PR for SKILL.md in chrisvasqm/skills.
 
-Every flag has a short form (`-s` for `--status`). Give each new flag one too, keep the shared meanings (`-n` how many, `-f` read text from a file, `-r` refs, `-J` from Jira, `-y` yes, uppercase `-C`/`-R`/`-S` for case, run and suite ids), and never reuse the global `-j`/`-c` on a subcommand: commander also reads global flags after the subcommand.
+Every flag has a short form (`-s` for `--status`). Give each new flag one too, keep the shared meanings (`-n` how many, `-f` read text from a file, `-r` refs, `-s` status or section, `-N` name, `-a` assignee, `-D` closed or completed, `-J` from Jira, `-y` yes, uppercase `-C`/`-R`/`-S`/`-M` for case, run, suite and milestone ids; `case create|edit -a --step` is the one older exception), and never reuse the global `-j`/`-c` on a subcommand: commander also reads global flags after the subcommand.
 
 ## Working on this repo
 
@@ -23,6 +23,9 @@ Every flag has a short form (`-s` for `--status`). Give each new flag one too, k
   - URLs are `<site>/index.php?/api/v2/<method>/<ids>&<params>`: filters follow with `&`, not `?`.
   - Every write is a POST. Unknown ids come back as 400 "Field :case_id is not a valid test case.", not 404.
   - `delete_*&soft=1` is not a safe preview on TestRail Cloud: it deleted the case. Never send it.
+  - Bulk GETs (`get_suites`, `get_users`, `get_plans`, `get_milestones`, …) are paged on Cloud (`{suites: [...], _links}`), bare arrays on older servers; read them with `collectPages`. `get_configs` and `get_reports` stay bare arrays.
+  - `get_users/<project>` can come back empty on Cloud; `UserService.list` then falls back to `get_users`.
+  - Test plans share the run id sequence (`R7`); `get_runs` leaves out runs inside plans.
 - **Checks.**
   - `pnpm check` runs the build, oxlint (max-depth 2, id-length ≥ 2, prefer-for-of, no-console) and `prettier --check`.
   - There are no automated tests (owner decision). Verify with `pnpm check` and, after a command or flag change, `pnpm regression` (every command with short flags; Jira features use the real `jira` CLI, set up for this directory, and its throwaway tickets are deleted), plus live runs against the owner's throwaway TestRail project, with the owner's OK.
