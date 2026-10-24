@@ -14,12 +14,15 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 let failures = 0;
 
 // Fake jira-cli: ticket view answers "Fake summary" (FAKE-404 is missing); ticket create logs and
-// answers FAKE-1.
+// answers FAKE-1, but rejects type Bug like Jira does while the no-bug file exists.
 const fakeDir = mkdtempSync(join(tmpdir(), "testrail-fake-jira-"));
 const createLog = join(fakeDir, "creates.log");
+const noBug = join(fakeDir, "no-bug");
 writeFileSync(
   join(fakeDir, "jira"),
   `#!/bin/sh
+if [ "$3" = create ] && [ "$5" = Bug ] && [ -e "${noBug}" ]; then cat >/dev/null
+  echo '{"ok":false,"error":{"code":"JIRA_ERROR","message":"400","details":{"errors":{"issuetype":"Specify a valid issue type"}}}}'; exit 1; fi
 if [ "$3" = create ]; then cat >/dev/null; echo "$@" >> "${createLog}"
   echo '{"ok":true,"data":{"key":"FAKE-1","id":"1","url":"https://fake/browse/FAKE-1","sprint":null}}'; exit 0; fi
 if [ "$4" = FAKE-404 ]; then echo '{"ok":false,"error":{"code":"TICKET_NOT_FOUND","message":"nope"}}'; exit 1; fi
@@ -218,12 +221,22 @@ check(
   run("result", "add", "--run", runRef, "--case", jiraCaseRef, "--status", "failed", "--create-bug"),
   (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && creates() === 1,
 );
+writeFileSync(noBug, "");
+check(
+  "--create-bug, no Bug type: files a Task",
+  run("result", "add", "--run", jiraRunRef, "--case", jiraCaseRef, "--status", "failed", "--create-bug"),
+  (res) =>
+    okData(res) &&
+    res.out.data.bug.key === "FAKE-1" &&
+    creates() === 2 &&
+    readFileSync(createLog, "utf8").includes("--type Task"),
+);
 const jiraTest = run("test", "list", jiraRunRef).out?.data?.tests?.[0]?.id;
 check("close the from-jira run", run("run", "close", jiraRunRef, "--yes"), okData);
 check(
   "--create-bug, closed run: no bug",
   run("result", "add", `T${jiraTest}`, "--status", "failed", "--create-bug"),
-  (res) => errCode("RUN_CLOSED", 2)(res) && creates() === 1,
+  (res) => errCode("RUN_CLOSED", 2)(res) && creates() === 2,
 );
 check("delete the from-jira case", run("case", "delete", jiraCaseRef, "--yes"), okData);
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));

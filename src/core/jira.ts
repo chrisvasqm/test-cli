@@ -73,16 +73,28 @@ export function jiraTicket(key: string): Promise<JiraTicket> {
 }
 
 /**
- * A new Bug in jira-cli's configured project. The description goes through stdin, not the command
- * line. Not retried: a timeout may still have created the ticket.
+ * A new Bug in jira-cli's configured project, or a Task when the project has no Bug type. Bug is
+ * tried first every time, so adding the type to the project switches back without a change here.
+ * The description goes through stdin, not the command line. Not retried on a timeout: it may still
+ * have created the ticket. A rejected issue type (400) created nothing, so the Task retry is safe.
  */
-export function createJiraBug(summary: string, description: string): Promise<JiraCreated> {
+export async function createJiraBug(summary: string, description: string): Promise<JiraCreated> {
+  try {
+    return await createJiraTicket("Bug", summary, description);
+  } catch (err) {
+    if (!(err instanceof CliError && isBadIssueType(err.details))) throw err;
+    info("The Jira project has no Bug issue type, so the bug is filed as a Task.");
+    return createJiraTicket("Task", summary, description);
+  }
+}
+
+function createJiraTicket(type: string, summary: string, description: string): Promise<JiraCreated> {
   const args = [
     "--json",
     "ticket",
     "create",
     "--type",
-    "Bug",
+    type,
     "--summary",
     summary,
     "--description-file",
@@ -100,6 +112,10 @@ export function createJiraBug(summary: string, description: string): Promise<Jir
     throw err;
   });
 }
+
+/** jira-cli's error for Jira's 400 `{ errors: { issuetype } }`: the project has no such type. */
+const isBadIssueType = (details: unknown): boolean =>
+  z.object({ details: z.object({ errors: z.object({ issuetype: z.string() }) }) }).safeParse(details).success;
 
 const isNoAnswer = (details: unknown): boolean =>
   typeof details === "object" && details !== null && "code" in details && details.code === "INVALID_RESPONSE";
