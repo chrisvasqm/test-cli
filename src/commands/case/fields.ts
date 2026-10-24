@@ -1,0 +1,94 @@
+import type { Command } from "commander";
+import { CliError } from "../../core/errors.js";
+import { splitRefs } from "../../core/text.js";
+import type { CaseInput } from "../../services/case.service.js";
+import type { MetaService } from "../../services/meta.service.js";
+
+/** Stable key of the built-in "Test Case (Steps)" template; its name can be renamed. */
+const STEPS_TEMPLATE = "templates_test_case_steps";
+/** Separates a step's action from its expected result in --step. */
+const STEP_SPLIT = "::";
+
+export interface CaseFieldOptions {
+  title?: string;
+  type?: string;
+  priority?: string;
+  refs?: string;
+  estimate?: string;
+  preconds?: string;
+  steps?: string;
+  expected?: string;
+  step?: string[];
+}
+
+const collect = (value: string, previous: string[] = []): string[] => [...previous, value];
+
+/** Field flags shared by case create and case edit. */
+export function addCaseFieldOptions(cmd: Command): Command {
+  return cmd
+    .option("--type <name>", "Case type, e.g. Functional, Regression")
+    .option("--priority <name>", "Priority, e.g. Low, Medium, High, Critical")
+    .option("--refs <keys>", "References, comma-separated (e.g. KAN-1); replaces existing refs")
+    .option("--estimate <time>", "Estimate, e.g. 30s, 5m, 1h")
+    .option("--preconds <text>", "Preconditions (Markdown)")
+    .option("--steps <text>", "Steps as one text (Test Case (Text) template)")
+    .option("--expected <text>", "Expected result (Test Case (Text) template)")
+    .option(
+      "--step <action::expected>",
+      `One step; repeat for each (switches the case to the Steps template). Split action and expected with "${STEP_SPLIT}"`,
+      collect,
+    );
+}
+
+/** Builds TestRail's case body from the given flags; flags left out stay out. */
+export async function toCaseInput(
+  opts: CaseFieldOptions,
+  meta: MetaService,
+  projectId: number,
+): Promise<CaseInput> {
+  const input: CaseInput = {};
+  if (opts.title !== undefined) {
+    if (!opts.title.trim()) throw new CliError("USAGE", "--title cannot be empty");
+    input.title = opts.title.trim();
+  }
+  if (opts.type !== undefined) {
+    input.type_id = await meta.idByName(meta.caseTypes(), opts.type, "UNKNOWN_TYPE", "case type");
+  }
+  if (opts.priority !== undefined) {
+    input.priority_id = await meta.idByName(meta.priorities(), opts.priority, "UNKNOWN_PRIORITY", "priority");
+  }
+  if (opts.refs !== undefined) input.refs = splitRefs(opts.refs).join(",");
+  if (opts.estimate !== undefined) input.estimate = opts.estimate.trim();
+  if (opts.preconds !== undefined) input.custom_preconds = opts.preconds;
+  if (opts.step !== undefined && (opts.steps !== undefined || opts.expected !== undefined)) {
+    throw new CliError("USAGE", "Use --step for separate steps, or --steps/--expected for text; not both");
+  }
+  if (opts.steps !== undefined) input.custom_steps = opts.steps;
+  if (opts.expected !== undefined) input.custom_expected = opts.expected;
+  if (opts.step !== undefined) {
+    input.custom_steps_separated = opts.step.map(parseStep);
+    input.template_id = await stepsTemplate(meta, projectId);
+  }
+  return input;
+}
+
+function parseStep(raw: string): { content: string; expected: string } {
+  const [content = "", ...rest] = raw.split(STEP_SPLIT);
+  if (!content.trim()) throw new CliError("USAGE", `--step "${raw}" has no action before "${STEP_SPLIT}"`);
+  return { content: content.trim(), expected: rest.join(STEP_SPLIT).trim() };
+}
+
+async function stepsTemplate(meta: MetaService, projectId: number): Promise<number> {
+  const templates = await meta.templates(projectId);
+  const found =
+    templates.find((item) => item.i18n_custom_id === STEPS_TEMPLATE) ??
+    templates.find((item) => item.name === "Test Case (Steps)");
+  if (!found) {
+    throw new CliError(
+      "NO_STEPS_TEMPLATE",
+      "This project has no Test Case (Steps) template; use --steps and --expected instead.",
+      templates.map((item) => item.name),
+    );
+  }
+  return found.id;
+}

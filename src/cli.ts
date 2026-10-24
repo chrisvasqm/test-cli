@@ -4,6 +4,7 @@ import { registerCase } from "./commands/case/index.js";
 import { registerProject } from "./commands/project/index.js";
 import { registerResult } from "./commands/result/index.js";
 import { registerRun } from "./commands/run/index.js";
+import { registerSection } from "./commands/section/index.js";
 import { registerSetup } from "./commands/setup.js";
 import { registerTest } from "./commands/test/index.js";
 import { CliError } from "./core/errors.js";
@@ -25,12 +26,20 @@ const program = new Command()
 
 registerSetup(program);
 registerProject(program);
+registerSection(program);
 registerCase(program);
 registerRun(program);
 registerTest(program);
 registerResult(program);
 
-const INPUT_ERRORS = new Set(["USAGE", "INPUT_EOF", "CONFIRM_REQUIRED", "UNKNOWN_STATUS"]);
+const INPUT_ERRORS = new Set([
+  "USAGE",
+  "INPUT_EOF",
+  "CONFIRM_REQUIRED",
+  "UNKNOWN_STATUS",
+  "UNKNOWN_PRIORITY",
+  "UNKNOWN_TYPE",
+]);
 
 // A reader that stops early (`testrail case list | head`) closes stdout; that is not an error.
 process.stdout.on("error", (err: NodeJS.ErrnoException) => {
