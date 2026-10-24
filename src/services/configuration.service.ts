@@ -10,11 +10,6 @@ export class ConfigurationService {
   groups(projectId: number): Promise<ConfigGroup[]> {
     return this.http.get<ConfigGroup[]>(`get_configs/${projectId}`).catch(notFound.project(projectId));
   }
-
-  /** "Chrome,Windows" or "3,7" → configuration ids, e.g. for one plan entry per configuration. */
-  async resolveIds(projectId: number, typed: string): Promise<number[]> {
-    return configIds(await this.groups(projectId), typed);
-  }
 }
 
 /**

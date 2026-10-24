@@ -13,7 +13,7 @@ export interface Collected<T> {
 }
 
 /** How many GETs one command sends at once, so a long list of ids stays under TestRail's rate limit. */
-export const BATCH_SIZE = 5;
+const BATCH_SIZE = 5;
 
 /** `fn` over `items`, BATCH_SIZE at a time; results keep the order of `items`. */
 export async function inBatches<Item, Out>(

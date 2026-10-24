@@ -2,18 +2,11 @@ import type { Command } from "commander";
 import { caseIdList, intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult } from "../../core/output.js";
-import { inBatches } from "../../core/paging.js";
-import type { Case } from "../../core/testrail-types.js";
 import { CaseService } from "../../services/case.service.js";
 import { SectionService } from "../../services/section.service.js";
 
 interface TransferOptions {
   section: string;
-}
-
-/** Every case, a few at a time; the first unknown one fails with CASE_NOT_FOUND. */
-export function loadCases(cases: CaseService, ids: number[]): Promise<Case[]> {
-  return inBatches(ids, (id) => cases.get(id));
 }
 
 export function registerCopy(testCase: Command): void {
@@ -45,10 +38,7 @@ function registerTransfer(testCase: Command, verb: "copy" | "move", done: string
       const { mode } = bootstrap(cmd);
       const cases = new CaseService();
       // Both checks run before the write, so it never half-starts on a typo.
-      const [section, found] = await Promise.all([
-        new SectionService().get(sectionId),
-        loadCases(cases, ids),
-      ]);
+      const [section, found] = await Promise.all([new SectionService().get(sectionId), cases.getMany(ids)]);
       await (verb === "copy"
         ? cases.copyTo(section.id, ids)
         : cases.moveTo(section.id, section.suite_id, ids));

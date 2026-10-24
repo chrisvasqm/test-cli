@@ -63,7 +63,7 @@ export async function buildEntry(
   const suite = parsed.suite ?? config.suiteId ?? (await onlySuite(config.projectId));
   const [caseList, assignee, groups] = await Promise.all([
     parsed.cases ?? (parsed.key === undefined ? undefined : linkedCases(config.projectId, suite, parsed.key)),
-    opts.assign === undefined ? undefined : new UserService().resolve(opts.assign, config.email, "--assign"),
+    new UserService().resolveOptional(opts.assign, config.email, "--assign"),
     opts.configs === undefined ? undefined : new ConfigurationService().groups(config.projectId),
   ]);
   const run: PlanRunInput = { include_all: caseList === undefined };
