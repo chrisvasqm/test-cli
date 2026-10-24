@@ -34,3 +34,14 @@ export const MAX_LIST = 1000;
 export function listLimit(raw: string): number {
   return intInRange(raw, "--limit", 1, MAX_LIST);
 }
+
+/** "C1,C2,3" → [1, 2, 3]. */
+export function caseIds(raw: string): number[] {
+  const ids = raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map(caseId);
+  if (ids.length === 0) throw new CliError("USAGE", "--cases needs at least one case id, e.g. C1,C2");
+  return ids;
+}
