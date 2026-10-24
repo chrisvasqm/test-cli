@@ -14,7 +14,7 @@ export function registerCopy(testCase: Command): void {
     testCase,
     "copy",
     "Copied",
-    "Copy cases into a section, e.g. C1 C2 -s 4; the originals stay",
+    "Copy cases into a section, e.g. C1 C2 -sc 4; the originals stay",
   );
 }
 
@@ -23,7 +23,7 @@ export function registerMove(testCase: Command): void {
     testCase,
     "move",
     "Moved",
-    "Move cases into a section, e.g. C1 C2 -s 4; TestRail may refuse a move to another suite",
+    "Move cases into a section, e.g. C1 C2 -sc 4; TestRail may refuse a move to another suite",
   );
 }
 
@@ -31,7 +31,7 @@ function registerTransfer(testCase: Command, verb: "copy" | "move", done: string
   testCase
     .command(`${verb} <cases...>`)
     .description(description)
-    .requiredOption("-s, --section <id>", "Section to put the cases in (ids: testrail section list)")
+    .requiredOption("-sc, --section <id>", "Section to put the cases in (ids: testrail section list)")
     .action(async (rawIds: string[], opts: TransferOptions, cmd: Command) => {
       const ids = caseIdList(rawIds);
       const sectionId = intInRange(opts.section, "--section", 1);

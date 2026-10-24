@@ -21,12 +21,12 @@ export function registerCreate(milestone: Command): void {
   milestone
     .command("create")
     .description("Create a milestone in the project from the config")
-    .option("-N, --name <name>", "Milestone name (required)")
+    .option("-na, --name <name>", "Milestone name (required)")
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
-    .option("-F, --start <date>", "Start date, e.g. 2026-11-01")
-    .option("-U, --due <date>", "Due date, e.g. 2026-11-30")
-    .option("-M, --parent <milestone>", "Make it a sub-milestone of this milestone, e.g. M3")
+    .option("-sd, --start <date>", "Start date, e.g. 2026-11-01")
+    .option("-du, --due <date>", "Due date, e.g. 2026-11-30")
+    .option("-pa, --parent <milestone>", "Make it a sub-milestone of this milestone, e.g. M3")
     .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
     .action(async (opts: CreateOptions, cmd: Command) => {
       requireName(opts.name, "milestone");

@@ -24,11 +24,11 @@ export function registerList(testCase: Command): void {
   testCase
     .command("list")
     .description("List the cases in the project (and suite) from the config")
-    .option("-s, --section <id>", "Only cases in this section")
+    .option("-sc, --section <id>", "Only cases in this section")
     .option("-r, --refs <key>", "Only cases linked to this Jira key, e.g. KAN-12")
     .option("-q, --query <text>", "Only cases whose title contains this text")
     .option("-p, --priority <names>", "Only these priorities, comma-separated, e.g. High,Critical")
-    .option("-T, --type <names>", "Only these case types, comma-separated, e.g. Functional,Regression")
+    .option("-ty, --type <names>", "Only these case types, comma-separated, e.g. Functional,Regression")
     .option(
       "-u, --updated-since <date>",
       "Only cases updated on or after this date (local midnight), e.g. 2026-10-01",

@@ -17,7 +17,10 @@ export function registerAddRun(plan: Command): void {
   const addRun = plan
     .command("add-run <plan>")
     .description("Add a suite's runs to an open plan, e.g. R7: one run, or one per configuration combination")
-    .option("-N, --name <name>", 'Name of the runs (default: the suite\'s, or "KAN-12: <summary>" with -J)');
+    .option(
+      "-na, --name <name>",
+      'Name of the runs (default: the suite\'s, or "KAN-12: <summary>" with -fj)',
+    );
   entryOptions(addRun).action(async (rawId: string, opts: AddRunOptions, cmd: Command) => {
     const id = planId(rawId);
     const parsed = parseEntry(opts);

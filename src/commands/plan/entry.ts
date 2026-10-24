@@ -20,14 +20,14 @@ export interface EntryOptions {
   configs?: string;
 }
 
-/** Adds the entry flags; add-run also gives the entry a name with -N (create's -N names the plan). */
+/** Adds the entry flags; add-run also gives the entry a name with -na (create's -na names the plan). */
 export function entryOptions(cmd: Command): Command {
   return cmd
-    .option("-S, --suite <suite>", "Suite of the runs, e.g. S1 (default: the config's, or the only suite)")
-    .option("-C, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
-    .option("-J, --from-jira <key>", "Only the cases linked to this Jira ticket (needs jira-cli)")
+    .option("-su, --suite <suite>", "Suite of the runs, e.g. S1 (default: the config's, or the only suite)")
+    .option("-ca, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
+    .option("-fj, --from-jira <key>", "Only the cases linked to this Jira ticket (needs jira-cli)")
     .option("-a, --assign <user>", "Assign the runs: me, an email or a user id")
-    .option("-g, --configs <names>", "One run per combination of these configurations, e.g. Chrome,Windows");
+    .option("-cf, --configs <names>", "One run per combination of these configurations, e.g. Chrome,Windows");
 }
 
 /** True when any entry flag was given, so create adds a first entry. */

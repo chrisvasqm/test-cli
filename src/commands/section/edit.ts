@@ -17,7 +17,7 @@ export function registerEdit(section: Command): void {
   section
     .command("edit <section>")
     .description("Rename a section or change its description; fields left out stay as they are")
-    .option("-N, --name <name>", "New name")
+    .option("-na, --name <name>", "New name")
     .option("-d, --description <text>", "New description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .action(async (rawId: string, opts: EditOptions, cmd: Command) => {

@@ -53,7 +53,7 @@ export function registerSync(run: Command): void {
   run
     .command("sync <run>")
     .description("Comment a run's results on its linked Jira tickets (run and case refs); needs jira-cli")
-    .option("-o, --move <status>", "Also move each ticket whose tests all passed to this Jira status")
+    .option("-mv, --move <status>", "Also move each ticket whose tests all passed to this Jira status")
     .option("-y, --yes", "Post without asking")
     .action(async (rawId: string, opts: SyncOptions, cmd: Command) => {
       const id = runId(rawId);

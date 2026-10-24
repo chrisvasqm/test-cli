@@ -24,8 +24,11 @@ export function registerHistory(testCase: Command): void {
   testCase
     .command("history <case>")
     .description("Show a case's results across the latest runs, newest first, e.g. C12")
-    .option("-R, --run <run>", "Only this run, e.g. R3")
-    .option("-W, --runs <n>", `How many of the latest runs to scan, open and closed (at most ${MAX_HISTORY})`)
+    .option("-ru, --run <run>", "Only this run, e.g. R3")
+    .option(
+      "-rn, --runs <n>",
+      `How many of the latest runs to scan, open and closed (at most ${MAX_HISTORY})`,
+    )
     .option("-n, --limit <n>", `Most results to show (at most ${MAX_HISTORY})`, "20")
     .action(async (rawId: string, opts: HistoryOptions, cmd: Command) => {
       const id = caseId(rawId);

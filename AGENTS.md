@@ -8,7 +8,11 @@ The agent guide is the `testrail-cli` skill in [chrisvasqm/skills](https://githu
 
 When a command, flag, data shape or error code changes, update the README command table in the same PR, and open a matching PR for SKILL.md in chrisvasqm/skills.
 
-Every flag has a short form (`-s` for `--status`). Give each new flag one too, keep the shared meanings (`-n` how many, `-f` read text from a file, `-r` refs, `-s` status or section, `-N` name, `-a` assignee, `-D` closed or completed, `-J` from Jira, `-y` yes, uppercase `-C`/`-R`/`-S`/`-M` for case, run, suite and milestone ids; `case create|edit -a --step` is the one older exception), and never reuse the global `-j`/`-c` on a subcommand: commander also reads global flags after the subcommand.
+Every flag has a short form (`-s` for `--status`). Give each new flag one too:
+
+- Short flags are lowercase. Each one has a single meaning across all commands (`-n` how many, `-f` read text from a file, `-r` refs, `-s` status, `-a` assignee, `-y` yes, `-w` sprint, `-sc` section, `-na` name, `-cp` closed or completed, `-fj` from Jira, `-ca`/`-ru`/`-su`/`-ml` case, run, suite and milestone ids).
+- The first flag to use a letter keeps it. A later flag with another meaning gets two letters (`-sc, --section` because `-s` is `--status`). `src/core/flags.ts` registers these and rewrites them before commander parses. A two-letter short may name related long flags on different commands (`-ru` is `--run` or `--from-run`), but never two on one command.
+- Never reuse the global `-j`/`-c` on a subcommand: commander also reads global flags after the subcommand.
 
 ## Working on this repo
 

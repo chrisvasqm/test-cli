@@ -115,7 +115,7 @@ const created = check(
   run(
     "case",
     "create",
-    "-s",
+    "-sc",
     sectionId,
     "-t",
     `Regression ${tag}`,
@@ -123,9 +123,9 @@ const created = check(
     "high",
     "-r",
     K1,
-    "-a",
+    "-sa",
     "Do a::See b",
-    "-a",
+    "-sa",
     "Do c::See d",
   ),
   okData,
@@ -134,12 +134,12 @@ const caseRef = `C${created?.id}`;
 check("case view", run("case", "view", caseRef), (res) => okData(res) && res.out.data.stepList.length === 2);
 check(
   "case edit",
-  run("case", "edit", caseRef, "-p", "low", "-e", "2m", "-T", "Functional", "-P", "Logged out"),
+  run("case", "edit", caseRef, "-p", "low", "-es", "2m", "-ty", "Functional", "-pc", "Logged out"),
   okData,
 );
 check(
   "case list",
-  run("case", "list", "-s", sectionId, "-n", "250"),
+  run("case", "list", "-sc", sectionId, "-n", "250"),
   (res) =>
     okData(res) && res.out.data.cases.some((item) => item.id === created?.id && item.priority === "Low"),
 );
@@ -153,7 +153,7 @@ check(
   run("case", "list", "-r", missing),
   (res) => okData(res) && res.out.data.cases.length === 0,
 );
-const runData = check("run create", run("run", "create", "-N", `Regression ${tag}`, "-C", caseRef), okData);
+const runData = check("run create", run("run", "create", "-na", `Regression ${tag}`, "-ca", caseRef), okData);
 const runRef = `R${runData?.id}`;
 check("run view", run("run", "view", runRef), (res) => okData(res) && res.out.data.counts.Untested === 1);
 const tests = check(
@@ -164,7 +164,7 @@ const tests = check(
 const testRef = `T${tests?.tests[0]?.id}`;
 check(
   "result add (test)",
-  run("result", "add", testRef, "-s", "failed", "-m", "regression", "-d", K2, "-e", "5s"),
+  run("result", "add", testRef, "-s", "failed", "-m", "regression", "-df", K2, "-e", "5s"),
   okData,
 );
 const importFile = join(mkdtempSync(join(tmpdir(), "testrail-regression-")), "results.json");
@@ -174,7 +174,7 @@ check(
   run("result", "import", runRef, "-f", importFile),
   (res) => okData(res) && res.out.data.added.length === 1,
 );
-check("result add (run+case)", run("result", "add", "-R", runRef, "-C", caseRef, "-s", "retest"), okData);
+check("result add (run+case)", run("result", "add", "-ru", runRef, "-ca", caseRef, "-s", "retest"), okData);
 check(
   "test view",
   run("test", "view", testRef, "-n", "2"),
@@ -191,8 +191,8 @@ check(
   (res) => okData(res) && res.out.data.runs.some((item) => item.id === runData?.id),
 );
 check(
-  "run list -D (closed runs)",
-  run("run", "list", "-D", "-n", "5"),
+  "run list -cp (closed runs)",
+  run("run", "list", "-cp", "-n", "5"),
   (res) => okData(res) && res.out.data.runs.every((item) => item.completed),
 );
 check(
@@ -222,7 +222,7 @@ check("PROJECT_NOT_FOUND", run("project", "view", "P999999999"), errCode("PROJEC
 const keysAre = (keys) => (res) => okData(res) && res.out.data.keys.join() === keys;
 check("link add case", run("link", "add", caseRef, K2, K1.toLowerCase()), keysAre(`${K1},${K2}`));
 check("link add missing ticket", run("link", "add", caseRef, missing), errCode("JIRA_TICKET_NOT_FOUND", 2));
-check("link add -N skips the check", run("link", "add", runRef, missing, "-N"), keysAre(missing));
+check("link add -nc skips the check", run("link", "add", runRef, missing, "-nc"), keysAre(missing));
 check("link remove case", run("link", "remove", caseRef, K1), keysAre(K2));
 check("link remove run", run("link", "remove", runRef, missing), keysAre(""));
 check("link add run", run("link", "add", runRef, K1), keysAre(K1));
@@ -235,13 +235,13 @@ check("link list test", run("link", "list", testRef), (res) => okData(res) && re
 check("LINK_NOT_REMOVABLE", run("link", "remove", testRef, K1), errCode("LINK_NOT_REMOVABLE", 2));
 const fromJira = check(
   "case create --from-jira",
-  run("case", "create", "-s", sectionId, "-J", K2),
+  run("case", "create", "-sc", sectionId, "-fj", K2),
   (res) => okData(res) && res.out.data.title === story && res.out.data.jira.key === K2,
 );
 const jiraCaseRef = `C${fromJira?.id}`;
 const jiraRun = check(
   "run create --from-jira (linked cases)",
-  run("run", "create", "-J", K2),
+  run("run", "create", "-fj", K2),
   (res) => okData(res) && res.out.data.name === `${K2}: ${story}` && res.out.data.counts.Untested === 2,
 );
 const jiraRunRef = `R${jiraRun?.id}`;
@@ -255,7 +255,7 @@ check(
     res.out.data.runs.some((item) => item.id === jiraRun?.id),
 );
 check("link list <bad key>", run("link", "list", "KAN-0"), errCode("USAGE", 2));
-check("NO_LINKED_CASES", run("run", "create", "-J", K1), errCode("NO_LINKED_CASES", 2));
+check("NO_LINKED_CASES", run("run", "create", "-fj", K1), errCode("NO_LINKED_CASES", 2));
 // An epic's children: a subtask of K2, linked to the from-jira case.
 const child = jira(
   "ticket",
@@ -273,13 +273,13 @@ if (child) tickets.push(child);
 check("link add <child>", run("link", "add", jiraCaseRef, child ?? missing), okData);
 const epicRun = check(
   "run create --from-epic",
-  run("run", "create", "-K", K2),
+  run("run", "create", "-ep", K2),
   (res) => okData(res) && res.out.data.tickets.from === "epic" && res.out.data.tickets.linked.includes(child),
 )?.id;
 if (epicRun) check("delete the from-epic run", run("run", "delete", `R${epicRun}`, "-y"), okData);
 check(
   "coverage --epic",
-  run("coverage", "-K", K2, "-W", "5"),
+  run("coverage", "-ep", K2, "-rn", "5"),
   (res) =>
     okData(res) &&
     res.out.data.summary.covered === 1 &&
@@ -287,23 +287,23 @@ check(
 );
 check(
   "coverage --jql (uncovered)",
-  run("coverage", "-Q", `key = ${K1}`, "-W", "1"),
+  run("coverage", "-ql", `key = ${K1}`, "-rn", "1"),
   (res) => okData(res) && res.out.data.summary.uncovered === 1 && res.out.data.tickets[0]?.cases.length === 0,
 );
-check("coverage -w -K", run("coverage", "-w", "active", "-K", K2), errCode("USAGE", 2));
+check("coverage -w -ep", run("coverage", "-w", "active", "-ep", K2), errCode("USAGE", 2));
 // Later checks (run sync) expect only K2 in the case's refs.
 check("link remove <child>", run("link", "remove", jiraCaseRef, child ?? missing), okData);
-check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO_LINKED_CASES", 2));
-check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
+check("run create -ep (no children)", run("run", "create", "-ep", K1), errCode("NO_LINKED_CASES", 2));
+check("run create -w -fj", run("run", "create", "-w", "active", "-fj", K1), errCode("USAGE", 2));
 check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
 check(
   "JIRA_TICKET_NOT_FOUND",
-  run("case", "create", "-s", sectionId, "-J", missing),
+  run("case", "create", "-sc", sectionId, "-fj", missing),
   errCode("JIRA_TICKET_NOT_FOUND", 2),
 );
 const bug = check(
   "result add --create-bug (Bug, or Task when the project has no Bug type)",
-  run("result", "add", "-R", jiraRunRef, "-C", jiraCaseRef, "-s", "failed", "-m", "regression", "-B"),
+  run("result", "add", "-ru", jiraRunRef, "-ca", jiraCaseRef, "-s", "failed", "-m", "regression", "-cb"),
   (res) => okData(res) && res.out.data.defects.includes(res.out.data.bug.key),
 )?.bug?.key;
 if (bug) tickets.push(bug);
@@ -318,13 +318,13 @@ check(
 );
 check(
   "--create-bug, case not in run: no bug",
-  run("result", "add", "-R", runRef, "-C", jiraCaseRef, "-s", "failed", "-B"),
+  run("result", "add", "-ru", runRef, "-ca", jiraCaseRef, "-s", "failed", "-cb"),
   (res) => errCode("CASE_NOT_IN_RUN", 1)(res) && noTicket(nextKey(bug ?? missing)),
 );
 check("run sync without --yes", run("run", "sync", jiraRunRef), errCode("CONFIRM_REQUIRED", 2));
 check(
   "run sync (comments; a failed test keeps the run's ticket in place)",
-  run("run", "sync", jiraRunRef, "-y", "-o", "Done"),
+  run("run", "sync", jiraRunRef, "-y", "-mv", "Done"),
   (res) => {
     const linked = res.out.data.tickets.find((item) => item.key === K2);
     return (
@@ -341,7 +341,7 @@ const jiraTest = run("test", "list", jiraRunRef).out?.data?.tests?.[0]?.id;
 check("close the from-jira run", run("run", "close", jiraRunRef, "-y"), okData);
 check(
   "--create-bug, closed run: no bug",
-  run("result", "add", `T${jiraTest}`, "-s", "failed", "-B"),
+  run("result", "add", `T${jiraTest}`, "-s", "failed", "-cb"),
   (res) => errCode("RUN_CLOSED", 2)(res) && noTicket(nextKey(bug ?? missing)),
 );
 check("delete the from-jira case", run("case", "delete", jiraCaseRef, "-y"), okData);
@@ -362,7 +362,7 @@ check("configuration list", run("configuration", "list"), okData);
 check("report list", run("report", "list"), okData);
 const milestone = check(
   "milestone create",
-  run("milestone", "create", "-N", `Regression ${tag}`, "-U", "2030-01-31", "-r", K1),
+  run("milestone", "create", "-na", `Regression ${tag}`, "-du", "2030-01-31", "-r", K1),
   okData,
 );
 const msRef = `M${milestone?.id}`;
@@ -378,25 +378,29 @@ check(
 );
 check(
   "milestone edit",
-  run("milestone", "edit", msRef, "-N", `Regression ${tag} edited`, "-U", "2030-02-28", "-d", "edited"),
+  run("milestone", "edit", msRef, "-na", `Regression ${tag} edited`, "-du", "2030-02-28", "-d", "edited"),
   (res) => okData(res) && res.out.data.name === `Regression ${tag} edited`,
 );
 check("milestone edit with no field", run("milestone", "edit", msRef), errCode("USAGE", 2));
-check("milestone edit -F -G", run("milestone", "edit", msRef, "-F", "2030-01-01", "-G"), errCode("USAGE", 2));
+check(
+  "milestone edit -sd -sr",
+  run("milestone", "edit", msRef, "-sd", "2030-01-01", "-sr"),
+  errCode("USAGE", 2),
+);
 check(
   "MILESTONE_NOT_FOUND on edit",
-  run("milestone", "edit", "M999999", "-N", "x"),
+  run("milestone", "edit", "M999999", "-na", "x"),
   errCode("MILESTONE_NOT_FOUND", 1),
 );
 const subMilestone = check(
-  "milestone create -F",
-  run("milestone", "create", "-N", `Regression ${tag} child`, "-F", "2030-01-01"),
+  "milestone create -sd",
+  run("milestone", "create", "-na", `Regression ${tag} child`, "-sd", "2030-01-01"),
   okData,
 );
 const subRef = `M${subMilestone?.id}`;
 check(
-  "milestone edit -M -G",
-  run("milestone", "edit", subRef, "-M", msRef, "-G"),
+  "milestone edit -pa -sr",
+  run("milestone", "edit", subRef, "-pa", msRef, "-sr"),
   (res) => okData(res) && res.out.data.parentId === milestone?.id && res.out.data.started === true,
 );
 check("milestone close", run("milestone", "close", subRef), (res) => okData(res) && res.out.data.completed);
@@ -418,19 +422,19 @@ check(
 check("milestone gone", run("milestone", "view", subRef), errCode("MILESTONE_NOT_FOUND", 1));
 const section = check(
   "section create",
-  run("section", "create", "-N", `Regression ${tag}`, "-s", sectionId, "-d", "regression"),
+  run("section", "create", "-na", `Regression ${tag}`, "-pa", sectionId, "-d", "regression"),
   okData,
 );
 const newSection = String(section?.id);
-check("section edit", run("section", "edit", newSection, "-N", `Regression ${tag} edited`), okData);
-check("case copy", run("case", "copy", caseRef, "-s", newSection), okData);
+check("section edit", run("section", "edit", newSection, "-na", `Regression ${tag} edited`), okData);
+check("case copy", run("case", "copy", caseRef, "-sc", newSection), okData);
 const copies = check(
   "case list (copied case)",
-  run("case", "list", "-s", newSection),
+  run("case", "list", "-sc", newSection),
   (res) => okData(res) && res.out.data.cases.length === 1,
 );
 const copyRef = `C${copies?.cases[0]?.id}`;
-check("case move", run("case", "move", copyRef, "-s", sectionId), okData);
+check("case move", run("case", "move", copyRef, "-sc", sectionId), okData);
 check("case edit (several)", run("case", "edit", caseRef, copyRef, "-p", "medium"), okData);
 check("case edit (several) -t", run("case", "edit", caseRef, copyRef, "-t", "x"), errCode("USAGE", 2));
 check(
@@ -438,7 +442,7 @@ check(
   run("case", "list", "-q", tag, "-p", "medium"),
   (res) => okData(res) && res.out.data.cases.length >= 2,
 );
-check("section move", run("section", "move", newSection, "-s", "top"), okData);
+check("section move", run("section", "move", newSection, "-pa", "top"), okData);
 check(
   "CONFIRM_REQUIRED on section delete",
   run("section", "delete", newSection),
@@ -447,7 +451,7 @@ check(
 check("section delete", run("section", "delete", newSection, "-y"), okData);
 check(
   "run edit",
-  run("run", "edit", runRef, "-N", `Regression ${tag} edited`, "-a", "me", "-M", msRef, "-i", copyRef),
+  run("run", "edit", runRef, "-na", `Regression ${tag} edited`, "-a", "me", "-ml", msRef, "-i", copyRef),
   okData,
 );
 check(
@@ -458,8 +462,8 @@ check(
 const attachFile = join(mkdtempSync(join(tmpdir(), "testrail-regression-")), "evidence.txt");
 writeFileSync(attachFile, `regression ${tag}\n`);
 check(
-  "result add -a -O -A",
-  run("result", "add", testRef, "-s", "passed", "-a", "me", "-O", "1:passed,2:failed", "-A", attachFile),
+  "result add -a -sl -at",
+  run("result", "add", testRef, "-s", "passed", "-a", "me", "-sl", "1:passed,2:failed", "-at", attachFile),
   okData,
 );
 check(
@@ -489,8 +493,8 @@ check(
   (res) => okData(res) && res.out.data.attachments.length >= 1,
 );
 check(
-  "case history -R",
-  run("case", "history", caseRef, "-R", runRef),
+  "case history -ru",
+  run("case", "history", caseRef, "-ru", runRef),
   (res) => okData(res) && res.out.data.results.length >= 4,
 );
 check(
@@ -499,26 +503,26 @@ check(
   (res) => okData(res) && res.out.data.results.length === 2,
 );
 const rerun = check(
-  "run create -R (rerun)",
-  run("run", "create", "-R", runRef, "-s", "passed"),
+  "run create -ru (rerun)",
+  run("run", "create", "-ru", runRef, "-s", "passed"),
   (res) => okData(res) && res.out.data.counts.Untested === 1,
 );
 const rerunRef = `R${rerun?.id}`;
 check(
   "NO_MATCHING_TESTS",
-  run("run", "create", "-R", runRef, "-s", "blocked"),
+  run("run", "create", "-ru", runRef, "-s", "blocked"),
   errCode("NO_MATCHING_TESTS", 2),
 );
 const plan = check(
   "plan create",
-  run("plan", "create", "-N", `Regression ${tag}`, "-M", msRef, "-C", caseRef),
+  run("plan", "create", "-na", `Regression ${tag}`, "-ml", msRef, "-ca", caseRef),
   okData,
 );
 const planRef = `R${plan?.id}`;
-check("plan add-run", run("plan", "add-run", planRef, "-C", caseRef, "-a", "me"), okData);
+check("plan add-run", run("plan", "add-run", planRef, "-ca", caseRef, "-a", "me"), okData);
 check(
-  "test todo -M (plan run)",
-  run("test", "todo", "-M", msRef),
+  "test todo -ml (plan run)",
+  run("test", "todo", "-ml", msRef),
   hasRows("tests", (item) => item.planId === plan?.id && item.status === "Untested"),
 );
 check("plan view", run("plan", "view", planRef), (res) => okData(res) && res.out.data.entries.length === 2);
@@ -531,17 +535,21 @@ check("CONFIRM_REQUIRED on plan close", run("plan", "close", planRef), errCode("
 check("plan close", run("plan", "close", planRef, "-y"), okData);
 check("close the rerun", run("run", "close", rerunRef, "-y"), okData);
 check("delete the copied case", run("case", "delete", copyRef, "-y"), okData);
-check("result add (failed, defect K1)", run("result", "add", testRef, "-s", "failed", "-d", K1), okData);
+check("result add (failed, defect K1)", run("result", "add", testRef, "-s", "failed", "-df", K1), okData);
 const k1Status = jira("ticket", "view", K1, "--comments", "0").data?.status ?? "To Do";
 const retestIds = (key) => (res) =>
   okData(res) && res.out.data[key].some((row) => `T${row.testId}` === testRef);
 check("run retest (bug open: waiting)", run("run", "retest", runRef, "-y"), retestIds("waiting"));
 check(
   "CONFIRM_REQUIRED on run retest",
-  run("run", "retest", runRef, "-o", k1Status),
+  run("run", "retest", runRef, "-dn", k1Status),
   errCode("CONFIRM_REQUIRED", 2),
 );
-check("run retest -o (bug done)", run("run", "retest", runRef, "-o", k1Status, "-y"), retestIds("retested"));
+check(
+  "run retest -dn (bug done)",
+  run("run", "retest", runRef, "-dn", k1Status, "-y"),
+  retestIds("retested"),
+);
 check(
   "run retest: test is Retest",
   run("test", "view", testRef),

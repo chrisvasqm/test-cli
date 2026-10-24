@@ -14,7 +14,7 @@ export function registerList(milestone: Command): void {
   milestone
     .command("list")
     .description("List open milestones in the project")
-    .option("-D, --completed", "List completed milestones instead")
+    .option("-cp, --completed", "List completed milestones instead")
     .option("-n, --limit <n>", "Most milestones to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
