@@ -2,7 +2,7 @@ import { openAsBlob } from "node:fs";
 import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import type { Upload } from "../core/input.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { ALL, collectPages, type Collected } from "../core/paging.js";
 import type { Attachment } from "../core/testrail-types.js";
 import { TestService } from "./test.service.js";
 
@@ -43,13 +43,10 @@ export class AttachmentService {
           err instanceof CliError
             ? err
             : new CliError("UPLOAD_FAILED", String(err instanceof Error ? err.message : err));
-        throw new CliError(
-          known.code,
-          `${known.message} Already attached: ${done.join(", ")}; retry only the rest.`,
-          { attached: ids, error: known.details },
-          known.status,
-          known.field,
-        );
+        throw known.withNote(`Already attached: ${done.join(", ")}; retry only the rest.`, {
+          attached: ids,
+          error: known.details,
+        });
       });
       ids.push(id);
     }
@@ -86,7 +83,7 @@ export class AttachmentService {
         `Test T${testId} has no results to attach to; add one first.`,
       );
     }
-    const { items } = await tests.results(testId, Number.MAX_SAFE_INTEGER);
+    const { items } = await tests.results(testId, ALL);
     if (items.some((item) => item.id === resultId)) return resultId;
     throw new CliError("RESULT_NOT_IN_TEST", `Result #${resultId} is not a result of test T${testId}.`);
   }

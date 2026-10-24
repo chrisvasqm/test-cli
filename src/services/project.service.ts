@@ -1,26 +1,15 @@
 import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { collectPages, MAX_LIST, type Collected } from "../core/paging.js";
 import type { Project, Suite } from "../core/testrail-types.js";
-
-/** Most projects one account can list at once. */
-const MAX_PROJECTS = 1000;
-/** Most suites one project lists at once. */
-const MAX_SUITES = 1000;
 
 /** get_project(s) and get_suites endpoints. */
 export class ProjectService {
   constructor(private readonly http = HttpClient.get()) {}
 
-  /** Active projects only; completed ones are archived. `hasMore` is true past MAX_PROJECTS. */
+  /** Active projects only; completed ones are archived. `hasMore` is true past MAX_LIST. */
   listActive(): Promise<Collected<Project>> {
-    return collectPages<Project>(
-      "get_projects",
-      "projects",
-      { is_completed: false },
-      MAX_PROJECTS,
-      this.http,
-    );
+    return collectPages<Project>("get_projects", "projects", { is_completed: false }, MAX_LIST, this.http);
   }
 
   get(id: number): Promise<Project> {
@@ -33,7 +22,7 @@ export class ProjectService {
       `get_suites/${projectId}`,
       "suites",
       {},
-      MAX_SUITES,
+      MAX_LIST,
       this.http,
     ).catch(notFound.project(projectId));
     return items;

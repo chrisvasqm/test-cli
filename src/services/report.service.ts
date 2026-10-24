@@ -1,6 +1,6 @@
 import { notFound, notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { ALL, collectPages, type Collected } from "../core/paging.js";
 import type { Report, ReportRun } from "../core/testrail-types.js";
 
 /**
@@ -11,13 +11,9 @@ export class ReportService {
   constructor(private readonly http = HttpClient.get()) {}
 
   list(projectId: number): Promise<Collected<Report>> {
-    return collectPages<Report>(
-      `get_reports/${projectId}`,
-      "reports",
-      {},
-      Number.MAX_SAFE_INTEGER,
-      this.http,
-    ).catch(notFound.project(projectId));
+    return collectPages<Report>(`get_reports/${projectId}`, "reports", {}, ALL, this.http).catch(
+      notFound.project(projectId),
+    );
   }
 
   /** Makes the report now; TestRail keeps it and returns its links. */
