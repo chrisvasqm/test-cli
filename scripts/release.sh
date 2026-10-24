@@ -50,6 +50,8 @@ while IFS=$'\x1f' read -r subject es; do
   fi
   cambios+="- $es"$'\n'
 done < <(git log --no-merges --format='%s%x1f%(trailers:key=Es,valueonly,separator=%x20)' "$range")
+# Strip the last newline here: $'…' quoting does not work inside the heredoc below.
+cambios=${cambios%$'\n'}
 [ "$missing" -eq 0 ] || echo "release: $missing commit(s) have no Es: trailer; their Spanish line repeats the English subject" >&2
 cat >"$notes" <<NOTES
 ## What's changed
@@ -70,7 +72,7 @@ To install exactly this version: \`npm install -g https://github.com/chrisvasqm/
 
 ## Cambios
 
-${cambios%$'\n'}
+$cambios
 
 ## Instalar o actualizar
 
