@@ -26,7 +26,7 @@ export class ReportService {
       .get<ReportRun>(`run_report/${id}`)
       .catch(
         notFoundAs(
-          "report_template_id",
+          "report_id",
           "REPORT_NOT_FOUND",
           `Report ${id} does not exist, is not on-demand via the API, or you cannot see it.`,
         ),
