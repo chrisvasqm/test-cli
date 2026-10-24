@@ -6,7 +6,7 @@ import { jiraTickets, type TicketSource } from "../core/jira.js";
 import { grid, printResult } from "../core/output.js";
 import type { Case, Run, Status, Test } from "../core/testrail-types.js";
 import { CaseService } from "../services/case.service.js";
-import { MetaService } from "../services/meta.service.js";
+import { MetaService, nameOf } from "../services/meta.service.js";
 import { RunService } from "../services/run.service.js";
 import { TestService } from "../services/test.service.js";
 
@@ -132,7 +132,7 @@ function keepLatest(
 ): void {
   for (const test of runTests) {
     if (!caseIds.has(test.case_id) || latest.has(test.case_id) || untested.has(test.status_id)) continue;
-    const label = statuses.find((status) => status.id === test.status_id)?.label ?? `#${test.status_id}`;
+    const label = nameOf(statuses, test.status_id) ?? `#${test.status_id}`;
     latest.set(test.case_id, {
       statusId: test.status_id,
       status: label,

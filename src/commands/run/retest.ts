@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import { isJiraKey, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
+import { InputError } from "../../core/errors.js";
 import { jiraStatuses, type JiraStatus } from "../../core/jira.js";
 import { grid, printResult } from "../../core/output.js";
 import type { Result, Test } from "../../core/testrail-types.js";
@@ -60,6 +61,7 @@ export function registerRetest(run: Command): void {
         meta.statusIds(opts.status),
         meta.status("retest"),
       ]);
+      if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
       const [{ items: tests }, { items: results }] = await Promise.all([
         new TestService().list(id, statusIds, Number.MAX_SAFE_INTEGER),
         new ResultService().forRun(id),

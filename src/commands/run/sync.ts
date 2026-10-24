@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { runId } from "../../core/args.js";
+import { isJiraKey, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
 import { CliError, InputError } from "../../core/errors.js";
@@ -18,7 +18,6 @@ interface SyncOptions {
 
 /** Most not-passed tests a comment lists by name; the rest are counted. */
 const MAX_LISTED = 25;
-const JIRA_KEY = /^[A-Z][A-Z0-9_]*-[1-9]\d*$/;
 
 /** A Jira key and the tests that relate to it: every test for a run ref, the case's tests for a case ref. */
 interface Plan {
@@ -81,15 +80,20 @@ export function registerSync(run: Command): void {
         await confirm(`Comment on ${views.length} Jira ticket(s) above${moves}?`);
       }
       for (const [index, view] of views.entries()) {
-        await sync(view, comment(found, plans[index]!, view), target);
+        const stopped = await syncOrStop(views, view, comment(found, plans[index]!, view), target);
+        if (stopped) break;
       }
       report(mode, found, target, views);
     });
 }
 
-/** Run refs first (every test), then each case's refs (its tests), keys in order of first appearance. */
+/**
+ * Run refs first (every test), then each case's refs (its tests), keys in order of first appearance.
+ * A run ref that a case also links (a run made from a sprint or epic) is judged by its own cases.
+ */
 function planTickets(run: Run, tests: Test[]): Plan[] {
-  const runKeys = jiraRefs(run.refs);
+  const caseKeys = new Set(tests.flatMap((test) => jiraRefs(test.refs)));
+  const runKeys = jiraRefs(run.refs).filter((key) => !caseKeys.has(key));
   const plans = runKeys.map((key): Plan => ({ key, scope: "run", tests }));
   const byKey = new Map<string, Plan>();
   const pairs = tests.flatMap((test) => jiraRefs(test.refs).map((key) => [key, test] as const));
@@ -104,7 +108,7 @@ function planTickets(run: Run, tests: Test[]): Plan[] {
 
 /** Refs that look like Jira keys, upper-cased; other refs (URLs, notes) are ignored. */
 const jiraRefs = (refs: string | null): string[] =>
-  uniqueRefs(splitList(refs).map((ref) => ref.toUpperCase())).filter((ref) => JIRA_KEY.test(ref));
+  uniqueRefs(splitList(refs).map((ref) => ref.toUpperCase())).filter(isJiraKey);
 
 function toView(plan: Plan, statuses: Status[]): TicketView {
   const counts: Record<string, number> = {};
@@ -157,6 +161,27 @@ function comment(run: Run, plan: Plan, view: TicketView): string {
   }
   lines.push(run.url);
   return lines.join("\n\n");
+}
+
+/**
+ * sync, but when jira-cli stops working after some tickets were commented on, keeps the error on
+ * this view and returns true, so the report names the tickets done and a rerun can skip them.
+ */
+async function syncOrStop(
+  views: readonly TicketView[],
+  view: TicketView,
+  text: string,
+  target: string | undefined,
+): Promise<boolean> {
+  try {
+    await sync(view, text, target);
+    return false;
+  } catch (err) {
+    if (!views.some((item) => item.commented)) throw err;
+    const { code, message } = err instanceof CliError ? err : new CliError("UNEXPECTED", String(err));
+    view.error = { code, message };
+    return true;
+  }
 }
 
 /** Comments, then moves when asked and every test passed; a failure is kept on the view, not thrown. */

@@ -310,7 +310,7 @@ check(
     const linked = res.out.data.tickets.find((item) => item.key === K2);
     return (
       okData(res) &&
-      linked.scope === "run" &&
+      linked.scope === "cases" &&
       linked.commented &&
       linked.moved === null &&
       linked.tests.notPassed.length > 0 &&
