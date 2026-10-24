@@ -35,6 +35,13 @@ export function jiraKeys(raw: readonly string[]): string[] {
   return keys.filter((key, index) => keys.indexOf(key) === index);
 }
 
+/** One Jira key, for --from-jira. */
+export function jiraKey(raw: string, flag: string): string {
+  const keys = jiraKeys([raw]);
+  if (keys.length > 1) throw new InputError("USAGE", `${flag} takes one Jira key, e.g. KAN-12`);
+  return keys[0]!;
+}
+
 /** Splits `keys` into those already in `linked` and the rest. */
 export function partition(keys: readonly string[], linked: readonly string[]) {
   const isLinked = (key: string) => linked.some((other) => sameKey(other, key));

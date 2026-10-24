@@ -9,7 +9,7 @@ import { splitList, uniqueRefs } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
-import { jiraKeys } from "../link/target.js";
+import { jiraKey } from "../link/target.js";
 import { renderCounts, toRunSummary } from "../render.js";
 
 interface CreateOptions {
@@ -40,7 +40,7 @@ export function registerCreate(run: Command): void {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone =
         opts.milestone === undefined ? undefined : intInRange(opts.milestone, "--milestone", 1);
-      const key = opts.fromJira === undefined ? undefined : jiraKeys([opts.fromJira])[0]!;
+      const key = opts.fromJira === undefined ? undefined : jiraKey(opts.fromJira, "--from-jira");
       if (key === undefined && opts.name === undefined) {
         throw new InputError("USAGE", "Give --name, or --from-jira KAN-12 to take it from Jira");
       }

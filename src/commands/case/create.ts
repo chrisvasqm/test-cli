@@ -7,7 +7,7 @@ import { printResult } from "../../core/output.js";
 import { splitList, uniqueRefs } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
-import { jiraKeys } from "../link/target.js";
+import { jiraKey } from "../link/target.js";
 import { caseUrl } from "../render.js";
 import { addCaseFieldOptions, toCaseInput, type CaseFieldOptions } from "./fields.js";
 
@@ -29,7 +29,7 @@ export function registerCreate(testCase: Command): void {
     );
   addCaseFieldOptions(cmd).action(async (opts: CreateOptions, command: Command) => {
     const sectionId = intInRange(opts.section, "--section", 1);
-    const key = opts.fromJira === undefined ? undefined : jiraKeys([opts.fromJira])[0]!;
+    const key = opts.fromJira === undefined ? undefined : jiraKey(opts.fromJira, "--from-jira");
     if (key === undefined && opts.title === undefined) {
       throw new InputError("USAGE", "Give --title, or --from-jira KAN-12 to take it from Jira");
     }

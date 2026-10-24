@@ -85,8 +85,21 @@ export function createJiraBug(summary: string, description: string): Promise<Jir
     "--description-file",
     "-",
   ];
-  return callJira<JiraCreated>(args, undefined, description);
+  return callJira<JiraCreated>(args, undefined, description).catch((err: unknown) => {
+    // No JSON answer (timeout, crash): the ticket may exist, so a blind retry could file two.
+    if (err instanceof CliError && err.code === "JIRA_ERROR" && isNoAnswer(err.details)) {
+      throw new CliError(
+        "JIRA_ERROR",
+        `${err.message} The bug may have been created; check Jira before retrying.`,
+        err.details,
+      );
+    }
+    throw err;
+  });
 }
+
+const isNoAnswer = (details: unknown): boolean =>
+  typeof details === "object" && details !== null && "code" in details && details.code === "INVALID_RESPONSE";
 
 const viewArgs = (key: string): string[] => ["--json", "ticket", "view", key, "--comments", "0"];
 
