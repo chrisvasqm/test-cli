@@ -1,4 +1,4 @@
-import { joinRefs, splitList } from "../core/text.js";
+import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
 import { CaseService } from "./case.service.js";
 import { ResultService } from "./result.service.js";
 import { RunService } from "./run.service.js";
@@ -27,7 +27,7 @@ export class LinkService {
     if (target.kind === "run") return splitList((await this.runs.get(target.id)).refs);
     await this.tests.get(target.id);
     const { items } = await this.tests.results(target.id, ALL_RESULTS);
-    return unique(items.toReversed().flatMap((result) => splitList(result.defects)));
+    return uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
   }
 
   /**
@@ -57,8 +57,4 @@ export class LinkService {
 /** Keys compare ignoring case, as Jira does; the first spelling wins. */
 export function sameKey(left: string, right: string): boolean {
   return left.toUpperCase() === right.toUpperCase();
-}
-
-function unique(keys: string[]): string[] {
-  return keys.filter((key, index) => keys.findIndex((other) => sameKey(other, key)) === index);
 }

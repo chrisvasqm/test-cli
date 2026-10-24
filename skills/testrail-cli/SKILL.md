@@ -39,6 +39,7 @@ testrail section list [--limit <n>]          # section ids, nested by depth (250
 testrail case list [--section <id>] [--limit <n>]       # cases in the configured project/suite (50)
 testrail case view C12                       # fields, preconditions, steps, expected
 testrail case create --section <id> --title "…" [case fields]
+testrail case create --section <id> --from-jira KAN-12 [--title "…"] [case fields]   # title = ticket summary, KAN-12 added to refs
 testrail case edit C12 [--title "…"] [case fields]
 testrail case delete C12 --yes
 #   case fields: --type <name>, --priority <name>, --refs KAN-1,KAN-2 (replaces), --estimate 5m,
@@ -49,6 +50,8 @@ testrail run list [--completed] [--limit <n>]           # open runs, newest firs
 testrail run view R3                         # status counts, refs, description
 testrail run create --name "…" [--cases C1,C2] [--description <text> | --file <path|->] [--refs KAN-1] [--milestone <id>]
 #   no --cases: every case in the suite
+testrail run create --from-jira KAN-12 [--name "…"] [--cases C1,C2] …   # name "KAN-12: <summary>", KAN-12 in refs;
+#   no --cases: only the cases whose refs include KAN-12 (NO_LINKED_CASES if none)
 testrail run close R3 --yes
 
 testrail test list R3 [--status failed,retest] [--limit <n>]   # tests in a run (100)
@@ -56,12 +59,15 @@ testrail test view T45 [--results <0-100>]   # status, steps, latest results (5)
 
 testrail result add T45 --status failed [--comment <text> | --file <path|->] [--defects KAN-2] [--elapsed "1m 30s"] [--build 1.2.0]
 testrail result add --run R3 --case C12 --status passed …   # when you know the case, not the test
+testrail result add T45 --status failed --comment "…" --create-bug   # files a Jira Bug first, adds its key to the defects
 testrail result import R3 --file results.json               # many results in one request (- reads stdin)
 
 testrail link list C12|R3|T45                # Jira keys linked to a case or run (refs) or a test (its results' defects)
 testrail link add C12 KAN-1 [KAN-2 …] [--no-check]   # adds to the refs; on a test, adds a status-less result "Linked KAN-1"
 testrail link remove C12 KAN-1 [KAN-2 …]     # cases and runs only
 ```
+
+`--from-jira` and `--create-bug` need jira-cli (`jira`) with its own config; without it they fail with `JIRA_CLI_MISSING`. `--create-bug` creates a real Jira ticket ("T45 failed: <title>", described by the comment plus a link to the test) in jira-cli's configured project, so use it only when the user asked for a bug.
 
 `link` needs the letter (`C12`, not `12`). Keys are upper-cased and must look like `KAN-12`; ones already linked are skipped. `link add` first checks each new key with jira-cli (`jira --json ticket view`) when `jira` is on PATH, and skips the check with a note on stderr when it is not. A test's link is a result, so it is permanent: add one only when the user asked.
 
@@ -86,16 +92,16 @@ All entries are added in one request, so either all land or none do.
 - `case list`: `{cases: [{id, title, sectionId, priority, type, refs, updated}], hasMore}`
 - `case view`: `{id, title, url, section: {id, name}, suiteId, priority, type, refs, estimate, created, updated, preconditions, steps, expected, stepList: [{content, expected}]}`
   - `steps` and `expected` are the text template's fields; `stepList` is the steps template's. Unused ones are null or `[]`.
-- `case create`: `{id, title, sectionId, url}`
+- `case create`: `{id, title, sectionId, jira: {key, url}|null, url}`
 - `case edit`: `{id, title, changed, url}` (`changed` lists the TestRail fields you set, e.g. `priority_id`, `custom_steps_separated`)
 - `case delete`: `{id, title, deleted: true}`
 - `run list`: `{runs: [{id, name, completed, planId, counts, created, url}], hasMore}`
 - `run view`: `{id, name, url, description, suiteId, planId, includeAll, completed, completedOn, refs, counts, created}`
-- `run create`: `{id, name, url, completed, completedOn, counts, includeAll}`
+- `run create`: `{id, name, url, completed, completedOn, counts, includeAll, jira: {key, url}|null}`
 - `run close`: `{id, name, url, completed, completedOn, counts}`
 - `test list`: `{runId, tests: [{id, caseId, title, status}], hasMore}`
 - `test view`: `{id, title, url, caseId, runId, status, refs, preconditions, steps, expected, stepList, results: {shown: [result], hasMore}}`
-- `result add`: a result plus `{testId, url}`
+- `result add`: a result plus `{testId, bug: {key, url}|null, url}`
 - `result import`: `{runId, added: [{id, testId, caseId, status}]}`
 - `link list`: `{target, keys, url}` (`target` is e.g. `"C12"`)
 - `link add`: `{target, keys, added, already, checked, url}` (`keys` is the full list after the change; `checked` is true when jira-cli confirmed the new keys)
@@ -114,6 +120,10 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `NO_STEPS_TEMPLATE`: the project has no steps template; use `--steps` and `--expected`.
 - `JIRA_TICKET_NOT_FOUND`: `details` lists the keys Jira does not have. Nothing was linked. Check the keys with the user.
 - `JIRA_CHECK_FAILED`: jira-cli is installed but failed (e.g. no `.jira-cli.json`); `details` is its error. Nothing was linked. In a terminal the CLI offers `jira setup`; without one, ask the user to run `jira setup` themselves (it asks for secrets), or pass `--no-check` if they say so.
+- `JIRA_CLI_MISSING`: `--from-jira` and `--create-bug` need jira-cli. Tell the user; don't install it yourself.
+- `JIRA_ERROR`: jira-cli refused (`details` is its error, e.g. `CONFIG_MISSING`). Nothing was created in TestRail. For setup errors, ask the user to run `jira setup`.
+- `NO_LINKED_CASES`: no case has that key in its refs. Link cases first (`link add`) or pass `--cases`.
+- After `--create-bug`, if the TestRail result then fails, the error message and `details.bug` name the bug that was created. Retry with `--defects <that key>`, not `--create-bug`, or you get a second bug.
 - `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.
 - `CONFIRM_REQUIRED`: see the rule on deletes above.
 - `FILE_ERROR`: the `--file` path can't be read.

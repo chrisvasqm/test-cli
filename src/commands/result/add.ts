@@ -1,12 +1,17 @@
 import type { Command } from "commander";
 import { caseId, runId, testId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
+import { CliError, InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
+import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
-import { ResultService } from "../../services/result.service.js";
-import { renderResult, testUrl, toResult } from "../render.js";
+import { CaseService } from "../../services/case.service.js";
+import { ResultService, type ResultInput } from "../../services/result.service.js";
+import { TestService } from "../../services/test.service.js";
+import { joinRefs, splitList } from "../../core/text.js";
+import { renderResult, runUrl, testUrl, toResult } from "../render.js";
+import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
 
 interface AddOptions {
@@ -18,6 +23,7 @@ interface AddOptions {
   build?: string;
   run?: string;
   case?: string;
+  createBug?: boolean;
 }
 
 export function registerAdd(result: Command): void {
@@ -32,6 +38,7 @@ export function registerAdd(result: Command): void {
     .option("--build <version>", "Build or version tested (--version is the CLI's own)")
     .option("--run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
     .option("--case <case>", "Case in that run, e.g. C12")
+    .option("--create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
     .action(async (rawTest: string | undefined, opts: AddOptions, cmd: Command) => {
       const target = parseTarget(rawTest, opts);
       const comment = await readOptionalText(opts.comment, opts.file, "comment");
@@ -40,21 +47,29 @@ export function registerAdd(result: Command): void {
       // Statuses before the write: a failed lookup after it would report an error for a saved result.
       const statuses = await meta.statuses();
       const input = await toResultInput({ ...opts, comment, version: opts.build }, meta, "result");
-      const results = new ResultService();
-      const added =
-        target.kind === "test"
-          ? await results.addForTest(target.testId, input)
-          : await results.addForCase(target.runId, target.caseId, input);
+      const bug = opts.createBug ? await fileBug(config, target, comment) : undefined;
+      if (bug) input.defects = joinRefs([...splitList(input.defects), bug.key]);
+      const added = await addResult(target, input).catch((err: unknown) => {
+        // The bug exists now; say so, or a retry files a second one.
+        if (!bug || !(err instanceof CliError)) throw err;
+        throw new CliError(
+          err.code,
+          `${err.message} Jira bug ${bug.key} was already created (${bug.url}); retry with --defects ${bug.key}, not --create-bug.`,
+          { bug, error: err.details },
+          err.status,
+          err.field,
+        );
+      });
       const view = {
         ...toResult(added, statuses),
         testId: added.test_id,
+        bug: bug ? { key: bug.key, url: bug.url } : null,
         url: testUrl(config, added.test_id),
       };
-      printResult(
-        mode,
-        view,
-        () => `Added result #${view.id} to T${view.testId}\n${renderResult(view)}\n${view.url}`,
-      );
+      printResult(mode, view, () => {
+        const filed = view.bug ? `\nCreated Jira bug ${view.bug.key}  ${view.bug.url}` : "";
+        return `Added result #${view.id} to T${view.testId}${filed}\n${renderResult(view)}\n${view.url}`;
+      });
     });
 }
 
@@ -69,4 +84,31 @@ function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
     throw new InputError("USAGE", "Give a test id (T45), or both --run R3 and --case C12");
   }
   return { kind: "case", runId: runId(opts.run), caseId: caseId(opts.case) };
+}
+
+function addResult(target: Target, input: ResultInput) {
+  const results = new ResultService();
+  return target.kind === "test"
+    ? results.addForTest(target.testId, input)
+    : results.addForCase(target.runId, target.caseId, input);
+}
+
+/** A Jira Bug named after the test, with the comment and a link back to TestRail. */
+async function fileBug(config: Config, target: Target, comment: string | undefined): Promise<JiraCreated> {
+  const [name, title, url] =
+    target.kind === "test"
+      ? [
+          `T${target.testId}`,
+          (await new TestService().get(target.testId)).title,
+          testUrl(config, target.testId),
+        ]
+      : [
+          `C${target.caseId}`,
+          (await new CaseService().get(target.caseId)).title,
+          runUrl(config, target.runId),
+        ];
+  const where =
+    target.kind === "test" ? `TestRail test ${name}` : `TestRail case ${name} in run R${target.runId}`;
+  const description = [comment, `${where}: ${url}`].filter(Boolean).join("\n\n");
+  return createJiraBug(`${name} failed: ${title}`, description);
 }
