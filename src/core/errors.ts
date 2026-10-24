@@ -48,4 +48,5 @@ export const notFound = {
   suite: (id: number) => notFoundAs("suite_id", "SUITE_NOT_FOUND", `Suite S${id} ${cannotSee}`),
   milestone: (id: number) =>
     notFoundAs("milestone_id", "MILESTONE_NOT_FOUND", `Milestone M${id} ${cannotSee}`),
+  result: (id: number) => notFoundAs("result_id", "RESULT_NOT_FOUND", `Result #${id} ${cannotSee}`),
 };

@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { basename } from "node:path";
 import { text as readStream } from "node:stream/consumers";
 import { InputError } from "./errors.js";
 import { info } from "./output.js";
@@ -43,4 +44,34 @@ export async function readOptionalText(
 ): Promise<string | undefined> {
   if (inline === undefined && file === undefined) return undefined;
   return readText(inline, file, what);
+}
+
+/** TestRail's limit for one attachment. */
+const MAX_UPLOAD_BYTES = 256 * 1024 * 1024;
+
+/** A file checked for upload: it exists, is a regular file and fits TestRail's limit. */
+export interface Upload {
+  path: string;
+  name: string;
+  size: number;
+}
+
+/** Checks every file before anything is sent, so a bad path never leaves half the files uploaded. */
+export async function checkUploads(paths: readonly string[]): Promise<Upload[]> {
+  if (paths.length === 0) throw new InputError("USAGE", "Give at least one file to attach");
+  return Promise.all(paths.map((path) => checkUpload(path)));
+}
+
+async function checkUpload(path: string): Promise<Upload> {
+  const found = await stat(path).catch((err: unknown) => {
+    throw new InputError(
+      "FILE_ERROR",
+      `Cannot read ${path}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  });
+  if (!found.isFile()) throw new InputError("FILE_ERROR", `${path} is not a file`);
+  if (found.size > MAX_UPLOAD_BYTES) {
+    throw new InputError("FILE_TOO_LARGE", `${path} is over TestRail's 256 MB limit for one attachment`);
+  }
+  return { path, name: basename(path), size: found.size };
 }

@@ -114,6 +114,8 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail report list`                 | On-demand report templates (made in the UI with "On-demand via the API")                                          |
 | `testrail report run <id>`             | Run a report template; prints its URL, HTML and PDF links                                                         |
 | `testrail user list`                   | Users in the project (id, name, email); `*` marks you                                                             |
+| `testrail attachment list <C\|R\|T>`   | Files on a case, a run, or a test's results (`-n <limit>`, 100)                                                   |
+| `testrail attachment add <C\|R\|T> …`  | Attach files (256 MB each); a test's go to its newest result or `-i <result id>`; also `result add -A`            |
 | `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                         |
 
 - **Case fields (`create` and `edit`):**
