@@ -1,10 +1,10 @@
 import { createInterface, type Interface } from "node:readline";
 import { stdin, stderr } from "node:process";
 import { Writable } from "node:stream";
-import { CliError } from "./errors.js";
+import { CliError, InputError } from "./errors.js";
 import { stripControls } from "./output.js";
 
-const eof = (): CliError => new CliError("INPUT_EOF", "Input ended before all prompts were answered.");
+const eof = (): CliError => new InputError("INPUT_EOF", "Input ended before all prompts were answered.");
 const interrupted = (): CliError => new CliError("INTERRUPTED", "Cancelled.");
 
 interface Waiter {

@@ -5,12 +5,13 @@ import { z } from "zod";
 import { globalOptions, outputMode } from "../core/bootstrap.js";
 import { CONFIG_FILE, GLOBAL_CONFIG, configSchema, isGitignored, saveConfig } from "../core/config.js";
 import { confirm } from "../core/confirm.js";
-import { CliError } from "../core/errors.js";
+import { CliError, InputError } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { info, printResult, table, type OutputMode } from "../core/output.js";
 import { ask, askSecret } from "../core/prompt.js";
 import { SUITE_MODE_SINGLE, type Suite } from "../core/testrail-types.js";
 import { ProjectService } from "../services/project.service.js";
+import { savedConfig } from "./render.js";
 import { UserService } from "../services/user.service.js";
 
 interface SetupOptions {
@@ -53,7 +54,7 @@ export function registerSetup(program: Command): void {
       const all = globalOptions(cmd);
       const mode = outputMode(cmd);
       if (opts.global && all.config)
-        throw new CliError("USAGE", "Use either --global or --config, not both.");
+        throw new InputError("USAGE", "Use either --global or --config, not both.");
       const target = opts.global ? GLOBAL_CONFIG : resolve(all.config ?? CONFIG_FILE);
       // Ask before anything else: replacing a config throws away its key and project.
       if (existsSync(target) && !opts.yes) await confirm(`${target} already exists. Replace it?`);
@@ -92,8 +93,7 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
   let suite: Suite | undefined;
   // Multi-suite and baseline projects both need a suite_id for cases and runs.
   if (project.suite_mode !== SUITE_MODE_SINGLE) {
-    const suites = (await projects.suites(project.id)).filter((item) => !item.is_completed);
-    if (suites.length === 0) throw new CliError("NO_SUITES", `Project ${project.name} has no active suites.`);
+    const suites = await projects.activeSuites(project.id);
     suite =
       suites.length === 1 ? suites[0] : await pick(suites, (item) => `${item.name} (S${item.id})`, "suite");
   }
@@ -107,22 +107,9 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
       ? `${basename(path)} is not ignored by git (add it to .gitignore, or \`git rm --cached\` it if tracked) so the API key is never committed.`
       : undefined;
 
-  const rows: [string, string][] = [
-    ["Config", path],
-    ["Project", `${project.name} (P${project.id})`],
-  ];
-  if (suite) rows.push(["Suite", `${suite.name} (S${suite.id})`]);
+  const { data, rows } = savedConfig(path, project, suite);
   rows.push(["Account", me?.name ?? email]);
-
-  printResult(
-    mode,
-    {
-      path,
-      project: { id: project.id, name: project.name },
-      suite: suite ? { id: suite.id, name: suite.name } : null,
-      userId: me?.id ?? null,
-      warning,
-    },
-    () => [table(rows), warning ? `\nwarning: ${warning}` : ""].join(""),
+  printResult(mode, { ...data, userId: me?.id ?? null, warning }, () =>
+    [table(rows), warning ? `\nwarning: ${warning}` : ""].join(""),
   );
 }

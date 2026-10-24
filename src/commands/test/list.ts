@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { listLimit, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { grid, moreHint, printResult } from "../../core/output.js";
+import { printResult, renderList } from "../../core/output.js";
 import { MetaService, nameOf } from "../../services/meta.service.js";
 import { TestService } from "../../services/test.service.js";
 
@@ -33,10 +33,11 @@ export function registerList(test: Command): void {
         status: nameOf(statuses, item.status_id),
       }));
       printResult(mode, { runId: run, tests, hasMore }, () =>
-        tests.length === 0
-          ? "No tests."
-          : grid(tests.map((item) => [`T${item.id}`, `C${item.caseId}`, item.status ?? "", item.title])) +
-            moreHint(tests.length, hasMore),
+        renderList(
+          tests.map((item) => [`T${item.id}`, `C${item.caseId}`, item.status ?? "", item.title]),
+          "No tests.",
+          hasMore,
+        ),
       );
     });
 }

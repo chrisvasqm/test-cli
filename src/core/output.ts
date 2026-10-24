@@ -3,6 +3,14 @@ import { CliError } from "./errors.js";
 
 export type OutputMode = "human" | "json";
 
+// A reader that stops early (`testrail case list | head`) closes the pipe; that is not an error.
+for (const stream of [process.stdout, process.stderr]) {
+  stream.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code !== "EPIPE") throw err;
+    process.exit(process.exitCode ?? 0);
+  });
+}
+
 export function printResult(mode: OutputMode, data: unknown, human: () => string): void {
   if (mode === "json") {
     process.stdout.write(`${toJson({ ok: true, data })}\n`);
@@ -69,9 +77,9 @@ function renderDetails(details: unknown): string | undefined {
   return undefined;
 }
 
+/** Key/value rows ("Status  Failed"). */
 export function table(rows: ReadonlyArray<readonly [string, string]>): string {
-  const width = Math.max(...rows.map(([key]) => key.length));
-  return rows.map(([key, value]) => `${key.padEnd(width)}  ${value}`).join("\n");
+  return grid(rows);
 }
 
 /** Columns padded to the widest cell; the last column is never padded. */
@@ -93,4 +101,9 @@ export function grid(rows: ReadonlyArray<readonly string[]>): string {
 /** "Showing 50; more exist (raise --limit)" when a list was cut. */
 export function moreHint(shown: number, hasMore: boolean): string {
   return hasMore ? `\n\nShowing ${shown}; more exist (raise --limit).` : "";
+}
+
+/** A list command's text: the rows as a grid, `empty` when there are none, plus the --limit hint. */
+export function renderList(rows: ReadonlyArray<readonly string[]>, empty: string, hasMore: boolean): string {
+  return rows.length === 0 ? empty : grid(rows) + moreHint(rows.length, hasMore);
 }

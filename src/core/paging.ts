@@ -1,8 +1,8 @@
 import { CliError } from "./errors.js";
-import { HttpClient, type Params } from "./http.js";
+import type { HttpClient, Params } from "./http.js";
 
 /** TestRail's largest (and default) page for bulk GETs. */
-export const PAGE_SIZE = 250;
+const PAGE_SIZE = 250;
 
 /** Bulk GETs return `{offset, limit, size, _links: {next}, <key>: [...]}`; older servers return a bare array. */
 type BulkResponse = Record<string, unknown> & { _links?: { next?: string | null } };
@@ -12,13 +12,13 @@ export interface Collected<T> {
   hasMore: boolean;
 }
 
-/** Follow `_links.next` until `limit` items or the last page. */
+/** Follow `_links.next` until `limit` items or the last page; each page asks only for what is still needed. */
 export async function collectPages<T>(
   endpoint: string,
   key: string,
   params: Params,
   limit: number,
-  http = HttpClient.get(),
+  http: HttpClient,
 ): Promise<Collected<T>> {
   const items: T[] = [];
   let next: string | null | undefined;
@@ -34,7 +34,8 @@ export async function collectPages<T>(
     items.push(...page);
     next = Array.isArray(response) ? null : response._links?.next;
     if (!next || page.length === 0 || items.length >= limit) break;
-    response = await http.getLink<BulkResponse | undefined>(next);
+    const want = Math.min(PAGE_SIZE, limit - items.length);
+    response = await http.getLink<BulkResponse | undefined>(next.replace(/&limit=\d+/, `&limit=${want}`));
   }
   // An empty page ends the walk even when TestRail still sends a next link.
   return {

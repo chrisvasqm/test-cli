@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { intInRange, testId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
-import { splitRefs } from "../../core/text.js";
+import { splitList } from "../../core/text.js";
 import { MetaService, nameOf } from "../../services/meta.service.js";
 import { TestService } from "../../services/test.service.js";
 import { renderContent, renderResult, testUrl, toContent, toResult } from "../render.js";
@@ -41,7 +41,7 @@ export function registerView(test: Command): void {
         caseId: found.case_id,
         runId: found.run_id,
         status: nameOf(statuses, found.status_id),
-        refs: splitRefs(found.refs),
+        refs: splitList(found.refs),
         ...toContent(found),
         results: { shown: results.items.map((item) => toResult(item, statuses)), hasMore: results.hasMore },
       };

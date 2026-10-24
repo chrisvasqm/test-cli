@@ -3,10 +3,10 @@ import { caseIds, intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
-import { splitRefs } from "../../core/text.js";
+import { joinRefs } from "../../core/text.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
-import { renderCounts, runCounts } from "../render.js";
+import { renderCounts, toRunSummary } from "../render.js";
 
 interface CreateOptions {
   name: string;
@@ -38,19 +38,12 @@ export function registerCreate(run: Command): void {
       if (cases) input.case_ids = cases;
       if (description !== undefined) input.description = description;
       if (milestone !== undefined) input.milestone_id = milestone;
-      const refs = splitRefs(opts.refs);
-      if (refs.length > 0) input.refs = refs.join(",");
-      const [created, statuses] = await Promise.all([
-        new RunService().add(config.projectId, input),
-        new MetaService().statuses(),
-      ]);
-      const view = {
-        id: created.id,
-        name: created.name,
-        url: created.url,
-        includeAll: created.include_all,
-        counts: runCounts(created, statuses),
-      };
+      const refs = joinRefs(opts.refs);
+      if (refs) input.refs = refs;
+      // Statuses first: a failed lookup after the write would report an error for a run that exists.
+      const statuses = await new MetaService().statuses();
+      const created = await new RunService().add(config.projectId, input);
+      const view = { ...toRunSummary(created, statuses), includeAll: created.include_all };
       printResult(mode, view, () =>
         [
           `Created R${view.id}  ${view.name}`,

@@ -1,14 +1,11 @@
-import { CliError } from "../core/errors.js";
+import { InputError } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { sameName } from "../core/text.js";
+import { sameName, splitList } from "../core/text.js";
 import type { Named, Status, Template } from "../core/testrail-types.js";
 
-/** Lookup tables (statuses, priorities, case types, templates), fetched once per command. */
+/** Lookup tables (statuses, priorities, case types, templates). Statuses are fetched once per command. */
 export class MetaService {
   private statusList: Promise<Status[]> | undefined;
-  private priorityList: Promise<Named[]> | undefined;
-  private typeList: Promise<Named[]> | undefined;
-  private templateList: Promise<Template[]> | undefined;
 
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -18,52 +15,54 @@ export class MetaService {
   }
 
   priorities(): Promise<Named[]> {
-    this.priorityList ??= this.http.get<Named[]>("get_priorities");
-    return this.priorityList;
+    return this.http.get<Named[]>("get_priorities");
   }
 
   caseTypes(): Promise<Named[]> {
-    this.typeList ??= this.http.get<Named[]>("get_case_types");
-    return this.typeList;
+    return this.http.get<Named[]>("get_case_types");
   }
 
   templates(projectId: number): Promise<Template[]> {
-    this.templateList ??= this.http.get<Template[]>(`get_templates/${projectId}`);
-    return this.templateList;
+    return this.http.get<Template[]>(`get_templates/${projectId}`);
   }
 
-  /** Case type or priority id by name ("functional", "High"); `what` names it in the error. */
-  async idByName(items: Promise<Named[]>, typed: string, code: string, what: string): Promise<number> {
-    const list = await items;
-    const found = list.find((item) => sameName(item.name, typed.trim()));
-    if (!found)
-      throw new CliError(
-        code,
-        `No ${what} named "${typed}"`,
-        list.map((item) => item.name),
-      );
-    return found.id;
-  }
-
-  /** "failed,retest" → status ids; matches the label ("Failed") or system name ("failed"). */
-  async statusIds(typed: string): Promise<number[]> {
+  /** One status by its label ("Failed") or system name ("failed"). */
+  async status(typed: string): Promise<Status> {
     const statuses = await this.statuses();
-    return typed
-      .split(",")
-      .map((name) => name.trim())
-      .filter(Boolean)
-      .map((name) => {
-        const found = statuses.find((item) => sameName(item.label, name) || sameName(item.name, name));
-        if (!found) {
-          throw new CliError(
-            "UNKNOWN_STATUS",
-            `No status named "${name}"`,
-            statuses.map((item) => item.label),
-          );
-        }
-        return found.id;
-      });
+    return findByName(
+      statuses,
+      typed,
+      (item) => sameName(item.label, typed.trim()) || sameName(item.name, typed.trim()),
+      "UNKNOWN_STATUS",
+      "status",
+    );
   }
+
+  /** "failed,retest" → status ids. */
+  statusIds(typed: string): Promise<number[]> {
+    return Promise.all(splitList(typed).map(async (name) => (await this.status(name)).id));
+  }
+}
+
+/** Case type or priority id by name ("functional", "High"); `what` names it in the error. */
+export function idByName(items: Named[], typed: string, code: string, what: string): number {
+  return findByName(items, typed, (item) => sameName(item.name, typed.trim()), code, what).id;
+}
+
+function findByName<T extends { name: string; label?: string }>(
+  items: T[],
+  typed: string,
+  matches: (item: T) => boolean,
+  code: string,
+  what: string,
+): T {
+  const found = items.find(matches);
+  if (found) return found;
+  throw new InputError(
+    code,
+    `No ${what} named "${typed}"`,
+    items.map((item) => item.label ?? item.name),
+  );
 }
 
 /** Name for an id from a lookup table, or "#id" when TestRail did not list it. */

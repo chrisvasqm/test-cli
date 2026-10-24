@@ -23,22 +23,21 @@ trap 'rm -rf "$tmp"' EXIT
 
 echo "Downloading the latest testrail-cli..."
 curl -fsSL "$base/testrail-cli.tgz" -o "$tmp/testrail-cli.tgz" || fail "download failed"
-if curl -fsSL "$base/testrail-cli.tgz.sha256" -o "$tmp/testrail-cli.tgz.sha256" 2>/dev/null; then
-  if command -v shasum >/dev/null 2>&1; then
-    (cd "$tmp" && shasum -a 256 -c testrail-cli.tgz.sha256 >/dev/null) || fail "checksum mismatch; the download was not installed"
-  elif command -v sha256sum >/dev/null 2>&1; then
-    (cd "$tmp" && sha256sum -c testrail-cli.tgz.sha256 >/dev/null) || fail "checksum mismatch; the download was not installed"
-  else
-    echo "testrail-cli: no shasum or sha256sum found; skipping the checksum check" >&2
-  fi
+# Every release ships the checksum, so a missing file or tool stops the install instead of skipping the check.
+curl -fsSL "$base/testrail-cli.tgz.sha256" -o "$tmp/testrail-cli.tgz.sha256" || fail "could not download the checksum file; nothing was installed"
+if command -v shasum >/dev/null 2>&1; then
+  (cd "$tmp" && shasum -a 256 -c testrail-cli.tgz.sha256 >/dev/null) || fail "checksum mismatch; the download was not installed"
+elif command -v sha256sum >/dev/null 2>&1; then
+  (cd "$tmp" && sha256sum -c testrail-cli.tgz.sha256 >/dev/null) || fail "checksum mismatch; the download was not installed"
 else
-  echo "testrail-cli: this release has no checksum file; skipping the checksum check" >&2
+  fail "needs shasum or sha256sum to verify the download"
 fi
 
 npm install -g "$tmp/testrail-cli.tgz" >/dev/null || fail "npm install failed (see the error above)"
 
-if command -v testrail >/dev/null 2>&1; then
-  echo "Installed testrail $(testrail -v). Run 'testrail setup' in your project directory to connect it to TestRail."
-else
-  echo "Installed. Open a new terminal if 'testrail' is not found, or add $(npm prefix -g)/bin to your PATH."
+# Report the binary npm just installed, not whichever testrail comes first on PATH.
+bin="$(npm prefix -g)/bin"
+echo "Installed testrail $("$bin/testrail" -v). Run 'testrail setup' in your project directory to connect it to TestRail."
+if [ "$(command -v testrail 2>/dev/null)" != "$bin/testrail" ]; then
+  echo "Note: 'testrail' on your PATH is not $bin/testrail. Put $bin first in PATH, or remove the other install." >&2
 fi

@@ -1,5 +1,5 @@
-import { CliError } from "../../core/errors.js";
-import { splitRefs } from "../../core/text.js";
+import { InputError } from "../../core/errors.js";
+import { joinRefs } from "../../core/text.js";
 import type { ResultInput } from "../../services/result.service.js";
 import type { MetaService } from "../../services/meta.service.js";
 
@@ -22,26 +22,24 @@ export async function toResultInput(
 ): Promise<ResultInput> {
   const input: ResultInput = {};
   if (fields.status !== undefined) {
-    const ids = await meta.statusIds(fields.status);
-    if (ids.length !== 1) throw new CliError("USAGE", `${where}: give exactly one status`);
-    const status = (await meta.statuses()).find((item) => item.id === ids[0]);
+    const status = await meta.status(fields.status);
     // TestRail refuses "Untested" as a result: it is only the state before any result.
-    if (status?.is_untested)
-      throw new CliError("USAGE", `${where}: ${status.label} cannot be set as a result`);
-    input.status_id = ids[0]!;
+    if (status.is_untested)
+      throw new InputError("USAGE", `${where}: ${status.label} cannot be set as a result`);
+    input.status_id = status.id;
   }
   if (fields.comment !== undefined) input.comment = fields.comment;
-  const defects = Array.isArray(fields.defects) ? fields.defects : splitRefs(fields.defects);
-  if (defects.length > 0) input.defects = defects.join(",");
+  const defects = joinRefs(fields.defects);
+  if (defects) input.defects = defects;
   if (fields.elapsed !== undefined) {
     if (!ELAPSED.test(fields.elapsed.trim())) {
-      throw new CliError("USAGE", `${where}: elapsed must look like 30s, 1m 45s or 2h`);
+      throw new InputError("USAGE", `${where}: elapsed must look like 30s, 1m 45s or 2h`);
     }
     input.elapsed = fields.elapsed.trim();
   }
   if (fields.version !== undefined) input.version = fields.version;
   if (input.status_id === undefined && input.comment === undefined && input.defects === undefined) {
-    throw new CliError("USAGE", `${where}: give a status, a comment or defects`);
+    throw new InputError("USAGE", `${where}: give a status, a comment or defects`);
   }
   return input;
 }

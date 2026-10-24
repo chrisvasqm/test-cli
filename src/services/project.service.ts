@@ -1,13 +1,10 @@
-import { notFoundAs } from "../core/errors.js";
+import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
 import type { Project, Suite } from "../core/testrail-types.js";
 
 /** Most projects one account can list at once. */
 const MAX_PROJECTS = 1000;
-
-const projectNotFound = (id: number) =>
-  notFoundAs("project_id", "PROJECT_NOT_FOUND", `Project P${id} does not exist or you cannot see it.`);
 
 /** get_project(s) and get_suites endpoints. */
 export class ProjectService {
@@ -25,10 +22,17 @@ export class ProjectService {
   }
 
   get(id: number): Promise<Project> {
-    return this.http.get<Project>(`get_project/${id}`).catch(projectNotFound(id));
+    return this.http.get<Project>(`get_project/${id}`).catch(notFound.project(id));
   }
 
   suites(projectId: number): Promise<Suite[]> {
-    return this.http.get<Suite[]>(`get_suites/${projectId}`).catch(projectNotFound(projectId));
+    return this.http.get<Suite[]>(`get_suites/${projectId}`).catch(notFound.project(projectId));
+  }
+
+  /** Suites that are not completed; NO_SUITES when there are none. */
+  async activeSuites(projectId: number): Promise<Suite[]> {
+    const active = (await this.suites(projectId)).filter((item) => !item.is_completed);
+    if (active.length === 0) throw new CliError("NO_SUITES", `Project P${projectId} has no active suites.`);
+    return active;
   }
 }

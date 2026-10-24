@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { caseId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
-import { splitRefs } from "../../core/text.js";
+import { splitList } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService, nameOf } from "../../services/meta.service.js";
 import { caseUrl, isoTime, localTime, renderContent, toContent } from "../render.js";
@@ -16,11 +16,12 @@ export function registerView(testCase: Command): void {
       const { config, mode } = bootstrap(cmd);
       const cases = new CaseService();
       const meta = new MetaService();
+      // The lookups do not depend on the case, so they run alongside it; only the section waits.
+      const lookups = Promise.all([meta.priorities(), meta.caseTypes()]);
       const found = await cases.get(id);
-      const [section, priorities, types] = await Promise.all([
+      const [section, [priorities, types]] = await Promise.all([
         cases.section(found.section_id).catch(() => undefined),
-        meta.priorities(),
-        meta.caseTypes(),
+        lookups,
       ]);
       const view = {
         id: found.id,
@@ -30,7 +31,7 @@ export function registerView(testCase: Command): void {
         suiteId: found.suite_id,
         priority: nameOf(priorities, found.priority_id),
         type: nameOf(types, found.type_id),
-        refs: splitRefs(found.refs),
+        refs: splitList(found.refs),
         estimate: found.estimate,
         created: isoTime(found.created_on),
         updated: isoTime(found.updated_on),

@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { bootstrap } from "../../core/bootstrap.js";
-import { grid, printResult } from "../../core/output.js";
+import { printResult, renderList } from "../../core/output.js";
 import { SUITE_MODE_SINGLE } from "../../core/testrail-types.js";
 import { ProjectService } from "../../services/project.service.js";
 
@@ -19,9 +19,11 @@ export function registerList(project: Command): void {
         url: item.url,
       }));
       printResult(mode, { projects, hasMore }, () =>
-        projects.length === 0
-          ? "No active projects."
-          : grid(projects.map((item) => [item.current ? "*" : " ", `P${item.id}`, item.name])),
+        renderList(
+          projects.map((item) => [item.current ? "*" : " ", `P${item.id}`, item.name]),
+          "No active projects.",
+          hasMore,
+        ),
       );
     });
 }

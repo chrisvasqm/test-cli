@@ -81,12 +81,12 @@ All entries are added in one request, so either all land or none do.
 - `case view`: `{id, title, url, section: {id, name}, suiteId, priority, type, refs, estimate, created, updated, preconditions, steps, expected, stepList: [{content, expected}]}`
   - `steps` and `expected` are the text template's fields; `stepList` is the steps template's. Unused ones are null or `[]`.
 - `case create`: `{id, title, sectionId, url}`
-- `case edit`: `{id, title, changed, url}` (`changed` lists the TestRail fields sent, e.g. `priority_id`)
+- `case edit`: `{id, title, changed, url}` (`changed` lists the TestRail fields you set, e.g. `priority_id`, `custom_steps_separated`)
 - `case delete`: `{id, title, deleted: true}`
 - `run list`: `{runs: [{id, name, completed, planId, counts, created, url}], hasMore}`
 - `run view`: `{id, name, url, description, suiteId, planId, includeAll, completed, completedOn, refs, counts, created}`
-- `run create`: `{id, name, url, includeAll, counts}`
-- `run close`: `{id, name, completed, completedOn, counts, url}`
+- `run create`: `{id, name, url, completed, completedOn, counts, includeAll}`
+- `run close`: `{id, name, url, completed, completedOn, counts}`
 - `test list`: `{runId, tests: [{id, caseId, title, status}], hasMore}`
 - `test view`: `{id, title, url, caseId, runId, status, refs, preconditions, steps, expected, stepList, results: {shown: [result], hasMore}}`
 - `result add`: a result plus `{testId, url}`
@@ -99,7 +99,7 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `USAGE`: fix the command (see `testrail <cmd> --help`). Don't retry it unchanged.
 - `CONFIG_MISSING`, `CONFIG_INVALID`, `AUTH_FAILED`, `NO_PROJECTS`: ask the user to run `testrail setup`. Repeated `AUTH_FAILED` can lock the TestRail account, so don't retry it.
 - `CASE_NOT_FOUND`, `RUN_NOT_FOUND`, `TEST_NOT_FOUND`, `SECTION_NOT_FOUND`, `PROJECT_NOT_FOUND`: check the id. A plain `NOT_FOUND` can also mean the config points at the wrong site.
-- `CASE_NOT_IN_RUN`: the case is not part of that run. Check with `test list R3`.
+- `CASE_NOT_IN_RUN`: the case exists but is not part of that run. Check with `test list R3`. A case id that does not exist at all is `CASE_NOT_FOUND`.
 - `UNKNOWN_STATUS`, `UNKNOWN_PRIORITY`, `UNKNOWN_TYPE`: `details` lists the valid names. Pick one.
 - `SUITE_REQUIRED`, `SUITE_NOT_FOUND`, `NO_SUITES`: `details` lists the project's suites (`S<id>  name`). Pass one with `--suite`.
 - `NO_STEPS_TEMPLATE`: the project has no steps template; use `--steps` and `--expected`.

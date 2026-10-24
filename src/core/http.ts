@@ -25,7 +25,6 @@ const MAX_RAW_DETAIL_CHARS = 500;
 
 interface Reply {
   status: number;
-  ok: boolean;
   retryAfter: string | null;
   text: string;
 }
@@ -57,20 +56,22 @@ export class HttpClient {
    * GET is retried on transient failures; writes only on 429, which TestRail never applied.
    */
   get<T>(endpoint: string, params?: Params): Promise<T> {
-    return this.send<T>("GET", apiPath(endpoint, params), undefined, true);
+    return this.send<T>("GET", apiPath(endpoint, params));
   }
 
   /** TestRail writes (add, update, close, delete) are all POST. */
   post<T>(endpoint: string, body: unknown = {}, params?: Params): Promise<T> {
-    return this.send<T>("POST", apiPath(endpoint, params), body, false);
+    return this.send<T>("POST", apiPath(endpoint, params), body);
   }
 
   /** Follows a pagination link from `_links.next`, e.g. "/api/v2/get_cases/1&limit=250&offset=250". */
   getLink<T>(link: string): Promise<T> {
-    return this.send<T>("GET", link.startsWith("/") ? link : `/${link}`, undefined, true);
+    return this.send<T>("GET", link.startsWith("/") ? link : `/${link}`);
   }
 
-  private async send<T>(method: string, path: string, body: unknown, idempotent: boolean): Promise<T> {
+  private async send<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+    // Only GETs are safe to repeat after a lost answer; writes are retried only on 429, which TestRail never applied.
+    const idempotent = method === "GET";
     // TestRail routes through index.php's query string, so filters follow with "&", not "?".
     const url = `${this.creds.baseUrl}/index.php?${path}`;
     // TestRail needs the JSON content type on every request, GET included.
@@ -111,7 +112,7 @@ export class HttpClient {
     try {
       const res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       const text = await res.text();
-      return { status: res.status, ok: res.ok, retryAfter: res.headers.get("Retry-After"), text };
+      return { status: res.status, retryAfter: res.headers.get("Retry-After"), text };
     } catch (err) {
       if (idempotent && more) return undefined;
       // A write may have reached TestRail before the connection failed, so a blind retry could duplicate it.
@@ -126,6 +127,7 @@ export class HttpClient {
     const { status, text } = reply;
     const parsed = parseJson(text);
     const reason = errorText(parsed);
+    const field = reason === undefined ? undefined : /^Field :(\w+)/.exec(reason)?.[1];
     if (status === 401) {
       throw new CliError(
         "AUTH_FAILED",
@@ -145,7 +147,7 @@ export class HttpClient {
     if (status === 404) {
       throw new CliError("NOT_FOUND", reason ?? `TestRail has no resource at ${path}`, undefined, status);
     }
-    if (!reply.ok) {
+    if (status < 200 || status > 299) {
       // A 400 for an unknown id ("Field :case_id is not a valid test case.") stays TESTRAIL_ERROR here;
       // services turn it into a domain code with notFoundAs, which knows which field is the path id.
       throw new CliError(
@@ -153,6 +155,7 @@ export class HttpClient {
         reason ?? `${method} ${path} returned ${status}`,
         reason === undefined ? text.slice(0, MAX_RAW_DETAIL_CHARS) : undefined,
         status,
+        field,
       );
     }
     if (text.trim() === "") return undefined as T;

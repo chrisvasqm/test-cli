@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { caseId, runId, testId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { CliError } from "../../core/errors.js";
+import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -37,6 +37,8 @@ export function registerAdd(result: Command): void {
       const comment = await readOptionalText(opts.comment, opts.file, "comment");
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
+      // Statuses before the write: a failed lookup after it would report an error for a saved result.
+      const statuses = await meta.statuses();
       const input = await toResultInput({ ...opts, comment, version: opts.build }, meta, "result");
       const results = new ResultService();
       const added =
@@ -44,7 +46,7 @@ export function registerAdd(result: Command): void {
           ? await results.addForTest(target.testId, input)
           : await results.addForCase(target.runId, target.caseId, input);
       const view = {
-        ...toResult(added, await meta.statuses()),
+        ...toResult(added, statuses),
         testId: added.test_id,
         url: testUrl(config, added.test_id),
       };
@@ -61,10 +63,10 @@ type Target = { kind: "test"; testId: number } | { kind: "case"; runId: number; 
 function parseTarget(rawTest: string | undefined, opts: AddOptions): Target {
   const byCase = opts.run !== undefined || opts.case !== undefined;
   if (rawTest !== undefined && byCase)
-    throw new CliError("USAGE", "Give a test id or --run with --case, not both");
+    throw new InputError("USAGE", "Give a test id or --run with --case, not both");
   if (rawTest !== undefined) return { kind: "test", testId: testId(rawTest) };
   if (opts.run === undefined || opts.case === undefined) {
-    throw new CliError("USAGE", "Give a test id (T45), or both --run R3 and --case C12");
+    throw new InputError("USAGE", "Give a test id (T45), or both --run R3 and --case C12");
   }
   return { kind: "case", runId: runId(opts.run), caseId: caseId(opts.case) };
 }
