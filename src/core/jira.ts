@@ -37,13 +37,7 @@ export type JiraCreated = z.infer<typeof createdSchema>;
  * runs again.
  */
 export async function checkJiraKeys(keys: readonly string[], setupOffered = false): Promise<boolean> {
-  const replies: (readonly [string, JiraReply | undefined])[] = [];
-  for (let start = 0; start < keys.length; start += MAX_PARALLEL) {
-    const batch = keys.slice(start, start + MAX_PARALLEL);
-    replies.push(
-      ...(await Promise.all(batch.map(async (key) => [key, await runJira(viewArgs(key))] as const))),
-    );
-  }
+  const replies = await viewAll(keys);
   if (replies.some(([, reply]) => reply === undefined)) {
     info("jira-cli is not installed, so the Jira keys were not checked.");
     return false;
@@ -66,6 +60,62 @@ export async function checkJiraKeys(keys: readonly string[], setupOffered = fals
   }
   return true;
 }
+
+/** `jira ticket view` for each key, MAX_PARALLEL at a time; undefined replies mean no jira-cli. */
+async function viewAll(keys: readonly string[]): Promise<(readonly [string, JiraReply | undefined])[]> {
+  const replies: (readonly [string, JiraReply | undefined])[] = [];
+  for (let start = 0; start < keys.length; start += MAX_PARALLEL) {
+    const batch = keys.slice(start, start + MAX_PARALLEL);
+    replies.push(
+      ...(await Promise.all(batch.map(async (key) => [key, await runJira(viewArgs(key))] as const))),
+    );
+  }
+  return replies;
+}
+
+/** The status field of `jira ticket view`. jira-cli has no status category, only the name. */
+const statusSchema = z.object({ status: z.string().min(1) });
+
+/**
+ * Each key's Jira status name, or null when Jira has no such ticket (or the user cannot see it).
+ * Any other jira-cli failure fails the lookup as a whole; a terminal user is offered `jira setup`
+ * once, and the lookup runs again.
+ */
+export async function jiraStatuses(
+  keys: readonly string[],
+  setupOffered = false,
+): Promise<Map<string, string | null>> {
+  const replies = await viewAll(keys);
+  if (replies.some(([, reply]) => reply === undefined)) throw cliMissing();
+  const statuses = new Map<string, string | null>();
+  for (const [key, reply] of replies) {
+    if (reply?.error?.code === "TICKET_NOT_FOUND") {
+      statuses.set(key, null);
+      continue;
+    }
+    const parsed = statusSchema.safeParse(reply?.data);
+    if (reply?.ok === true && parsed.success) {
+      statuses.set(key, parsed.data.status);
+      continue;
+    }
+    const error = reply?.ok === true ? { code: "INVALID_RESPONSE", message: "no status" } : reply?.error;
+    if (!setupOffered && NEEDS_SETUP.has(error?.code ?? "") && (await offerSetup(error?.message))) {
+      return jiraStatuses(keys, true);
+    }
+    throw new CliError(
+      "JIRA_ERROR",
+      `jira-cli could not read ${key}: ${error?.message ?? "no answer"}`,
+      error,
+    );
+  }
+  return statuses;
+}
+
+const cliMissing = (): CliError =>
+  new CliError(
+    "JIRA_CLI_MISSING",
+    "This needs jira-cli (`jira`) on PATH: https://github.com/chrisvasqm/jira-cli",
+  );
 
 /** A Jira ticket through jira-cli, which must be installed. */
 export function jiraTicket(key: string): Promise<JiraTicket> {
@@ -139,12 +189,7 @@ async function callJira<T>(
   setupOffered = false,
 ): Promise<T> {
   const reply = await runJira(args, input);
-  if (reply === undefined) {
-    throw new CliError(
-      "JIRA_CLI_MISSING",
-      "This needs jira-cli (`jira`) on PATH: https://github.com/chrisvasqm/jira-cli",
-    );
-  }
+  if (reply === undefined) throw cliMissing();
   if (reply.ok) {
     const parsed = schema.safeParse(reply.data);
     if (parsed.success) return parsed.data;

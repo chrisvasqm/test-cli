@@ -405,6 +405,23 @@ check("CONFIRM_REQUIRED on plan close", run("plan", "close", planRef), errCode("
 check("plan close", run("plan", "close", planRef, "-y"), okData);
 check("close the rerun", run("run", "close", rerunRef, "-y"), okData);
 check("delete the copied case", run("case", "delete", copyRef, "-y"), okData);
+check("result add (failed, defect K1)", run("result", "add", testRef, "-s", "failed", "-d", K1), okData);
+const k1Status = jira("ticket", "view", K1, "--comments", "0").data?.status ?? "To Do";
+const retestIds = (key) => (res) =>
+  okData(res) && res.out.data[key].some((row) => `T${row.testId}` === testRef);
+check("run retest (bug open: waiting)", run("run", "retest", runRef, "-y"), retestIds("waiting"));
+check(
+  "CONFIRM_REQUIRED on run retest",
+  run("run", "retest", runRef, "-o", k1Status),
+  errCode("CONFIRM_REQUIRED", 2),
+);
+check("run retest -o (bug done)", run("run", "retest", runRef, "-o", k1Status, "-y"), retestIds("retested"));
+check(
+  "run retest: test is Retest",
+  run("test", "view", testRef),
+  (res) => okData(res) && res.out.data.status === "Retest",
+);
+check("RUN_NOT_FOUND on run retest", run("run", "retest", "R999999999", "-y"), errCode("RUN_NOT_FOUND", 1));
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));
 check("CASE_NOT_FOUND", run("case", "view", "C999999999"), errCode("CASE_NOT_FOUND", 1));
 check("UNKNOWN_STATUS", run("test", "list", runRef, "-s", "nope"), errCode("UNKNOWN_STATUS", 2));

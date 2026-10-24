@@ -102,6 +102,17 @@ export class ResultService {
     };
   }
 
+  /** Every result in the run, for all its tests, newest first as TestRail returns them. */
+  forRun(runId: number): Promise<Collected<Result>> {
+    return collectPages<Result>(
+      `get_results_for_run/${runId}`,
+      "results",
+      {},
+      Number.MAX_SAFE_INTEGER,
+      this.http,
+    ).catch(notFound.run(runId));
+  }
+
   /** One request for many cases; TestRail applies all or none. */
   addForCases(runId: number, results: (ResultInput & { case_id: number })[]): Promise<Result[]> {
     return this.http.post<Result[]>(`add_results_for_cases/${runId}`, { results }).catch(notFound.run(runId));
