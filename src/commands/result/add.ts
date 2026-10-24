@@ -8,6 +8,7 @@ import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import type { Test } from "../../core/testrail-types.js";
 import { ResultService, type ResultInput, type ResultTarget } from "../../services/result.service.js";
+import { UserService } from "../../services/user.service.js";
 import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult } from "../render.js";
 import type { Config } from "../../core/config.js";
@@ -23,6 +24,7 @@ interface AddOptions {
   run?: string;
   case?: string;
   createBug?: boolean;
+  assign?: string;
 }
 
 export function registerAdd(result: Command): void {
@@ -37,15 +39,25 @@ export function registerAdd(result: Command): void {
     .option("-b, --build <version>", "Build or version tested (--version is the CLI's own)")
     .option("-R, --run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
     .option("-C, --case <case>", "Case in that run, e.g. C12")
+    .option("-a, --assign <user>", "Reassign the test: me, an email or a user id")
     .option("-B, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
     .action(async (rawTest: string | undefined, opts: AddOptions, cmd: Command) => {
       const target = parseTarget(rawTest, opts);
       const comment = await readOptionalText(opts.comment, opts.file, "comment");
       const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
-      // Statuses before the write: a failed lookup after it would report an error for a saved result.
-      const statuses = await meta.statuses();
-      const input = await toResultInput({ ...opts, comment, version: opts.build }, meta, "result");
+      // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
+      const [statuses, assignee] = await Promise.all([
+        meta.statuses(),
+        opts.assign === undefined
+          ? undefined
+          : new UserService().resolve(opts.assign, config.email, "--assign"),
+      ]);
+      const input = await toResultInput(
+        { ...opts, comment, version: opts.build, assignedToId: assignee?.id },
+        meta,
+        "result",
+      );
       const bug = opts.createBug
         ? await fileBug(config, await new ResultService().openTest(target), comment)
         : undefined;
@@ -65,11 +77,13 @@ export function registerAdd(result: Command): void {
         ...toResult(added, statuses),
         testId: added.test_id,
         bug: bug ? { key: bug.key, url: bug.url } : null,
+        assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
         url: testUrl(config, added.test_id),
       };
       printResult(mode, view, () => {
         const filed = view.bug ? `\nCreated Jira bug ${view.bug.key}  ${view.bug.url}` : "";
-        return `Added result #${view.id} to T${view.testId}${filed}\n${renderResult(view)}\n${view.url}`;
+        const assigned = view.assignedTo ? `\nAssigned to ${view.assignedTo.name}` : "";
+        return `Added result #${view.id} to T${view.testId}${filed}${assigned}\n${renderResult(view)}\n${view.url}`;
       });
     });
 }

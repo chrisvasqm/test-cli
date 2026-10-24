@@ -12,6 +12,8 @@ export interface ResultFields {
   defects?: string | string[] | undefined;
   elapsed?: string | undefined;
   version?: string | undefined;
+  /** A user id, already resolved. */
+  assignedToId?: number | undefined;
 }
 
 /** Turns typed fields into TestRail's add_result body; `where` names the input in errors. */
@@ -38,9 +40,10 @@ export async function toResultInput(
     input.elapsed = fields.elapsed.trim();
   }
   if (fields.version !== undefined) input.version = fields.version;
+  if (fields.assignedToId !== undefined) input.assignedto_id = fields.assignedToId;
   // TestRail: "One of Status ID, Assigned To or Comment is required"; defects alone are refused.
-  if (input.status_id === undefined && input.comment === undefined) {
-    throw new InputError("USAGE", `${where}: give a status or a comment`);
+  if (input.status_id === undefined && input.comment === undefined && input.assignedto_id === undefined) {
+    throw new InputError("USAGE", `${where}: give a status, a comment or an assignee`);
   }
   return input;
 }

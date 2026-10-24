@@ -8,6 +8,7 @@ import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
+import { UserService } from "../../services/user.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { renderCounts, toRunSummary } from "../render.js";
 
@@ -19,6 +20,7 @@ interface CreateOptions {
   file?: string;
   refs?: string;
   milestone?: string;
+  assign?: string;
 }
 
 export function registerCreate(run: Command): void {
@@ -35,6 +37,7 @@ export function registerCreate(run: Command): void {
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
     .option("-M, --milestone <id>", "Milestone id")
+    .option("-a, --assign <user>", "Assign the run: me, an email or a user id")
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone =
@@ -45,9 +48,12 @@ export function registerCreate(run: Command): void {
       // Jira first, alone: it may prompt for `jira setup`. Then the TestRail lookups, all before the
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
       const { ticket, refs } = await loadFromJira(key, opts.refs);
-      const [caseList, statuses] = await Promise.all([
+      const [caseList, statuses, assignee] = await Promise.all([
         cases ?? (key === undefined ? undefined : linkedCases(config.projectId, config.suiteId, key)),
         new MetaService().statuses(),
+        opts.assign === undefined
+          ? undefined
+          : new UserService().resolve(opts.assign, config.email, "--assign"),
       ]);
       const name = opts.name ?? clip(`${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
       const input: RunInput = { name, include_all: caseList === undefined };
@@ -56,10 +62,12 @@ export function registerCreate(run: Command): void {
       if (description !== undefined) input.description = description;
       if (milestone !== undefined) input.milestone_id = milestone;
       if (refs.length > 0) input.refs = joinRefs(refs);
+      if (assignee) input.assignedto_id = assignee.id;
       const created = await new RunService().add(config.projectId, input);
       const view = {
         ...toRunSummary(created, statuses),
         includeAll: created.include_all,
+        assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
         jira: jiraView(ticket),
       };
       printResult(mode, view, () =>
@@ -67,6 +75,7 @@ export function registerCreate(run: Command): void {
           `Created R${view.id}  ${view.name}`,
           table([
             ["Tests", renderCounts(view.counts)],
+            ...(view.assignedTo ? [["Assigned", view.assignedTo.name] as const] : []),
             ["URL", view.url],
           ]),
         ].join("\n\n"),

@@ -96,15 +96,15 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail case delete <C>`             | Delete a case and its tests in active runs                                                                     |
 | `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)                                                    |
 | `testrail run view <R>`                | Progress per status, refs and description                                                                      |
-| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`                                                            |
+| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`; `-a me` assigns it                                        |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                            |
 | `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                              |
 | `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                          |
 | `testrail milestone view <M>`          | Dates, parent, refs and description                                                                            |
 | `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-a`/`-u` start/due dates, `-M <M>` parent, `-r`)                       |
-| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-n <limit>`, 100)                                                         |
+| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                |
 | `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                     |
-| `testrail result add <T>`              | Add a result (`-B` files a Jira bug); or `-R <R> -C <C>`                                                       |
+| `testrail result add <T>`              | Add a result (`-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>`                                    |
 | `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)                                                |
 | `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it |
 | `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                       |
@@ -112,6 +112,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail configuration list`          | Configuration groups (e.g. browsers, OS) and their ids                                                         |
 | `testrail report list`                 | On-demand report templates (made in the UI with "On-demand via the API")                                       |
 | `testrail report run <id>`             | Run a report template; prints its URL, HTML and PDF links                                                      |
+| `testrail user list`                   | Users in the project (id, name, email); `*` marks you                                                          |
 | `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                      |
 
 - **Case fields (`create` and `edit`):**
@@ -120,7 +121,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
   - `-P --preconds <text>`
   - `-S --steps <text>` and `-E --expected <text>` for the text template, or `-a --step "action::expected"` repeated for the steps template
 - **Result fields:** `-s --status <name>`, `-m --comment <text>` or `-f --file <path>`, `-d --defects KAN-2`, `-e --elapsed "1m 30s"`, `-b --build 1.2.0`; `-R --run` and `-C --case` instead of a test id; `-B --create-bug`. A result needs a status or a comment (defects alone are refused). Results cannot be edited or deleted later.
-- **`result import` file:** a JSON array such as `[{"case": "C1", "status": "passed", "elapsed": "45s"}, {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2"}]`. Either all results land or none do.
+- **`result import` file:** a JSON array such as `[{"case": "C1", "status": "passed", "elapsed": "45s"}, {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2", "assign": "me"}]`. `assign` takes `me`, an email or a user id. Either all results land or none do.
 - **From Jira** (needs [jira-cli](https://github.com/chrisvasqm/jira-cli)): `case create --from-jira KAN-12` takes the title from the ticket's summary and puts the key in refs. `run create --from-jira KAN-12` names the run "KAN-12: summary", puts the key in refs and, without `--cases`, runs only the cases linked to KAN-12. `result add --create-bug` creates a Jira Bug named "T45 failed: title" (the comment and a link to the test are its description; a Task when the project has no Bug type) and adds its key to the result's defects.
 - **Jira links:** `link` needs the id letter. `link add` checks new keys with [jira-cli](https://github.com/chrisvasqm/jira-cli) if `jira` is on your PATH (`--no-check` skips it). If jira-cli is not set up for the directory, it offers to run `jira setup` and then checks again. On a test, a link is a new result with no status, the comment "Linked KAN-1" and the key as a defect, so it cannot be removed.
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
