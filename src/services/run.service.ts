@@ -14,7 +14,7 @@ export interface RunInput {
   case_ids?: number[];
 }
 
-/** get_run(s), add_run and close_run endpoints. Runs inside test plans are listed by get_plans, not here. */
+/** get_run(s), add_run, update_run and close_run endpoints. Runs inside test plans are listed by get_plans, not here. */
 export class RunService {
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -33,6 +33,11 @@ export class RunService {
       .catch(
         notFoundAs("case_ids", "CASE_NOT_FOUND", "Some --cases ids are not cases in this project and suite."),
       );
+  }
+
+  /** Only the fields given change. TestRail refuses changes to a closed run. */
+  update(id: number, input: Partial<Pick<RunInput, "name" | "description" | "refs">>): Promise<Run> {
+    return this.http.post<Run>(`update_run/${id}`, input).catch(notFound.run(id));
   }
 
   /** Closing archives the run: TestRail cannot reopen it, and its results can no longer change. */

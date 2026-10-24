@@ -48,7 +48,7 @@ The CLI looks for a config in this order:
 
 ## Commands
 
-Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project and `S1` a suite. The letter is optional.
+Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project and `S1` a suite. The letter is optional, except for `link`.
 
 | Command                                | What it does                                                    |
 | -------------------------------------- | --------------------------------------------------------------- |
@@ -68,6 +68,9 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail test view <T>`               | Status, steps and latest results (`--results <0-100>`, 5)       |
 | `testrail result add <T>`              | Add a result; or `--run <R> --case <C>` instead of a test       |
 | `testrail result import <R> --file <>` | Add many results in one request from a JSON file (`-` is stdin) |
+| `testrail link list <C\|R\|T>`         | Jira keys on a case or run (refs) or a test (result defects)    |
+| `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed        |
+| `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                             |
 | `testrail setup`                       | Create the config (see [Set up](#set-up))                       |
 
 - **Case fields (`create` and `edit`):**
@@ -75,8 +78,9 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
   - `--refs KAN-1,KAN-2` (replaces the refs)
   - `--preconds <text>`
   - `--steps <text>` and `--expected <text>` for the text template, or `--step "action::expected"` repeated for the steps template
-- **Result fields:** `--status <name>`, `--comment <text>` or `--file <path>`, `--defects KAN-2`, `--elapsed "1m 30s"`, `--build 1.2.0`. A result needs a status, a comment or defects. Results cannot be edited or deleted later.
+- **Result fields:** `--status <name>`, `--comment <text>` or `--file <path>`, `--defects KAN-2`, `--elapsed "1m 30s"`, `--build 1.2.0`. A result needs a status or a comment (defects alone are refused). Results cannot be edited or deleted later.
 - **`result import` file:** a JSON array such as `[{"case": "C1", "status": "passed", "elapsed": "45s"}, {"case": "C2", "status": "failed", "comment": "500 page", "defects": "KAN-2"}]`. Either all results land or none do.
+- **Jira links:** `link` needs the id letter. `link add` checks new keys with [jira-cli](https://github.com/chrisvasqm/jira-cli) if `jira` is on your PATH (`--no-check` skips it). On a test, a link is a new result with no status, the comment "Linked KAN-1" and the key as a defect, so it cannot be removed.
 - **Names** of statuses, types and priorities match TestRail's labels, ignoring case.
 - **Deletes and `run close`** ask you to type "yes". `--yes` (`-y`) skips the question. With no terminal (scripts, agents), they fail with `CONFIRM_REQUIRED` unless you pass `--yes`.
 

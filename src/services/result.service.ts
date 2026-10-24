@@ -2,7 +2,7 @@ import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import type { Result } from "../core/testrail-types.js";
 
-/** Fields of a new result; TestRail needs at least one of status, comment or defects. */
+/** Fields of a new result; TestRail needs a status or a comment (defects alone are refused). */
 export interface ResultInput {
   status_id?: number;
   comment?: string;
