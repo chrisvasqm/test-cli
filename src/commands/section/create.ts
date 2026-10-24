@@ -17,8 +17,8 @@ export function registerCreate(section: Command): void {
   section
     .command("create")
     .description("Create a section in the project (and suite) from the config")
-    .requiredOption("-N, --name <name>", "Section name")
-    .option("-s, --parent <id>", "Parent section (ids: testrail section list); default: top level")
+    .requiredOption("-na, --name <name>", "Section name")
+    .option("-pa, --parent <id>", "Parent section (ids: testrail section list); default: top level")
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .action(async (opts: CreateOptions, cmd: Command) => {

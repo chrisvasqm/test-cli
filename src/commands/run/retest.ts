@@ -45,7 +45,7 @@ export function registerRetest(run: Command): void {
     .description("Set tests back to Retest when every Jira bug in their defects is done (needs jira-cli)")
     .option("-s, --status <names>", "Check tests with these statuses, comma-separated", RETEST_FROM)
     .option(
-      "-o, --done <names>",
+      "-dn, --done <names>",
       "Jira statuses that mean fixed, comma-separated (any status in Jira's Done category counts too)",
       DONE,
     )

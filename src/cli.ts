@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { Command, CommanderError } from "commander";
+import { CommanderError } from "commander";
 import { registerAttachment } from "./commands/attachment/index.js";
 import { registerCase } from "./commands/case/index.js";
 import { registerConfiguration } from "./commands/configuration/index.js";
@@ -17,13 +17,14 @@ import { registerSuite } from "./commands/suite/index.js";
 import { registerTest } from "./commands/test/index.js";
 import { registerUser } from "./commands/user/index.js";
 import { CliError, InputError } from "./core/errors.js";
+import { expandShortFlags, FlagCommand } from "./core/flags.js";
 import { outputMode } from "./core/bootstrap.js";
 import { printError } from "./core/output.js";
 import { closePrompts } from "./core/prompt.js";
 
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
-const program = new Command()
+const program = new FlagCommand()
   .name("testrail")
   .description("TestRail from the terminal, for humans and agents")
   .version(version, "-v, --version", "Print the version")
@@ -73,7 +74,7 @@ function toCliError(err: unknown): unknown {
 }
 
 program
-  .parseAsync(process.argv)
+  .parseAsync(expandShortFlags(program, process.argv))
   .then(() => closePrompts())
   .catch((raw: unknown) => {
     closePrompts();

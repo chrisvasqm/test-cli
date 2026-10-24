@@ -40,10 +40,10 @@ export function registerCoverage(program: Command): void {
       "-w, --sprint <sprint>",
       "A sprint's tickets: active, an id or a name (default: the active sprint)",
     )
-    .option("-K, --epic <key>", "An epic's child tickets, e.g. KAN-5")
-    .option("-Q, --jql <query>", "The tickets this JQL finds")
+    .option("-ep, --epic <key>", "An epic's child tickets, e.g. KAN-5")
+    .option("-ql, --jql <query>", "The tickets this JQL finds")
     .option(
-      "-W, --runs <n>",
+      "-rn, --runs <n>",
       `How many of the latest runs to read results from, open and closed (at most ${MAX_RUNS})`,
       "25",
     )

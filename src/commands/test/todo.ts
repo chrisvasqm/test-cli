@@ -60,7 +60,7 @@ export function registerTodo(test: Command): void {
       "-s, --status <names>",
       "Only these statuses, comma-separated (default: those not final, e.g. untested,retest)",
     )
-    .option("-M, --milestone <id>", "Only runs and plans in this milestone, e.g. M3")
+    .option("-ml, --milestone <id>", "Only runs and plans in this milestone, e.g. M3")
     .option("-n, --limit <n>", "Most tests to show", "100")
     .action(async (opts: TodoOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);

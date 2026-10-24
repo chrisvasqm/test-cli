@@ -15,7 +15,7 @@ export function registerCreate(suite: Command): void {
   suite
     .command("create")
     .description("Create a suite in the project from the config (multi-suite projects only)")
-    .option("-N, --name <name>", "Suite name (required)")
+    .option("-na, --name <name>", "Suite name (required)")
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .action(async (opts: CreateOptions, cmd: Command) => {

@@ -16,7 +16,7 @@ export function registerEdit(suite: Command): void {
   suite
     .command("edit <suite>")
     .description("Change a suite's name or description, e.g. S3; fields left out stay as they are")
-    .option("-N, --name <name>", "New name")
+    .option("-na, --name <name>", "New name")
     .option("-d, --description <text>", "New description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .action(async (rawId: string, opts: EditOptions, cmd: Command) => {

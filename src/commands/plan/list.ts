@@ -16,7 +16,7 @@ export function registerList(plan: Command): void {
   plan
     .command("list")
     .description("List open test plans in the project, newest first")
-    .option("-D, --completed", "List closed plans instead")
+    .option("-cp, --completed", "List closed plans instead")
     .option("-n, --limit <n>", "Most plans to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);

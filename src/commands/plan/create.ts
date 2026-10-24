@@ -20,10 +20,10 @@ export function registerCreate(plan: Command): void {
   const create = plan
     .command("create")
     .description("Create a test plan in the project; any run flag also adds its first runs")
-    .option("-N, --name <name>", "Plan name (required)")
+    .option("-na, --name <name>", "Plan name (required)")
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
-    .option("-M, --milestone <milestone>", "Milestone, e.g. M3");
+    .option("-ml, --milestone <milestone>", "Milestone, e.g. M3");
   entryOptions(create).action(async (opts: CreateOptions, cmd: Command) => {
     requireName(opts.name, "plan");
     const input: PlanInput = { name: opts.name };

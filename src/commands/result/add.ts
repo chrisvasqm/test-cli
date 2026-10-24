@@ -41,17 +41,17 @@ export function registerAdd(result: Command): void {
     .option("-s, --status <name>", "Status, e.g. passed, failed, blocked, retest")
     .option("-m, --comment <text>", "Comment (Markdown)")
     .option("-f, --file <path>", "Read the comment from a file (- reads stdin)")
-    .option("-d, --defects <keys>", "Defect keys, comma-separated (e.g. KAN-2,KAN-3)")
+    .option("-df, --defects <keys>", "Defect keys, comma-separated (e.g. KAN-2,KAN-3)")
     .option("-e, --elapsed <time>", "Time spent, e.g. 1m 45s")
     .option("-b, --build <version>", "Build or version tested (--version is the CLI's own)")
-    .option("-R, --run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
-    .option("-C, --case <case>", "Case in that run, e.g. C12")
+    .option("-ru, --run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
+    .option("-ca, --case <case>", "Case in that run, e.g. C12")
     .option("-a, --assign <user>", "Reassign the test: me, an email or a user id")
-    .option("-O, --steps <list>", "Step statuses by step number, e.g. 1:passed,2:failed (others Untested)")
-    .option("-B, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
+    .option("-sl, --steps <list>", "Step statuses by step number, e.g. 1:passed,2:failed (others Untested)")
+    .option("-cb, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
     .option(
-      "-A, --attach <file>",
-      "Attach a file to the new result; repeat -A for more (up to 256 MB each)",
+      "-at, --attach <file>",
+      "Attach a file to the new result; repeat -at for more (up to 256 MB each)",
       (value: string, previous: string[]) => [...previous, value],
       [],
     )
@@ -143,7 +143,7 @@ async function attachTo(resultId: number, test: number, uploads: readonly Upload
     if (!(err instanceof CliError)) throw err;
     throw new CliError(
       err.code,
-      `${err.message} Result #${resultId} was saved; attach the files with testrail attachment add T${test} -I ${resultId}, not result add.`,
+      `${err.message} Result #${resultId} was saved; attach the files with testrail attachment add T${test} -rs ${resultId}, not result add.`,
       { resultId, testId: test, error: err.details },
       err.status,
       err.field,

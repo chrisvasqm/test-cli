@@ -23,14 +23,14 @@ export function registerEdit(milestone: Command): void {
   milestone
     .command("edit <milestone>")
     .description("Change a milestone's fields, e.g. M3; fields left out stay as they are")
-    .option("-N, --name <name>", "New name")
+    .option("-na, --name <name>", "New name")
     .option("-d, --description <text>", "New description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
-    .option("-F, --start <date>", "Start date, e.g. 2026-11-01; makes the milestone upcoming (not started)")
-    .option("-U, --due <date>", "Due date, e.g. 2026-11-30")
-    .option("-M, --parent <milestone>", "Make it a sub-milestone of this milestone, e.g. M3")
+    .option("-sd, --start <date>", "Start date, e.g. 2026-11-01; makes the milestone upcoming (not started)")
+    .option("-du, --due <date>", "Due date, e.g. 2026-11-30")
+    .option("-pa, --parent <milestone>", "Make it a sub-milestone of this milestone, e.g. M3")
     .option("-r, --refs <keys>", "Replace the references, comma-separated (e.g. KAN-1)")
-    .option("-G, --started", "Mark it started")
+    .option("-sr, --started", "Mark it started")
     .action(async (rawId: string, opts: EditOptions, cmd: Command) => {
       const id = milestoneId(rawId);
       if (opts.start !== undefined && opts.started) {

@@ -18,7 +18,7 @@ export function registerAdd(attachment: Command): void {
     .description(
       "Attach files (up to 256 MB each) to a case (C12), a run (R3), or a test's newest result (T45)",
     )
-    .option("-I, --result <id>", "With a test (T45): attach to this result of it instead of the newest")
+    .option("-rs, --result <id>", "With a test (T45): attach to this result of it instead of the newest")
     .action(async (rawTarget: string, paths: string[], opts: AddOptions, cmd: Command) => {
       const target = kindedId(rawTarget);
       if (opts.result !== undefined && target.kind !== "test") {

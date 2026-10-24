@@ -38,11 +38,11 @@ export function registerCreate(run: Command): void {
     .command("create")
     .description("Create a run in the project (and suite) from the config")
     .option(
-      "-N, --name <name>",
+      "-na, --name <name>",
       "Run name (required unless --from-jira, --from-sprint, --from-epic or --from-run)",
     )
     .option(
-      "-J, --from-jira <key>",
+      "-fj, --from-jira <key>",
       'Run the cases linked to this Jira ticket; name "KAN-12: <summary>", key in refs (needs jira-cli)',
     )
     .option(
@@ -50,22 +50,22 @@ export function registerCreate(run: Command): void {
       "Run the cases linked to a sprint's tickets (active, an id or a name); named after the sprint, linked keys in refs (needs jira-cli)",
     )
     .option(
-      "-K, --from-epic <key>",
+      "-ep, --from-epic <key>",
       'Run the cases linked to an epic\'s child tickets; name "KAN-5: <summary>", linked keys in refs (needs jira-cli)',
     )
     .option(
-      "-R, --from-run <run>",
+      "-ru, --from-run <run>",
       'Rerun an earlier run\'s tests by status, same suite; name "<its name> (rerun)", its milestone',
     )
     .option(
       "-s, --status <names>",
       `With --from-run: these statuses, comma-separated (default: ${RERUN_STATUSES})`,
     )
-    .option("-C, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
+    .option("-ca, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
-    .option("-M, --milestone <id>", "Milestone id, e.g. M3")
+    .option("-ml, --milestone <id>", "Milestone id, e.g. M3")
     .option("-a, --assign <user>", "Assign the run: me, an email or a user id")
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
