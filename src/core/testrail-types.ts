@@ -86,6 +86,22 @@ export interface Run {
   url: string;
 }
 
+export interface Milestone {
+  id: number;
+  name: string;
+  description: string | null;
+  project_id: number;
+  parent_id: number | null;
+  refs: string | null;
+  start_on: number | null;
+  started_on: number | null;
+  is_started: boolean;
+  due_on: number | null;
+  is_completed: boolean;
+  completed_on: number | null;
+  url: string;
+}
+
 export interface Test extends CaseContent {
   id: number;
   case_id: number;

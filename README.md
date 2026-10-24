@@ -73,7 +73,7 @@ Agents add `-j` to every command to read the JSON output. They never pass `-y` (
 
 ## Commands
 
-Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project and `S1` a suite. The letter is optional, except for `link`.
+Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project, `S1` a suite and `M3` a milestone. The letter is optional, except for `link`.
 
 | Command                                | What it does                                                                                                   |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -95,6 +95,9 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`                                                            |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                            |
 | `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                              |
+| `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                          |
+| `testrail milestone view <M>`          | Dates, parent, refs and description                                                                            |
+| `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-a`/`-u` start/due dates, `-M <M>` parent, `-r`)                       |
 | `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-n <limit>`, 100)                                                         |
 | `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                     |
 | `testrail result add <T>`              | Add a result (`-B` files a Jira bug); or `-R <R> -C <C>`                                                       |

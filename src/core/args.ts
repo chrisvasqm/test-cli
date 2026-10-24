@@ -10,7 +10,8 @@ export function intInRange(raw: string, flag: string, min: number, max = Number.
 }
 
 /**
- * TestRail shows ids with a letter: C12 (case), R3 (run), T45 (test), P2 (project), S1 (suite).
+ * TestRail shows ids with a letter: C12 (case), R3 (run), T45 (test), P2 (project), S1 (suite),
+ * M3 (milestone).
  * Accepts "C12", "c12" or "12" for that kind; another letter is a usage error. `where` prefixes the
  * error, e.g. "entry 3".
  */
@@ -32,6 +33,19 @@ export const runId = (raw: string): number => prefixedId(raw, "R", "run");
 export const testId = (raw: string): number => prefixedId(raw, "T", "test");
 export const projectId = (raw: string): number => prefixedId(raw, "P", "project");
 export const suiteId = (raw: string): number => prefixedId(raw, "S", "suite");
+export const milestoneId = (raw: string): number => prefixedId(raw, "M", "milestone");
+
+/** A calendar date "2026-11-30" → Unix seconds at local midnight, as TestRail stores dates. */
+export function dateArg(raw: string, flag: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim());
+  const [year, month, day] = [Number(match?.[1]), Number(match?.[2]), Number(match?.[3])];
+  const date = new Date(year, month - 1, day);
+  // Date rolls 2026-02-30 over to March, so the parts must survive the round trip.
+  if (!match || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    throw new InputError("USAGE", `${flag} must be a date like 2026-11-30`);
+  }
+  return Math.floor(date.getTime() / 1000);
+}
 
 /** Upper limit for --limit on list commands. */
 const MAX_LIST = 1000;
