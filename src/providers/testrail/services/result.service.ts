@@ -1,12 +1,12 @@
 import { notFound } from "../errors.js";
 import { CliError, InputError } from "../../../core/errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { inBatches, type Collected } from "../../../core/paging.js";
 import type { Result, Run, StepResult, Test } from "../types.js";
-import { CaseService } from "./case.service.js";
-import { RunService } from "./run.service.js";
-import { TestService } from "./test.service.js";
+import type { CaseService } from "./case.service.js";
+import type { RunService } from "./run.service.js";
+import type { TestService } from "./test.service.js";
 
 /** Fields of a new result; TestRail needs a status, a comment or an assignee (defects alone are refused). */
 export interface ResultInput {
@@ -46,10 +46,10 @@ function skipNotInRun(err: unknown): undefined {
 /** add_result(s) and get_results_for_case endpoints. Results are append-only: TestRail has no edit or delete for them. */
 export class ResultService {
   constructor(
-    private readonly http = HttpClient.get(),
-    private readonly tests = new TestService(http),
-    private readonly runs = new RunService(http),
-    private readonly cases = new CaseService(http),
+    private readonly http: HttpClient,
+    private readonly tests: TestService,
+    private readonly runs: RunService,
+    private readonly cases: CaseService,
   ) {}
 
   addForTest(testId: number, input: ResultInput): Promise<Result> {

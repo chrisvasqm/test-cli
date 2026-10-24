@@ -8,7 +8,6 @@ export function registerDelete(suite: Command): void {
     usage: "delete <suite>",
     description: "Delete a suite with its sections, cases and tests, e.g. S3; TestRail has no undo",
     parseId: suiteId,
-    needs: "suites",
     service: () => provider().suites,
     key: "name",
     ref: (id) => `S${id}`,

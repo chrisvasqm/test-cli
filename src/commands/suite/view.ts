@@ -10,7 +10,7 @@ export function registerView(suite: Command): void {
     .description("Show a suite's details, e.g. S3")
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = suiteId(rawId);
-      const { config, mode } = bootstrap(cmd, "suites");
+      const { config, mode } = bootstrap(cmd);
       const found = await provider().suites.get(id);
       const view = {
         id: found.id,

@@ -1,5 +1,5 @@
 import { notFound, notFoundAs } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { type Collected } from "../../../core/paging.js";
 import type { Milestone } from "../types.js";
@@ -23,7 +23,7 @@ export interface MilestoneUpdate extends Partial<MilestoneInput> {
 
 /** get_milestone(s), add_milestone, update_milestone and delete_milestone endpoints. */
 export class MilestoneService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Milestone> {
     return this.http.get<Milestone>(`get_milestone/${id}`).catch(notFound.milestone(id));

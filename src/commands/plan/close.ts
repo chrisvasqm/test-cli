@@ -9,7 +9,6 @@ export function registerClose(plan: Command): void {
     usage: "close <plan>",
     description: "Close a plan and its runs, e.g. R7; TestRail cannot reopen it",
     parseId: planId,
-    needs: "plans",
     confirm: {
       yesHelp: "Close without asking",
       question: async (id, { plans }) => {

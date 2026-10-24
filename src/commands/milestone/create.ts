@@ -40,7 +40,7 @@ export function registerCreate(milestone: Command): void {
       if (refs) input.refs = refs;
       const description = await readOptionalText(opts.description, opts.file, "description");
       if (description !== undefined) input.description = description;
-      const { config, mode } = bootstrap(cmd, "milestones");
+      const { config, mode } = bootstrap(cmd);
       const view = toMilestoneView(await provider().milestones.add(config.projectId, input));
       printResult(mode, view, () =>
         [`Created M${view.id}  ${view.name}`, table(milestoneRows(view))].join("\n\n"),

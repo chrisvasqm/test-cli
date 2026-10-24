@@ -18,7 +18,7 @@ export function registerClose(run: Command): void {
     .action(async (rawId: string, opts: CloseOptions, cmd: Command) => {
       const id = runId(rawId);
       const { mode } = bootstrap(cmd);
-      const runs = provider().runs;
+      const { runs } = provider();
       const statuses = provider().meta.statuses();
       const found = await runs.get(id);
       // A run in a plan fails here, before the question.

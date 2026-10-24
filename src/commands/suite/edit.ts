@@ -30,7 +30,7 @@ export function registerEdit(suite: Command): void {
       const changed = Object.keys(input);
       if (changed.length === 0)
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name");
-      const { mode } = bootstrap(cmd, "suites");
+      const { mode } = bootstrap(cmd);
       const updated = await provider().suites.update(id, input);
       const view = { id: updated.id, name: updated.name, changed, url: updated.url };
       printResult(mode, view, () => `Updated S${view.id}  ${view.name}\n${view.url}`);

@@ -11,7 +11,7 @@ export function registerView(plan: Command): void {
     .description("Show a plan's progress and its runs, e.g. R7 (a run's tests: test list R8)")
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = planId(rawId);
-      const { mode } = bootstrap(cmd, "plans");
+      const { mode } = bootstrap(cmd);
       const [found, statuses] = await Promise.all([provider().plans.get(id), provider().meta.statuses()]);
       const view = toPlanView(found, statuses);
       printResult(mode, view, () => renderPlan(view));

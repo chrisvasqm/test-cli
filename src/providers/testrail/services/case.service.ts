@@ -1,5 +1,5 @@
 import { notFound } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import { hasRef, splitList } from "../../../core/text.js";
@@ -36,7 +36,7 @@ export interface CaseInput extends CaseContent {
  * case with get first to name the missing one.
  */
 export class CaseService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   /** Every case, a few at a time; the first unknown one fails with CASE_NOT_FOUND. */
   getMany(ids: number[]): Promise<Case[]> {

@@ -57,7 +57,7 @@ export function registerEdit(milestone: Command): void {
       if (Object.keys(input).length === 0) {
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name or --due");
       }
-      const { mode } = bootstrap(cmd, "milestones");
+      const { mode } = bootstrap(cmd);
       const updated = await provider().milestones.update(id, input);
       const view = { ...toMilestoneView(updated), changed: Object.keys(input) };
       printResult(mode, view, () =>

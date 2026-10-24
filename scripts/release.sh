@@ -74,7 +74,7 @@ On Windows (PowerShell):
 irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-To install exactly this version: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\` (coming from testrail-cli 2.x, run \`npm uninstall -g testrail-cli\` first; the install scripts do this for you)
+To install exactly this version: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
 
 ---
 
@@ -98,7 +98,7 @@ En Windows (PowerShell):
 irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\` (si viene de testrail-cli 2.x, ejecute antes \`npm uninstall -g testrail-cli\`; los scripts de instalación lo hacen por usted)
+Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
 NOTES
 if tagged=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
   [ "$tagged" = "$head" ] || die "$tag exists on another commit; bump the version in the PR first"

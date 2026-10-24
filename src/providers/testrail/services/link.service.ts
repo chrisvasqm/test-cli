@@ -1,9 +1,9 @@
 import type { Run } from "../types.js";
 import { joinRefs, splitList, uniqueRefs } from "../../../core/text.js";
-import { CaseService } from "./case.service.js";
-import { ResultService } from "./result.service.js";
-import { RunService } from "./run.service.js";
-import { TestService } from "./test.service.js";
+import type { CaseService } from "./case.service.js";
+import type { ResultService } from "./result.service.js";
+import type { RunService } from "./run.service.js";
+import type { TestService } from "./test.service.js";
 
 /** What a Jira key is linked to: a case's or run's refs, or a test's result defects. */
 export type LinkTarget = RefsTarget | { kind: "test"; id: number };
@@ -16,10 +16,10 @@ const ALL_RESULTS = Number.MAX_SAFE_INTEGER;
 /** Jira keys on cases and runs (the refs field) and on tests (defects of their results). */
 export class LinkService {
   constructor(
-    private readonly cases = new CaseService(),
-    private readonly runs = new RunService(),
-    private readonly tests = new TestService(),
-    private readonly results = new ResultService(),
+    private readonly cases: CaseService,
+    private readonly runs: RunService,
+    private readonly tests: TestService,
+    private readonly results: ResultService,
   ) {}
 
   /**

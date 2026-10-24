@@ -2,7 +2,6 @@ import type { Command } from "commander";
 import { bootstrap } from "../core/bootstrap.js";
 import { confirm } from "../core/confirm.js";
 import { printResult } from "../core/output.js";
-import type { Capability } from "../providers/index.js";
 
 interface ActionOptions {
   yes?: boolean;
@@ -14,8 +13,6 @@ export interface IdActionSpec<Ctx, Out> {
   usage: string;
   description: string;
   parseId: (raw: string) => number;
-  /** The optional provider feature the command uses, e.g. "milestones". */
-  needs?: Capability;
   /** Ask in a terminal unless `--yes`; without one, CONFIRM_REQUIRED. Leave out for actions that never ask. */
   confirm?: {
     /** Help text for `-y, --yes`. */
@@ -33,7 +30,7 @@ export function registerIdAction<Ctx, Out>(group: Command, spec: IdActionSpec<Ct
   if (spec.confirm) command.option("-y, --yes", spec.confirm.yesHelp);
   command.action(async (rawId: string, opts: ActionOptions, cmd: Command) => {
     const id = spec.parseId(rawId);
-    const { mode } = bootstrap(cmd, spec.needs);
+    const { mode } = bootstrap(cmd);
     const ctx = await spec.prepare(id);
     if (spec.confirm && !opts.yes) await confirm(await spec.confirm.question(id, ctx));
     const out = await spec.act(id, ctx);
@@ -51,7 +48,6 @@ export interface DeleteSpec<Key extends string, Found extends Record<Key, string
   usage: string;
   description: string;
   parseId: (raw: string) => number;
-  needs?: Capability;
   /** Built after bootstrap. */
   service: () => Removable<Found>;
   /** The field that names the item in the output: "name", or "title" for cases. */
@@ -70,7 +66,6 @@ export function registerDeleteAction<Key extends string, Found extends Record<Ke
     usage: spec.usage,
     description: spec.description,
     parseId: spec.parseId,
-    ...(spec.needs ? { needs: spec.needs } : {}),
     confirm: { yesHelp: "Delete without asking", question: (id, ctx) => spec.question(id, ctx.found) },
     prepare: async (id) => {
       const service = spec.service();

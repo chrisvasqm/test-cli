@@ -11,7 +11,7 @@ export function registerView(milestone: Command): void {
     .description("Show a milestone's dates, parent, refs and description, e.g. M3")
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = milestoneId(rawId);
-      const { mode } = bootstrap(cmd, "milestones");
+      const { mode } = bootstrap(cmd);
       const view = toMilestoneView(await provider().milestones.get(id));
       printResult(mode, view, () => {
         const sections = [`M${view.id}  ${view.name}`, table(milestoneRows(view))];

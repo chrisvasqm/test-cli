@@ -8,7 +8,6 @@ export function registerDelete(plan: Command): void {
     usage: "delete <plan>",
     description: "Delete a plan with its runs, tests and results, e.g. R7; TestRail has no undo",
     parseId: planId,
-    needs: "plans",
     service: () => provider().plans,
     key: "name",
     ref: (id) => `R${id}`,

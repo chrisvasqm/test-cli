@@ -44,7 +44,7 @@ export function registerList(testCase: Command): void {
       const updatedAfter =
         opts.updatedSince === undefined ? undefined : sinceDate(opts.updatedSince, "--updated-since");
       const { config, mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       // The same tables name each row's priority and type; filter names need them before listing.
       const tablesLoaded = Promise.all([meta.priorities(), meta.caseTypes()]);
       const filtered = opts.priority !== undefined || opts.type !== undefined;
@@ -98,7 +98,7 @@ export function registerList(testCase: Command): void {
 
 /** With a key, every exact match is fetched first, so the limit cuts the matches, not TestRail's looser page. */
 async function listCases(filter: CaseFilter, key: string | undefined): Promise<Collected<Case>> {
-  const cases = provider().cases;
+  const { cases } = provider();
   if (key === undefined) return cases.list(filter);
   const matches = await cases.withRef(filter, key);
   return { items: matches.slice(0, filter.limit), hasMore: matches.length > filter.limit };

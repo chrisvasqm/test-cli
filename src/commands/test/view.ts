@@ -28,8 +28,7 @@ export function registerView(test: Command): void {
       const id = testId(rawId);
       const limit = intInRange(opts.results, "--results", 0, MAX_RESULTS);
       const { config, mode } = bootstrap(cmd);
-      const tests = provider().tests;
-      const meta = provider().meta;
+      const { tests, meta } = provider();
       const [found, results, statuses] = await Promise.all([
         tests.get(id),
         limit > 0 ? tests.results(id, limit) : Promise.resolve({ items: [], hasMore: false }),

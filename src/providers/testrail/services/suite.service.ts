@@ -1,5 +1,5 @@
 import { notFound } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import type { Suite } from "../types.js";
 
 export interface SuiteInput {
@@ -9,7 +9,7 @@ export interface SuiteInput {
 
 /** get_suite, add_suite, update_suite and delete_suite endpoints. get_suites is ProjectService.suites. */
 export class SuiteService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Suite> {
     return this.http.get<Suite>(`get_suite/${id}`).catch(notFound.suite(id));

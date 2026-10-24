@@ -8,7 +8,6 @@ export function registerDelete(milestone: Command): void {
     usage: "delete <milestone>",
     description: "Delete a milestone, e.g. M3; TestRail has no undo",
     parseId: milestoneId,
-    needs: "milestones",
     service: () => provider().milestones,
     key: "name",
     ref: (id) => `M${id}`,

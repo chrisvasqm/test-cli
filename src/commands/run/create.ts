@@ -80,7 +80,7 @@ export function registerCreate(run: Command): void {
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
       const { ticket, refs: given } = await loadFromJira(key, opts.refs);
       const found = tickets === undefined ? undefined : await jiraTickets(tickets);
-      const meta = provider().meta;
+      const { meta } = provider();
       const [rerun, fromTickets, linked, statuses, assignee] = await Promise.all([
         sourceId === undefined ? undefined : rerunCases(sourceId, opts.status, meta),
         found === undefined ? undefined : ticketCases(config.projectId, config.suiteId, found),

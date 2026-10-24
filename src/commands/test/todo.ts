@@ -65,7 +65,7 @@ export function registerTodo(test: Command): void {
       const limit = listLimit(opts.limit);
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
       const { config, mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       const [user, statusIds, runs] = await Promise.all([
         provider().users.resolve(opts.assigned ?? "me", config.email, "--assigned"),
         opts.status === undefined ? meta.openStatusIds() : meta.statusIds(opts.status),

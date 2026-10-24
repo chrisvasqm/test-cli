@@ -1,4 +1,4 @@
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { sameName, splitList } from "../../../core/text.js";
 import { findByName } from "../lookup.js";
 import type { Named, Status, Template } from "../types.js";
@@ -7,7 +7,7 @@ import type { Named, Status, Template } from "../types.js";
 export class MetaService {
   private statusList: Promise<Status[]> | undefined;
 
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   statuses(): Promise<Status[]> {
     this.statusList ??= this.http.get<Status[]>("get_statuses");

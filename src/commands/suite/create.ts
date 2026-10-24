@@ -22,7 +22,7 @@ export function registerCreate(suite: Command): void {
     .action(async (opts: CreateOptions, cmd: Command) => {
       requireName(opts.name, "suite");
       const description = await readOptionalText(opts.description, opts.file, "description");
-      const { config, mode } = bootstrap(cmd, "suites");
+      const { config, mode } = bootstrap(cmd);
       const input: SuiteInput = { name: opts.name };
       if (description !== undefined) input.description = description;
       const created = await provider().suites.add(config.projectId, input);
