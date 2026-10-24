@@ -29,6 +29,7 @@ export interface Section {
   name: string;
   suite_id: number;
   parent_id: number | null;
+  depth: number;
 }
 
 export interface Step {
@@ -116,4 +117,12 @@ export interface Status {
 export interface Named {
   id: number;
   name: string;
+}
+
+export interface Template {
+  id: number;
+  name: string;
+  /** Stable key, e.g. "templates_test_case_steps"; the name can be renamed. */
+  i18n_custom_id?: string | null;
+  is_default: boolean;
 }
