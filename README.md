@@ -138,7 +138,7 @@ pnpm check          # type-check, bundle, lint, format check
 pnpm add -g .       # once: use your local build as the global `testrail` (then `pnpm build` after changes)
 ```
 
-[AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs as evidence.
+[AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs as evidence. Jira features go through the real `jira` CLI: it creates throwaway tickets in its configured project and deletes them when the run ends, even on Ctrl+C.
 
 ## Releasing
 
