@@ -82,10 +82,11 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
   const projects = new ProjectService();
   // Listing projects proves the credentials. Only then look up the name, so a wrong key
   // costs one failed login (repeated failures can lock the account), not two.
-  const active = await projects.listActive();
+  const { items: active, hasMore } = await projects.listActive();
   const me = await new UserService().byEmail(email).catch(() => undefined);
   info(`Authenticated as ${me?.name ?? email}`);
   if (active.length === 0) throw new CliError("NO_PROJECTS", "This account can see no active projects.");
+  if (hasMore) info(`Showing the first ${active.length} projects; edit projectId in the config for another.`);
   const project = await pick(active, (item) => `${item.name} (P${item.id})`, "project");
 
   let suite: Suite | undefined;

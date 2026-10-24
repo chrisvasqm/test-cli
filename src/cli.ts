@@ -47,8 +47,12 @@ program
   .then(() => closePrompts())
   .catch((raw: unknown) => {
     closePrompts();
-    if (isHelp(raw)) process.exit(raw.exitCode === 0 ? 0 : 2);
+    // exitCode, not process.exit(): stdout to a pipe is async on macOS and a JSON line could be cut.
+    if (isHelp(raw)) {
+      process.exitCode = raw.exitCode === 0 ? 0 : 2;
+      return;
+    }
     const err = toCliError(raw);
     printError(outputMode(program), err);
-    process.exit(exitCode(err));
+    process.exitCode = exitCode(err);
   });

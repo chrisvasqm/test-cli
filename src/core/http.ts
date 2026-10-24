@@ -18,6 +18,8 @@ const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Longest Retry-After wait the client honors. TestRail Cloud allows 180-300 requests a minute. */
 const MAX_RETRY_AFTER_MS = 60_000;
+/** Wait after a 429 that has no Retry-After header. */
+const RATE_LIMIT_WAIT_MS = 20_000;
 /** Longest raw (non-JSON) error body kept in error details, e.g. a proxy's HTML page. */
 const MAX_RAW_DETAIL_CHARS = 500;
 
@@ -82,14 +84,14 @@ export class HttpClient {
 
     for (let attempt = 0; ; attempt++) {
       const more = attempt < MAX_RETRIES;
-      const reply = await this.attempt(url, init, idempotent && more);
+      const reply = await this.attempt(url, init, idempotent, more);
       if (reply === undefined) {
         await sleep(this.backoff(attempt));
         continue;
       }
       const retryable = reply.status === 429 || (idempotent && RETRYABLE_STATUS.has(reply.status));
       if (more && retryable) {
-        await sleep(this.backoff(attempt, reply.retryAfter));
+        await sleep(this.backoff(attempt, reply.retryAfter, reply.status === 429));
         continue;
       }
       return this.decode<T>(reply, method, path);
@@ -100,14 +102,23 @@ export class HttpClient {
    * Sends and reads the whole body: the timeout covers both, so a stalled body is a network error too.
    * Returns undefined when the network failed and a retry is allowed.
    */
-  private async attempt(url: string, init: RequestInit, canRetry: boolean): Promise<Reply | undefined> {
+  private async attempt(
+    url: string,
+    init: RequestInit,
+    idempotent: boolean,
+    more: boolean,
+  ): Promise<Reply | undefined> {
     try {
       const res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       const text = await res.text();
       return { status: res.status, ok: res.ok, retryAfter: res.headers.get("Retry-After"), text };
     } catch (err) {
-      if (canRetry) return undefined;
-      throw new CliError("NETWORK_ERROR", `Could not reach ${this.creds.baseUrl}`, networkReason(err));
+      if (idempotent && more) return undefined;
+      // A write may have reached TestRail before the connection failed, so a blind retry could duplicate it.
+      const message = idempotent
+        ? `Could not reach ${this.creds.baseUrl}`
+        : `Lost the connection to ${this.creds.baseUrl}; the change may or may not have been saved. Check before retrying.`;
+      throw new CliError("NETWORK_ERROR", message, networkReason(err));
     }
   }
 
@@ -154,9 +165,11 @@ export class HttpClient {
     return parsed as T;
   }
 
-  private backoff(attempt: number, retryAfter?: string | null): number {
+  private backoff(attempt: number, retryAfter?: string | null, rateLimited = false): number {
     const fromHeader = retryAfterMs(retryAfter);
     if (fromHeader !== undefined) return Math.min(fromHeader, MAX_RETRY_AFTER_MS);
+    // TestRail limits per minute, so a 429 without Retry-After waits for most of the window.
+    if (rateLimited) return RATE_LIMIT_WAIT_MS;
     const exponential = BASE_DELAY_MS * 2 ** attempt;
     const jitter = Math.random() * BASE_DELAY_MS;
     return Math.min(exponential + jitter, MAX_DELAY_MS);

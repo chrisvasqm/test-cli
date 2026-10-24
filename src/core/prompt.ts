@@ -65,6 +65,9 @@ export function closePrompts(): void {
 }
 
 function nextLine(): Promise<string> {
+  // On a terminal, lines typed before the question was shown (e.g. an extra Enter while a request ran)
+  // must not answer it. Piped input keeps its queue: there every line is a planned answer.
+  if (stdin.isTTY) queued.length = 0;
   const line = queued.shift();
   if (line !== undefined) return Promise.resolve(line);
   if (ended) return Promise.reject(eof());

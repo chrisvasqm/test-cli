@@ -1,6 +1,6 @@
 import { notFoundAs } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages } from "../core/paging.js";
+import { collectPages, type Collected } from "../core/paging.js";
 import type { Project, Suite } from "../core/testrail-types.js";
 
 /** Most projects one account can list at once. */
@@ -10,16 +10,15 @@ const MAX_PROJECTS = 1000;
 export class ProjectService {
   constructor(private readonly http = HttpClient.get()) {}
 
-  /** Active projects only; completed ones are archived. */
-  async listActive(): Promise<Project[]> {
-    const { items } = await collectPages<Project>(
+  /** Active projects only; completed ones are archived. `hasMore` is true past MAX_PROJECTS. */
+  listActive(): Promise<Collected<Project>> {
+    return collectPages<Project>(
       "get_projects",
       "projects",
       { is_completed: false },
       MAX_PROJECTS,
       this.http,
     );
-    return items;
   }
 
   suites(projectId: number): Promise<Suite[]> {

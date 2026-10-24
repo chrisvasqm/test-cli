@@ -5,7 +5,7 @@ export type OutputMode = "human" | "json";
 
 export function printResult(mode: OutputMode, data: unknown, human: () => string): void {
   if (mode === "json") {
-    process.stdout.write(`${JSON.stringify({ ok: true, data })}\n`);
+    process.stdout.write(`${toJson({ ok: true, data })}\n`);
     return;
   }
   process.stdout.write(`${stripControls(human())}\n`);
@@ -24,10 +24,19 @@ export function stripControls(text: string): string {
   return stripVTControlCharacters(text).replace(HIDDEN, (char) => (keep(char) ? char : ""));
 }
 
-/** Newline, tab, and the zero-width joiner and tag characters that emoji sequences need. */
+/**
+ * Newline, tab, and the zero-width joiner that emoji sequences need. Unicode tag characters are
+ * dropped: they can carry invisible text aimed at agents (only subdivision flags lose detail).
+ */
 function keep(char: string): boolean {
-  const code = char.codePointAt(0) ?? 0;
-  return char === "\n" || char === "\t" || code === 0x200d || (code >= 0xe0020 && code <= 0xe007f);
+  return char === "\n" || char === "\t" || char === "\u200d";
+}
+
+/** JSON for agents gets the same cleaning as terminal text: every string value is stripped. */
+function toJson(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    typeof item === "string" ? stripControls(item) : item,
+  );
 }
 
 /** A note for people (progress, hints) on stderr, so stdout stays the result. */
@@ -40,7 +49,7 @@ export function printError(mode: OutputMode, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
   const details = err instanceof CliError ? err.details : undefined;
   if (mode === "json") {
-    process.stdout.write(`${JSON.stringify({ ok: false, error: { code, message, details } })}\n`);
+    process.stdout.write(`${toJson({ ok: false, error: { code, message, details } })}\n`);
     return;
   }
   process.stderr.write(`error [${code}]: ${stripControls(message)}\n`);
