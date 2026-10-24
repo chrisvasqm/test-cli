@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { registerCase } from "./commands/case/index.js";
 import { registerProject } from "./commands/project/index.js";
+import { registerResult } from "./commands/result/index.js";
 import { registerRun } from "./commands/run/index.js";
 import { registerSetup } from "./commands/setup.js";
 import { registerTest } from "./commands/test/index.js";
@@ -27,6 +28,7 @@ registerProject(program);
 registerCase(program);
 registerRun(program);
 registerTest(program);
+registerResult(program);
 
 const INPUT_ERRORS = new Set(["USAGE", "INPUT_EOF", "CONFIRM_REQUIRED", "UNKNOWN_STATUS"]);
 
