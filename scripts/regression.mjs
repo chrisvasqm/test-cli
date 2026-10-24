@@ -247,6 +247,8 @@ const child = jira(
   K2,
   "--summary",
   `Regression ${tag} child (delete me)`,
+  "--description",
+  "Created by testrail-cli regression",
 ).data?.key;
 if (child) tickets.push(child);
 check("link add <child>", run("link", "add", jiraCaseRef, child ?? missing), okData);
@@ -256,6 +258,8 @@ const epicRun = check(
   (res) => okData(res) && res.out.data.tickets.from === "epic" && res.out.data.tickets.linked.includes(child),
 )?.id;
 if (epicRun) check("delete the from-epic run", run("run", "delete", `R${epicRun}`, "-y"), okData);
+// Later checks (run sync) expect only K2 in the case's refs.
+check("link remove <child>", run("link", "remove", jiraCaseRef, child ?? missing), okData);
 check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO_LINKED_CASES", 2));
 check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
 check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
