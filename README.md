@@ -75,57 +75,57 @@ Agents add `-j` to every command to read the JSON output. They never pass `-y` (
 
 Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one case inside one run), `P2` a project, `S1` a suite and `M3` a milestone. Test plans share run ids, so a plan is an `R` id too (`R7`); its runs work with `test list` and `result add` like any run. The letter is optional, except for `link`.
 
-| Command                                | What it does                                                                                                      |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `testrail project list`                | Active projects; `*` marks yours                                                                                  |
-| `testrail project use <P>`             | Make a project (and `-S <S>`) the default                                                                         |
-| `testrail suite list`                  | Suites in your project; `*` marks yours                                                                           |
-| `testrail suite view <S>`              | Name, description, state and URL                                                                                  |
-| `testrail suite create`                | New suite (`-N <name>`, `-d <text>` or `-f <file>`); multi-suite projects only                                    |
-| `testrail suite edit <S>`              | Change the name (`-N`) or description (`-d`, `-f`)                                                                |
-| `testrail suite delete <S>`            | Delete a suite with its sections, cases and tests                                                                 |
-| `testrail section list`                | Sections and their ids, nested                                                                                    |
-| `testrail section create`              | New section (`-N <name>`, `-s <parent>`, `-d <text>` or `-f <file>`)                                              |
-| `testrail section edit <id>`           | Rename (`-N`) or change the description (`-d`, `-f`)                                                              |
-| `testrail section move <id>`           | Move under `-s <parent>` (or `top`) and/or after `-A <sibling>` (or `first`)                                      |
-| `testrail section delete <id>`         | Delete a section, its child sections and all their cases                                                          |
-| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-T <type>`, `-u <date>`, `-n <limit>`, 50)           |
-| `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                                 |
-| `testrail case history <C>`            | Results across the latest runs, newest first (`-u <runs>`, 25; `-n <limit>`, 20; or `-R <R>`)                     |
-| `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                        |
-| `testrail case edit <C…>`              | Change only the fields you pass; with several cases, only `-T`, `-p`, `-r`, `-e`                                  |
-| `testrail case copy <C…> -s <section>` | Copy cases into a section                                                                                         |
-| `testrail case move <C…> -s <section>` | Move cases into a section (same suite)                                                                            |
-| `testrail case delete <C>`             | Delete a case and its tests in active runs                                                                        |
-| `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)                                                       |
-| `testrail run view <R>`                | Progress per status, refs and description                                                                         |
-| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`; `-a me` assigns it                                           |
-| `testrail run edit <R>`                | Change an open run (`-N`, `-d`, `-r`, `-M M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-C C1,C2` sets    |
-| `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                               |
-| `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                                 |
-| `testrail plan list`                   | Open test plans, newest first (`-D` for closed, `-n <limit>`, 25)                                                 |
-| `testrail plan view <R>`               | Progress per status, milestone, and each entry's runs with configurations                                         |
-| `testrail plan create`                 | New plan (`-N <name>`; `-d`/`-f`, `-M <M>`); run flags as in `add-run` add its first runs                         |
-| `testrail plan add-run <R>`            | Add runs (`-S <S>`, `-N`, `-C C1,C2` or `-J KAN-12`, `-a me`, `-g Chrome,Windows`: one run per combination)       |
-| `testrail plan close <R>`              | Close a plan and its runs (it cannot be reopened)                                                                 |
-| `testrail plan delete <R>`             | Delete a plan with its runs, tests and results                                                                    |
-| `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                             |
-| `testrail milestone view <M>`          | Dates, parent, refs and description                                                                               |
-| `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-a`/`-u` start/due dates, `-M <M>` parent, `-r`)                          |
-| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                   |
-| `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                        |
-| `testrail result add <T>`              | Add a result (`-P 1:passed,2:failed` step statuses, `-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>` |
-| `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)                                                   |
-| `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it    |
-| `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                          |
-| `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                                                                               |
-| `testrail configuration list`          | Configuration groups (e.g. browsers, OS) and their ids                                                            |
-| `testrail report list`                 | On-demand report templates (made in the UI with "On-demand via the API")                                          |
-| `testrail report run <id>`             | Run a report template; prints its URL, HTML and PDF links                                                         |
-| `testrail user list`                   | Users in the project (id, name, email); `*` marks you                                                             |
-| `testrail attachment list <C\|R\|T>`   | Files on a case, a run, or a test's results (`-n <limit>`, 100)                                                   |
-| `testrail attachment add <C\|R\|T> …`  | Attach files (256 MB each); a test's go to its newest result or `-i <result id>`; also `result add -A`            |
-| `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                         |
+| Command                                | What it does                                                                                                                                        |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `testrail project list`                | Active projects; `*` marks yours                                                                                                                    |
+| `testrail project use <P>`             | Make a project (and `-S <S>`) the default                                                                                                           |
+| `testrail suite list`                  | Suites in your project; `*` marks yours                                                                                                             |
+| `testrail suite view <S>`              | Name, description, state and URL                                                                                                                    |
+| `testrail suite create`                | New suite (`-N <name>`, `-d <text>` or `-f <file>`); multi-suite projects only                                                                      |
+| `testrail suite edit <S>`              | Change the name (`-N`) or description (`-d`, `-f`)                                                                                                  |
+| `testrail suite delete <S>`            | Delete a suite with its sections, cases and tests                                                                                                   |
+| `testrail section list`                | Sections and their ids, nested                                                                                                                      |
+| `testrail section create`              | New section (`-N <name>`, `-s <parent>`, `-d <text>` or `-f <file>`)                                                                                |
+| `testrail section edit <id>`           | Rename (`-N`) or change the description (`-d`, `-f`)                                                                                                |
+| `testrail section move <id>`           | Move under `-s <parent>` (or `top`) and/or after `-A <sibling>` (or `first`)                                                                        |
+| `testrail section delete <id>`         | Delete a section, its child sections and all their cases                                                                                            |
+| `testrail case list`                   | Cases (`-s <section>`, `-r KAN-12`, `-q <text>`, `-p High`, `-T <type>`, `-u <date>`, `-n <limit>`, 50)                                             |
+| `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                                                                   |
+| `testrail case history <C>`            | Results across the latest runs, newest first (`-u <runs>`, 25; `-n <limit>`, 20; or `-R <R>`)                                                       |
+| `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                                                          |
+| `testrail case edit <C…>`              | Change only the fields you pass; with several cases, only `-T`, `-p`, `-r`, `-e`                                                                    |
+| `testrail case copy <C…> -s <section>` | Copy cases into a section                                                                                                                           |
+| `testrail case move <C…> -s <section>` | Move cases into a section (same suite)                                                                                                              |
+| `testrail case delete <C>`             | Delete a case and its tests in active runs                                                                                                          |
+| `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)                                                                                         |
+| `testrail run view <R>`                | Progress per status, refs and description                                                                                                           |
+| `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`; `-R R3` reruns R3's failed, retest and blocked tests (`-s` picks statuses); `-a me` assigns it |
+| `testrail run edit <R>`                | Change an open run (`-N`, `-d`, `-r`, `-M M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-C C1,C2` sets                                      |
+| `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                                                                 |
+| `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                                                                   |
+| `testrail plan list`                   | Open test plans, newest first (`-D` for closed, `-n <limit>`, 25)                                                                                   |
+| `testrail plan view <R>`               | Progress per status, milestone, and each entry's runs with configurations                                                                           |
+| `testrail plan create`                 | New plan (`-N <name>`; `-d`/`-f`, `-M <M>`); run flags as in `add-run` add its first runs                                                           |
+| `testrail plan add-run <R>`            | Add runs (`-S <S>`, `-N`, `-C C1,C2` or `-J KAN-12`, `-a me`, `-g Chrome,Windows`: one run per combination)                                         |
+| `testrail plan close <R>`              | Close a plan and its runs (it cannot be reopened)                                                                                                   |
+| `testrail plan delete <R>`             | Delete a plan with its runs, tests and results                                                                                                      |
+| `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                                                               |
+| `testrail milestone view <M>`          | Dates, parent, refs and description                                                                                                                 |
+| `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-a`/`-u` start/due dates, `-M <M>` parent, `-r`)                                                            |
+| `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                                                     |
+| `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                                                          |
+| `testrail result add <T>`              | Add a result (`-P 1:passed,2:failed` step statuses, `-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>`                                   |
+| `testrail result import <R> -f <file>` | Add many results in one request from a JSON file (`-` is stdin)                                                                                     |
+| `testrail link list <C\|R\|T\|KEY>`    | Jira keys on a case or run (refs) or a test (result defects); with a Jira key, the cases and runs linked to it                                      |
+| `testrail link add <C\|R\|T> <KEY…>`   | Link Jira keys; checks them with jira-cli when installed                                                                                            |
+| `testrail link remove <C\|R> <KEY…>`   | Unlink Jira keys from a case or run                                                                                                                 |
+| `testrail configuration list`          | Configuration groups (e.g. browsers, OS) and their ids                                                                                              |
+| `testrail report list`                 | On-demand report templates (made in the UI with "On-demand via the API")                                                                            |
+| `testrail report run <id>`             | Run a report template; prints its URL, HTML and PDF links                                                                                           |
+| `testrail user list`                   | Users in the project (id, name, email); `*` marks you                                                                                               |
+| `testrail attachment list <C\|R\|T>`   | Files on a case, a run, or a test's results (`-n <limit>`, 100)                                                                                     |
+| `testrail attachment add <C\|R\|T> …`  | Attach files (256 MB each); a test's go to its newest result or `-i <result id>`; also `result add -A`                                              |
+| `testrail setup`                       | Create the config (see [Set up](#set-up))                                                                                                           |
 
 - **Case fields (`create` and `edit`):**
   - `-t --title`, `-T --type <name>`, `-p --priority <name>`, `-e --estimate 5m`
