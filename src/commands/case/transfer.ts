@@ -36,7 +36,7 @@ function registerTransfer(testCase: Command, verb: "copy" | "move", done: string
       const ids = caseIdList(rawIds);
       const sectionId = intInRange(opts.section, "--section", 1);
       const { mode } = bootstrap(cmd);
-      const cases = provider().cases;
+      const { cases } = provider();
       // Both checks run before the write, so it never half-starts on a typo.
       const [section, found] = await Promise.all([provider().sections.get(sectionId), cases.getMany(ids)]);
       await (verb === "copy"

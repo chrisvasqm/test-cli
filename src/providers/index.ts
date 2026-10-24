@@ -1,5 +1,5 @@
 import { CliError, InputError } from "../core/errors.js";
-import type { Capability } from "./capability.js";
+import { CAPABILITIES, type Capability } from "./capability.js";
 import { createTestRail, type TestRailCredentials, type TestRailProvider } from "./testrail/index.js";
 
 export type { Capability } from "./capability.js";
@@ -12,16 +12,6 @@ export type Provider = TestRailProvider;
 
 /** What a provider needs to connect: a whole config, or what `setup` has asked for so far. */
 export type Connection = { provider: "testrail" } & TestRailCredentials;
-
-/** The service behind each optional feature; reading it from a provider without the feature fails. */
-const GATED: Record<Capability, keyof Provider> = {
-  suites: "suites",
-  plans: "plans",
-  milestones: "milestones",
-  configurations: "configurations",
-  reports: "reports",
-  attachments: "attachments",
-};
 
 let active: Provider | undefined;
 
@@ -51,9 +41,9 @@ export function requireCapability(current: Provider, need: Capability): void {
 /** The provider with each optional service behind its capability, so no call site can skip the check. */
 function gated(built: Provider): Provider {
   const out = { ...built };
-  for (const [need, key] of Object.entries(GATED) as [Capability, keyof Provider][]) {
+  for (const need of CAPABILITIES) {
     if (built.capabilities.has(need)) continue;
-    Object.defineProperty(out, key, {
+    Object.defineProperty(out, need, {
       get: () => requireCapability(built, need),
       enumerable: true,
     });

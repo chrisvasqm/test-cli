@@ -19,7 +19,7 @@ export function registerList(attachment: Command): void {
     .action(async (rawTarget: string, opts: ListOptions, cmd: Command) => {
       const target = kindedId(rawTarget);
       const limit = listLimit(opts.limit);
-      const { mode } = bootstrap(cmd, "attachments");
+      const { mode } = bootstrap(cmd);
       const { items, hasMore } = await provider().attachments.list(target, limit);
       const attachments = items.map((item) => ({
         id: item.id,

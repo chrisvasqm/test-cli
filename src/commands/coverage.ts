@@ -111,7 +111,7 @@ async function latestResults(
   if (caseIds.size === 0) return latest;
   const untested = new Set(statuses.filter((status) => status.is_untested).map((status) => status.id));
   const ordered = runs.toSorted((left, right) => right.created_on - left.created_on || right.id - left.id);
-  const tests = provider().tests;
+  const { tests } = provider();
   for (let start = 0; start < ordered.length && latest.size < caseIds.size; start += RUN_BATCH) {
     const batch = ordered.slice(start, start + RUN_BATCH);
     const found = await Promise.all(batch.map((run) => tests.all(run.id)));

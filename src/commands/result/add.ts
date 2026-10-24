@@ -58,7 +58,7 @@ export function registerAdd(result: Command): void {
       // Checked before the result exists: results are append-only, so a retry would add a second one.
       const uploads = opts.attach.length > 0 ? await checkUploads(opts.attach) : [];
       const { config, mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
       const [statuses, assignee] = await Promise.all([
         meta.statuses(),
@@ -128,7 +128,7 @@ async function caseSteps(target: ResultTarget): Promise<Step[] | null | undefine
 }
 
 function addResult(target: ResultTarget, input: ResultInput) {
-  const results = provider().results;
+  const { results } = provider();
   return target.kind === "test"
     ? results.addForTest(target.testId, input)
     : results.addForCase(target.runId, target.caseId, input);
@@ -137,15 +137,14 @@ function addResult(target: ResultTarget, input: ResultInput) {
 /** Uploads --attach files to the saved result; a failure says so, or a retry adds a second result. */
 async function attachTo(resultId: number, test: number, uploads: readonly Upload[]) {
   if (uploads.length === 0) return [];
-  return provider()
-    .attachments.addAll({ kind: "result", id: resultId }, uploads)
-    .catch((err: unknown) => {
-      if (!(err instanceof CliError)) throw err;
-      throw err.withNote(
-        `Result #${resultId} was saved; attach the files with test-cli attachment add T${test} -rs ${resultId}, not result add.`,
-        { resultId, testId: test, error: err.details },
-      );
-    });
+  const { attachments } = provider();
+  return attachments.addAll({ kind: "result", id: resultId }, uploads).catch((err: unknown) => {
+    if (!(err instanceof CliError)) throw err;
+    throw err.withNote(
+      `Result #${resultId} was saved; attach the files with test-cli attachment add T${test} -rs ${resultId}, not result add.`,
+      { resultId, testId: test, error: err.details },
+    );
+  });
 }
 
 /** A bug is filed only for a failed or blocked result, so a passing run cannot open one by mistake. */

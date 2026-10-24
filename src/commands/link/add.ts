@@ -19,7 +19,7 @@ export function registerAdd(link: Command): void {
       const target = linkTarget(rawTarget);
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
-      const links = provider().links;
+      const { links } = provider();
       const loaded = await links.load(target);
       const current = loaded.keys;
       const { linked: already, unlinked: added } = partition(keys, current);

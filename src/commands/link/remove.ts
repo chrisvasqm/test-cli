@@ -20,7 +20,7 @@ export function registerRemove(link: Command): void {
       }
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
-      const links = provider().links;
+      const { links } = provider();
       const loaded = await links.load(target);
       const { linked: removed, unlinked: notLinked } = partition(keys, loaded.keys);
       const left = partition(loaded.keys, removed).unlinked;

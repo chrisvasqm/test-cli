@@ -18,7 +18,7 @@ On Windows, run this in PowerShell:
 irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 ```
 
-The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js version, download the latest release, verify its SHA-256 checksum, then install it with `npm install -g`. Each [release](https://github.com/chrisvasqm/test-cli/releases) also lists the command for that exact version.
+The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js version, download the latest release, verify its SHA-256 checksum, then install it with `npm install -g`. Each [release](https://github.com/chrisvasqm/test-cli/releases) also lists the command for that exact version; coming from testrail-cli 2.x, run `npm uninstall -g testrail-cli` before that command (the install scripts do it for you).
 
 To teach your AI agent (Claude Code, Codex, Cursor and others) to use the CLI, run:
 

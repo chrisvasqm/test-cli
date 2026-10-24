@@ -52,14 +52,14 @@ export function registerImport(result: Command): void {
       const run = runId(rawRun);
       const entries = parseFile(await readText(undefined, opts.file, "results file"));
       const { config, mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       // Statuses and assignees before the write: a failed lookup after it would hide that the results were saved.
       const [statuses, stepsOf] = await Promise.all([
         meta.statuses(),
         entries.some((entry) => entry.steps) ? runSteps(run) : undefined,
       ]);
       const assignees = new Map<string, Promise<User>>();
-      const users = provider().users;
+      const { users } = provider();
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;

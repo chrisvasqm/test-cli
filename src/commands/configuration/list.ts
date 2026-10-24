@@ -13,7 +13,7 @@ export function registerList(configuration: Command): void {
     .command("list")
     .description("List configuration groups and their configurations in the project")
     .action(async (_opts: unknown, cmd: Command) => {
-      const { config, mode } = bootstrap(cmd, "configurations");
+      const { config, mode } = bootstrap(cmd);
       const found = await provider().configurations.groups(config.projectId);
       const groups = found.map((group) => ({
         id: group.id,

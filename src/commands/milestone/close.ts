@@ -10,7 +10,6 @@ export function registerClose(milestone: Command): void {
     usage: "close <milestone>",
     description: "Mark a milestone completed, e.g. M3; milestone reopen undoes it",
     parseId: milestoneId,
-    needs: "milestones",
     prepare: () => provider().milestones,
     act: async (id, milestones) => toMilestoneView(await milestones.update(id, { is_completed: true })),
     render: (view) => [`Closed M${view.id}  ${view.name}`, table(milestoneRows(view))].join("\n\n"),

@@ -1,5 +1,5 @@
 import { notFound, notFoundAs } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { ALL, type Collected } from "../../../core/paging.js";
 import type { Report, ReportRun } from "../types.js";
@@ -9,7 +9,7 @@ import type { Report, ReportRun } from "../types.js";
  * on are listed. Plans or roles without API reports get TestRail's 403 (FORBIDDEN) as is.
  */
 export class ReportService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   list(projectId: number): Promise<Collected<Report>> {
     return collectPages<Report>(`get_reports/${projectId}`, "reports", {}, ALL, this.http).catch(

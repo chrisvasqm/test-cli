@@ -19,7 +19,7 @@ export function registerList(plan: Command): void {
     .option("-n, --limit <n>", "Most plans to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
-      const { config, mode } = bootstrap(cmd, "plans");
+      const { config, mode } = bootstrap(cmd);
       const [{ items, hasMore }, statuses] = await Promise.all([
         provider().plans.list(config.projectId, Boolean(opts.completed), limit),
         provider().meta.statuses(),

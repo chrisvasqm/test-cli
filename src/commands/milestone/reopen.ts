@@ -10,7 +10,6 @@ export function registerReopen(milestone: Command): void {
     usage: "reopen <milestone>",
     description: "Mark a completed milestone open again, e.g. M3",
     parseId: milestoneId,
-    needs: "milestones",
     prepare: () => provider().milestones,
     act: async (id, milestones) => toMilestoneView(await milestones.update(id, { is_completed: false })),
     render: (view) => [`Reopened M${view.id}  ${view.name}`, table(milestoneRows(view))].join("\n\n"),

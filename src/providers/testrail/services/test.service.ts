@@ -1,12 +1,12 @@
 import { notFound } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages, findInPages } from "../paging.js";
 import { ALL, inBatches, type Collected } from "../../../core/paging.js";
 import type { Result, Test } from "../types.js";
 
 /** get_test(s) and get_results endpoints. A test is one case inside one run. */
 export class TestService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Test> {
     return this.http.get<Test>(`get_test/${id}`).catch(notFound.test(id));

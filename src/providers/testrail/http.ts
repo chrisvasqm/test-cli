@@ -1,7 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { CliError } from "../../core/errors.js";
 
-interface Credentials {
+/** A TestRail site and the account that signs in to it. */
+export interface Credentials {
   baseUrl: string;
   email: string;
   apiKey: string;
@@ -31,24 +32,11 @@ interface Reply {
   text: string;
 }
 
-/** Single networking entry point: auth header, JSON encoding, retries with exponential backoff. */
+/** One TestRail site's networking entry point: auth header, JSON encoding, retries with exponential backoff. */
 export class HttpClient {
-  private static instance: HttpClient | undefined;
-
-  static configure(creds: Credentials): void {
-    HttpClient.instance = new HttpClient(creds);
-  }
-
-  static get(): HttpClient {
-    if (!HttpClient.instance) {
-      throw new CliError("HTTP_NOT_CONFIGURED", "HttpClient.configure() must run before any request.");
-    }
-    return HttpClient.instance;
-  }
-
   private readonly authHeader: string;
 
-  private constructor(private readonly creds: Credentials) {
+  constructor(private readonly creds: Credentials) {
     const raw = `${creds.email}:${creds.apiKey}`;
     this.authHeader = `Basic ${Buffer.from(raw).toString("base64")}`;
   }

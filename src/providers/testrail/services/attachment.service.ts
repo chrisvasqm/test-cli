@@ -1,7 +1,7 @@
 import { openAsBlob } from "node:fs";
 import { notFound } from "../errors.js";
 import { CliError } from "../../../core/errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import type { Upload } from "../../../core/input.js";
 import { collectPages } from "../paging.js";
 import { ALL, type Collected } from "../../../core/paging.js";
@@ -18,7 +18,7 @@ const notFoundFor = { case: notFound.case, run: notFound.run, test: notFound.tes
 
 /** add_attachment_to_* and get_attachments_for_* endpoints. */
 export class AttachmentService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   /** One file per request, as TestRail takes them. The id is a number on older servers, a UUID on Cloud. */
   async add(target: AttachTarget, upload: Upload): Promise<number | string> {

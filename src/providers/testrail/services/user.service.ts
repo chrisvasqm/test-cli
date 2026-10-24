@@ -1,13 +1,13 @@
 import { notFoundAs } from "../errors.js";
 import { InputError } from "../../../core/errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { inBatches, MAX_LIST, type Collected } from "../../../core/paging.js";
 import type { User } from "../types.js";
 
 /** get_user(s) and get_user_by_email endpoints. */
 export class UserService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   byEmail(email: string): Promise<User> {
     // TestRail: 400 "Field :email is not a valid email address." for an unknown email.

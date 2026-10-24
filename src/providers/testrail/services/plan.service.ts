@@ -1,5 +1,5 @@
 import { notFound, notFoundAs } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { type Collected } from "../../../core/paging.js";
 import type { Plan, PlanEntry } from "../types.js";
@@ -43,7 +43,7 @@ function withHandlers<T>(request: Promise<T>, handlers: ReadonlyArray<(err: unkn
 
 /** get_plan(s), add_plan, add_plan_entry, close_plan and delete_plan endpoints. */
 export class PlanService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Plan> {
     return this.http.get<Plan>(`get_plan/${id}`).catch(notFound.plan(id));

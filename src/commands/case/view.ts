@@ -14,15 +14,12 @@ export function registerView(testCase: Command): void {
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = caseId(rawId);
       const { config, mode } = bootstrap(cmd);
-      const cases = provider().cases;
-      const meta = provider().meta;
+      const { cases, meta, sections } = provider();
       // The lookups do not depend on the case, so they run alongside it; only the section waits.
       const lookups = Promise.all([meta.priorities(), meta.caseTypes()]);
       const found = await cases.get(id);
       const [section, [priorities, types]] = await Promise.all([
-        provider()
-          .sections.get(found.section_id)
-          .catch(() => undefined),
+        sections.get(found.section_id).catch(() => undefined),
         lookups,
       ]);
       const view = {

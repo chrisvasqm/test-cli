@@ -28,8 +28,8 @@ export function registerAdd(attachment: Command): void {
       }
       const resultId = opts.result === undefined ? undefined : intInRange(opts.result, "--result", 1);
       const uploads = await checkUploads(paths);
-      const { config, mode } = bootstrap(cmd, "attachments");
-      const attachments = provider().attachments;
+      const { config, mode } = bootstrap(cmd);
+      const { attachments } = provider();
       // TestRail attaches to a test's results, not to the test itself.
       const to: AttachTarget =
         target.kind === "test"

@@ -1,6 +1,6 @@
 import { notFound, notFoundAs } from "../errors.js";
 import { CliError, InputError } from "../../../core/errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { inBatches, type Collected } from "../../../core/paging.js";
 import type { Plan, PlanEntry, PlanRun, Run } from "../types.js";
@@ -46,7 +46,7 @@ export type RunChange = Partial<Omit<RunInput, "suite_id">>;
  * update_run_in_plan_entry for runs inside test plans. get_runs leaves out runs in plans.
  */
 export class RunService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Run> {
     return this.http.get<Run>(`get_run/${id}`).catch(notFound.run(id));

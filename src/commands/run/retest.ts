@@ -52,7 +52,7 @@ export function registerRetest(run: Command): void {
       const id = runId(rawRun);
       const doneNames = splitList(opts.done);
       const { mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       // TestRail first, so an unknown or closed run fails before any Jira call.
       const [, statusIds, retest] = await Promise.all([
         provider().runs.open(id),

@@ -1,5 +1,5 @@
 import { notFound, notFoundAs } from "../errors.js";
-import { HttpClient } from "../http.js";
+import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
 import { type Collected } from "../../../core/paging.js";
 import type { Section } from "../types.js";
@@ -26,7 +26,7 @@ const missingSection = (field: string, id: number | null | undefined) =>
 
 /** get_section(s), add_section, update_section, move_section and delete_section endpoints. */
 export class SectionService {
-  constructor(private readonly http = HttpClient.get()) {}
+  constructor(private readonly http: HttpClient) {}
 
   get(id: number): Promise<Section> {
     return this.http.get<Section>(`get_section/${id}`).catch(notFound.section(id));

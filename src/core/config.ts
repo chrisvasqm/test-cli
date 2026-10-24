@@ -4,32 +4,16 @@ import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { z } from "zod";
 import { CliError } from "./errors.js";
+import { testRailConfigSchema } from "../providers/testrail/config.js";
 
 export const CONFIG_FILE = ".test-cli.json";
 export const GLOBAL_CONFIG = join(homedir(), ".config", "test-cli", "config.json");
-/** Names from before the rename to test-cli; still read, never written by setup. */
+/** Names from before the rename to test-cli: still read; `setup` replaces a local one. */
 export const LEGACY_CONFIG_FILE = ".testrail-cli.json";
 const LEGACY_GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
 
 /** The providers a config can name; a config without `provider` (from before 3.0.0) is TestRail. */
 export const PROVIDERS = ["testrail"] as const;
-
-export const testRailConfigSchema = z.object({
-  provider: z.literal("testrail"),
-  baseUrl: z
-    .url({ protocol: /^https$/, error: "Use the https:// address of your TestRail site" })
-    // A pasted browser link such as https://acme.testrail.io/index.php?/dashboard keeps only the site.
-    .transform((raw) => {
-      const url = new URL(raw);
-      const path = url.pathname.replace(/\/index\.php.*$/, "").replace(/\/+$/, "");
-      return `${url.origin}${path}`;
-    }),
-  email: z.email(),
-  apiKey: z.string().min(1),
-  projectId: z.number().int().positive(),
-  /** Set for multi-suite and baseline projects; single-suite projects need none. */
-  suiteId: z.number().int().positive().optional(),
-});
 
 export const configSchema = z.preprocess(
   (raw) => (isObject(raw) && raw.provider === undefined ? { provider: "testrail", ...raw } : raw),

@@ -8,7 +8,7 @@ export function registerList(suite: Command): void {
     .command("list")
     .description("List the suites in the project from the config; * marks the one in the config")
     .action(async (_opts: unknown, cmd: Command) => {
-      const { config, mode } = bootstrap(cmd, "suites");
+      const { config, mode } = bootstrap(cmd);
       const found = await provider().projects.suites(config.projectId);
       const suites = found.map((item) => ({
         id: item.id,

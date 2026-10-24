@@ -30,7 +30,7 @@ export function registerEdit(testCase: Command): void {
     const { input, changed } = await toCaseInput(opts, provider().meta, config.projectId);
     if (changed.length === 0)
       throw new InputError("USAGE", "Give at least one field to change, e.g. --title");
-    const cases = provider().cases;
+    const { cases } = provider();
     if (ids.length === 1) {
       const updated = await cases.update(ids[0]!, input);
       const view = { id: updated.id, title: updated.title, changed, url: caseUrl(config, updated.id) };

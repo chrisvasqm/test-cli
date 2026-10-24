@@ -1,6 +1,6 @@
 /**
- * Features that not every test management tool has. A command that needs one checks it with
- * `bootstrap(cmd, capability)`; a provider without it fails with NOT_SUPPORTED (exit 2).
+ * Features that not every test management tool has, each named after the provider service behind it.
+ * Reading that service from a provider without the feature fails with NOT_SUPPORTED (exit 2).
  * Cases, sections, runs, tests, results and Jira links are core: every provider has them.
  */
 export const CAPABILITIES = [

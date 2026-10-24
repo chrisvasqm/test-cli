@@ -21,7 +21,7 @@ export function registerUse(project: Command): void {
       const id = projectId(rawProject);
       const wantedSuite = opts.suite === undefined ? undefined : suiteId(opts.suite);
       const { config, configPath, mode } = bootstrap(cmd);
-      const projects = provider().projects;
+      const { projects } = provider();
       const found = await projects.get(id);
       const single = found.suite_mode === SUITE_MODE_SINGLE;
       if (single && wantedSuite !== undefined) {

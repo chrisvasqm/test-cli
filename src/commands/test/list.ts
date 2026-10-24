@@ -23,7 +23,7 @@ export function registerList(test: Command): void {
       const run = runId(rawRun);
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);
-      const meta = provider().meta;
+      const { meta } = provider();
       const [statusIds, assignee] = await Promise.all([
         opts.status === undefined ? [] : meta.statusIds(opts.status),
         provider().users.resolveOptional(opts.assigned, config.email, "--assigned"),

@@ -23,7 +23,7 @@ export function registerAddRun(plan: Command): void {
   entryOptions(addRun).action(async (rawId: string, opts: AddRunOptions, cmd: Command) => {
     const id = planId(rawId);
     const parsed = parseEntry(opts);
-    const { config, mode } = bootstrap(cmd, "plans");
+    const { config, mode } = bootstrap(cmd);
     const { input, ticket, assignee } = await buildEntry(opts, parsed, config, opts.name, "plan add-run");
     const statuses = await provider().meta.statuses();
     const entry = toEntryView(await provider().plans.addEntry(id, input), statuses);

@@ -58,7 +58,7 @@ export function registerEdit(run: Command): void {
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name or --add C4");
       }
       const { config, mode } = bootstrap(cmd);
-      const runs = provider().runs;
+      const { runs } = provider();
       const target = await runs.editable(id);
       const found = target.run;
       // Before resolving users or asking about removals.

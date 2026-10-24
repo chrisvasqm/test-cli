@@ -11,8 +11,8 @@ import {
   configSchema,
   isGitignored,
   saveConfig,
-  testRailConfigSchema,
 } from "../core/config.js";
+import { testRailConfigSchema } from "../providers/testrail/config.js";
 import { confirm } from "../core/confirm.js";
 import { CliError, InputError } from "../core/errors.js";
 import { info, printResult, table, type OutputMode } from "../core/output.js";
@@ -73,7 +73,7 @@ export function registerSetup(program: Command): void {
           `${replaced.join(" and ")} already ${replaced.length > 1 ? "exist" : "exists"}. Replace it?`,
         );
       await runSetup(target, mode);
-      if (legacy && existsSync(legacy)) rmSync(legacy);
+      if (legacy) rmSync(legacy, { force: true });
     });
 }
 

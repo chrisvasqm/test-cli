@@ -18,7 +18,7 @@ export function registerList(milestone: Command): void {
     .option("-n, --limit <n>", "Most milestones to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
-      const { config, mode } = bootstrap(cmd, "milestones");
+      const { config, mode } = bootstrap(cmd);
       const { items, hasMore } = await provider().milestones.list(
         config.projectId,
         Boolean(opts.completed),
