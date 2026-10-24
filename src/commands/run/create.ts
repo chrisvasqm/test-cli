@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { caseIds, intInRange } from "../../core/args.js";
+import { caseIds, milestoneId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
@@ -36,12 +36,11 @@ export function registerCreate(run: Command): void {
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
-    .option("-M, --milestone <id>", "Milestone id")
+    .option("-M, --milestone <id>", "Milestone id, e.g. M3")
     .option("-a, --assign <user>", "Assign the run: me, an email or a user id")
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
-      const milestone =
-        opts.milestone === undefined ? undefined : intInRange(opts.milestone, "--milestone", 1);
+      const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
       const key = fromJiraKey(opts.fromJira, opts.name, "--name");
       const description = await readOptionalText(opts.description, opts.file, "description");
       const { config, mode } = bootstrap(cmd);

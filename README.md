@@ -100,6 +100,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail run list`                    | Open runs, newest first (`-D` for closed, `-n <limit>`, 25)                                                       |
 | `testrail run view <R>`                | Progress per status, refs and description                                                                         |
 | `testrail run create`                  | New run with every case, `-C C1,C2`, or `-J KAN-12`; `-a me` assigns it                                           |
+| `testrail run edit <R>`                | Change an open run (`-N`, `-d`, `-r`, `-M M3`, `-a me`); cases: `-i C4` adds, `-x C3` removes, `-C C1,C2` sets    |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                                                                               |
 | `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission)                                                 |
 | `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                             |

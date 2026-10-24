@@ -63,9 +63,16 @@ export class RunService {
     return run;
   }
 
-  /** Only the fields given change. TestRail refuses changes to a closed run. */
-  update(id: number, input: Partial<Pick<RunInput, "name" | "description" | "refs">>): Promise<Run> {
-    return this.http.post<Run>(`update_run/${id}`, input).catch(notFound.run(id));
+  /**
+   * Only the fields given change. TestRail refuses changes to a closed run. `case_ids` is the whole
+   * new list (with include_all false): cases left out lose their tests and results.
+   */
+  update(id: number, input: Partial<Omit<RunInput, "suite_id">>): Promise<Run> {
+    return this.http
+      .post<Run>(`update_run/${id}`, input)
+      .catch(notFound.run(id))
+      .catch(notFoundAs("case_ids", "CASE_NOT_FOUND", "Some case ids are not cases in this run's suite."))
+      .catch(notFoundAs("milestone_id", "MILESTONE_NOT_FOUND", "The milestone is not one in this project."));
   }
 
   /** Closing archives the run: TestRail cannot reopen it, and its results can no longer change. */
