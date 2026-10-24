@@ -276,7 +276,7 @@ const epicRun = check(
   run("run", "create", "-ep", K2),
   (res) => okData(res) && res.out.data.tickets.from === "epic" && res.out.data.tickets.linked.includes(child),
 )?.id;
-if (epicRun) check("delete the from-epic run", run("run", "delete", `R${epicRun}`, "-y"), okData);
+if (epicRun) check("close the from-epic run (kept)", run("run", "close", `R${epicRun}`, "-y"), okData);
 check(
   "coverage --epic",
   run("coverage", "-ep", K2, "-rn", "5"),
@@ -524,7 +524,21 @@ check("plan add-run", run("plan", "add-run", planRef, "-ca", caseRef, "-a", "me"
 const planRunRef = `R${plan?.entries?.[0]?.runs?.[0]?.id}`;
 check(
   "run edit (plan run)",
-  run("run", "edit", planRunRef, "-na", `Regression ${tag} plan run`, "-d", "edited", "-r", K1, "-a", "me", "-i", copyRef),
+  run(
+    "run",
+    "edit",
+    planRunRef,
+    "-na",
+    `Regression ${tag} plan run`,
+    "-d",
+    "edited",
+    "-r",
+    K1,
+    "-a",
+    "me",
+    "-i",
+    copyRef,
+  ),
   (res) => okData(res) && res.out.data.added.length === 1,
 );
 check("run edit -x (plan run)", run("run", "edit", planRunRef, "-x", copyRef, "-y"), okData);
@@ -594,6 +608,6 @@ check(
 
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
 console.log(
-  `left behind: closed runs ${runRef}, ${jiraRunRef}, ${rerunRef}, closed plan ${planRef} and closed milestone ${msRef} (kept in TestRail as evidence)`,
+  `left behind: closed runs ${runRef}, ${jiraRunRef}, ${rerunRef}, ${epicRun ? `R${epicRun}, ` : ""}closed plan ${planRef} and closed milestone ${msRef} (kept in TestRail as evidence)`,
 );
 process.exit(failures === 0 ? 0 : 1);
