@@ -6,8 +6,8 @@ import { z } from "zod";
 import { globalOptions, outputMode } from "../core/bootstrap.js";
 import {
   CONFIG_FILE,
+  configFileIn,
   GLOBAL_CONFIG,
-  LEGACY_CONFIG_FILE,
   configSchema,
   isGitignored,
   saveConfig,
@@ -61,19 +61,17 @@ export function registerSetup(program: Command): void {
       const mode = outputMode(cmd);
       if (opts.global && all.config)
         throw new InputError("USAGE", "Use either --global or --config, not both.");
-      const target = opts.global ? GLOBAL_CONFIG : resolve(all.config ?? localConfig());
+      // An existing config here is rewritten in place, even under the old name: the repo's .gitignore
+      // may list only that name, and a second file would shadow the first.
+      const target = opts.global
+        ? GLOBAL_CONFIG
+        : all.config
+          ? resolve(all.config)
+          : (configFileIn(process.cwd()) ?? resolve(CONFIG_FILE));
       // Ask before anything else: replacing a config throws away its key and project.
       if (existsSync(target) && !opts.yes) await confirm(`${target} already exists. Replace it?`);
       await runSetup(target, mode);
     });
-}
-
-/**
- * The file to write here: the new name, or an existing old-name config, which is rewritten in place.
- * The repo's .gitignore may list only the old name, and a second file would shadow the first.
- */
-function localConfig(): string {
-  return !existsSync(CONFIG_FILE) && existsSync(LEGACY_CONFIG_FILE) ? LEGACY_CONFIG_FILE : CONFIG_FILE;
 }
 
 async function runSetup(path: string, mode: OutputMode): Promise<void> {

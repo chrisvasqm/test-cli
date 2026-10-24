@@ -4,22 +4,18 @@ import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { z } from "zod";
 import { CliError } from "./errors.js";
-import { testRailConfigSchema } from "../providers/testrail/config.js";
+import { providerConfigSchema } from "../providers/config.js";
 
 export const CONFIG_FILE = ".test-cli.json";
 export const GLOBAL_CONFIG = join(homedir(), ".config", "test-cli", "config.json");
 /** Names from before the rename to test-cli: still read; `setup` replaces a local one. */
-export const LEGACY_CONFIG_FILE = ".testrail-cli.json";
+const LEGACY_CONFIG_FILE = ".testrail-cli.json";
 const LEGACY_GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
 
-/** The providers a config can name; a config without `provider` (from before 3.0.0) is TestRail. */
-export const PROVIDERS = ["testrail"] as const;
-
+/** A config without `provider` (from before 3.0.0) is TestRail's. */
 export const configSchema = z.preprocess(
   (raw) => (isObject(raw) && raw.provider === undefined ? { provider: "testrail", ...raw } : raw),
-  z.discriminatedUnion("provider", [testRailConfigSchema], {
-    error: `provider must be one of: ${PROVIDERS.join(", ")}`,
-  }),
+  providerConfigSchema,
 );
 
 export type Config = z.infer<typeof configSchema>;
@@ -28,11 +24,16 @@ function isObject(raw: unknown): raw is Record<string, unknown> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw);
 }
 
+/** The config file in `dir`: the new name, else the old one, else none. */
+export function configFileIn(dir: string): string | undefined {
+  return [CONFIG_FILE, LEGACY_CONFIG_FILE].map((name) => join(dir, name)).find(existsSync);
+}
+
 function walkUp(start: string): string | undefined {
   let dir = resolve(start);
   for (;;) {
     // Both names in each directory, so a parent's new file never shadows a closer old one.
-    const candidate = [CONFIG_FILE, LEGACY_CONFIG_FILE].map((name) => join(dir, name)).find(existsSync);
+    const candidate = configFileIn(dir);
     if (candidate) return candidate;
     const parent = dirname(dir);
     if (parent === dir) return undefined;

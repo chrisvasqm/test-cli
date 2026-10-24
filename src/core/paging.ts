@@ -9,7 +9,7 @@ export interface Collected<T> {
   hasMore: boolean;
 }
 
-/** A list with nothing in it, for a feature the provider does not have. */
+/** A list with nothing in it, without a request. */
 export function emptyPage<T>(): Promise<Collected<T>> {
   return Promise.resolve({ items: [], hasMore: false });
 }

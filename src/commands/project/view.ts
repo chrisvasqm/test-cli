@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { provider, type Capability } from "../../providers/index.js";
+import { provider, supported } from "../../providers/index.js";
 import { projectId } from "../../providers/testrail/ids.js";
 import { listLimit } from "../../core/args.js";
 import { emptyPage } from "../../core/paging.js";
@@ -57,12 +57,11 @@ export function registerView(project: Command): void {
       const id = wanted ?? config.projectId;
       const current = provider();
       // Plans and milestones are optional features; a provider without them shows none.
-      const has = (need: Capability) => current.capabilities.has(need);
       const [found, runList, planList, milestoneList, statuses] = await Promise.all([
         current.projects.get(id),
         current.runs.list(id, limit, { completed: false }),
-        has("plans") ? current.plans.list(id, false, limit) : emptyPage<Plan>(),
-        has("milestones") ? current.milestones.list(id, false, limit) : emptyPage<Milestone>(),
+        supported(current, "plans")?.list(id, false, limit) ?? emptyPage<Plan>(),
+        supported(current, "milestones")?.list(id, false, limit) ?? emptyPage<Milestone>(),
         current.meta.statuses(),
       ]);
       const runs = runList.items.map((item) => ({

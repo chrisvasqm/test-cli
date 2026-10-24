@@ -16,8 +16,6 @@ import { SuiteService } from "./services/suite.service.js";
 import { TestService } from "./services/test.service.js";
 import { UserService } from "./services/user.service.js";
 
-export type { Credentials as TestRailCredentials } from "./http.js";
-
 /** One HTTP client for the site, and one instance of each service on it. */
 export function createTestRail(creds: Credentials) {
   const http = new HttpClient(creds);

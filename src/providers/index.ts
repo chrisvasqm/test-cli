@@ -1,6 +1,7 @@
 import { CliError, InputError } from "../core/errors.js";
 import { CAPABILITIES, type Capability } from "./capability.js";
-import { createTestRail, type TestRailCredentials, type TestRailProvider } from "./testrail/index.js";
+import type { Credentials } from "./testrail/http.js";
+import { createTestRail, type TestRailProvider } from "./testrail/index.js";
 
 export type { Capability } from "./capability.js";
 
@@ -11,7 +12,7 @@ export type { Capability } from "./capability.js";
 export type Provider = TestRailProvider;
 
 /** What a provider needs to connect: a whole config, or what `setup` has asked for so far. */
-export type Connection = { provider: "testrail" } & TestRailCredentials;
+export type Connection = { provider: "testrail" } & Credentials;
 
 let active: Provider | undefined;
 
@@ -31,11 +32,12 @@ export function provider(): Provider {
   return active;
 }
 
-/** NOT_SUPPORTED (exit 2) when the provider lacks the feature, e.g. milestones. */
-export function requireCapability(current: Provider, need: Capability): void {
-  if (!current.capabilities.has(need)) {
-    throw new InputError("NOT_SUPPORTED", `${current.label} does not support ${need}.`);
-  }
+/** The service behind an optional feature, or undefined when the provider lacks it. */
+export function supported<Need extends Capability>(
+  current: Provider,
+  need: Need,
+): Provider[Need] | undefined {
+  return current.capabilities.has(need) ? current[need] : undefined;
 }
 
 /**
@@ -47,7 +49,9 @@ function gated(built: Provider): Provider {
   for (const need of CAPABILITIES) {
     if (built.capabilities.has(need)) continue;
     Object.defineProperty(out, need, {
-      get: () => requireCapability(built, need),
+      get: () => {
+        throw new InputError("NOT_SUPPORTED", `${built.label} does not support ${need}.`);
+      },
       enumerable: true,
     });
   }

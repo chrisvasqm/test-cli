@@ -68,13 +68,12 @@ export class RunService {
 
   /** Every open run, those inside open plans too (get_runs leaves them out), newest first. */
   async allOpen(projectId: number, milestoneId?: number): Promise<OpenRun[]> {
-    const { plans } = this;
     const [runs, planList] = await Promise.all([
       this.list(projectId, ALL, { completed: false, milestoneId }),
-      plans.list(projectId, false, ALL, milestoneId),
+      this.plans.list(projectId, false, ALL, milestoneId),
     ]);
     // get_plans leaves out the entries, so each plan is read on its own.
-    const full = await inBatches(planList.items, (item) => plans.get(item.id));
+    const full = await inBatches(planList.items, (item) => this.plans.get(item.id));
     const inPlans = full.flatMap((plan) =>
       (plan.entries ?? []).flatMap((entry) => entry.runs.map((run) => ({ run, plan }))),
     );
