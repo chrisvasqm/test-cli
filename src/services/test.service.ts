@@ -11,11 +11,25 @@ export class TestService {
     return this.http.get<Test>(`get_test/${id}`).catch(notFound.test(id));
   }
 
-  list(runId: number, statusIds: number[], limit: number): Promise<Collected<Test>> {
+  /** `assignedTo` filters here: get_tests has no assignee filter, so every page is read first. */
+  async list(
+    runId: number,
+    statusIds: number[],
+    limit: number,
+    assignedTo?: number,
+  ): Promise<Collected<Test>> {
     const status = statusIds.length > 0 ? statusIds.join(",") : undefined;
-    return collectPages<Test>(`get_tests/${runId}`, "tests", { status_id: status }, limit, this.http).catch(
-      notFound.run(runId),
-    );
+    const want = assignedTo === undefined ? limit : Number.MAX_SAFE_INTEGER;
+    const page = await collectPages<Test>(
+      `get_tests/${runId}`,
+      "tests",
+      { status_id: status },
+      want,
+      this.http,
+    ).catch(notFound.run(runId));
+    if (assignedTo === undefined) return page;
+    const items = page.items.filter((item) => item.assignedto_id === assignedTo);
+    return { items: items.slice(0, limit), hasMore: items.length > limit };
   }
 
   /** Newest first, as TestRail returns them. */

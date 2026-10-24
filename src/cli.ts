@@ -12,6 +12,7 @@ import { registerSection } from "./commands/section/index.js";
 import { registerSetup } from "./commands/setup.js";
 import { registerSuite } from "./commands/suite/index.js";
 import { registerTest } from "./commands/test/index.js";
+import { registerUser } from "./commands/user/index.js";
 import { CliError, InputError } from "./core/errors.js";
 import { outputMode } from "./core/bootstrap.js";
 import { printError } from "./core/output.js";
@@ -41,6 +42,7 @@ registerResult(program);
 registerLink(program);
 registerConfiguration(program);
 registerReport(program);
+registerUser(program);
 
 /** 130 for Ctrl+C, 2 for bad usage, bad input or a missing --yes, 1 for everything else. */
 function exitCode(err: unknown): number {

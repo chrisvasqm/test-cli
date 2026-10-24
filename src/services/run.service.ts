@@ -10,6 +10,7 @@ export interface RunInput {
   description?: string;
   milestone_id?: number;
   refs?: string;
+  assignedto_id?: number;
   /** true: every case in the suite; false: only case_ids. */
   include_all: boolean;
   case_ids?: number[];

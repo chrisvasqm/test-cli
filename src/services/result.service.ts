@@ -5,13 +5,15 @@ import { CaseService } from "./case.service.js";
 import { RunService } from "./run.service.js";
 import { TestService } from "./test.service.js";
 
-/** Fields of a new result; TestRail needs a status or a comment (defects alone are refused). */
+/** Fields of a new result; TestRail needs a status, a comment or an assignee (defects alone are refused). */
 export interface ResultInput {
   status_id?: number;
   comment?: string;
   defects?: string;
   elapsed?: string;
   version?: string;
+  /** Reassigns the test. */
+  assignedto_id?: number;
 }
 
 /** Where a result goes: a test, or a case inside a run. */

@@ -22,6 +22,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  is_active: boolean;
 }
 
 export interface Section {
@@ -75,6 +76,7 @@ export interface Run {
   milestone_id: number | null;
   plan_id: number | null;
   include_all: boolean;
+  assignedto_id: number | null;
   is_completed: boolean;
   completed_on: number | null;
   refs: string | null;
@@ -108,6 +110,7 @@ export interface Test extends CaseContent {
   case_id: number;
   run_id: number;
   status_id: number;
+  assignedto_id: number | null;
   title: string;
   type_id: number;
   priority_id: number;
@@ -122,6 +125,7 @@ export interface Result {
   status_id: number | null;
   comment: string | null;
   defects: string | null;
+  assignedto_id: number | null;
   elapsed: string | null;
   version: string | null;
   created_on: number;

@@ -7,6 +7,8 @@ import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
 import { ResultService, type ResultInput } from "../../services/result.service.js";
+import type { User } from "../../core/testrail-types.js";
+import { UserService } from "../../services/user.service.js";
 import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";
 
@@ -20,6 +22,7 @@ const entrySchema = z.object({
   defects: z.union([z.string(), z.array(z.string())]).optional(),
   elapsed: z.string().optional(),
   version: z.string().optional(),
+  assign: z.union([z.string(), z.number().int().positive()]).optional(),
 });
 const fileSchema = z.array(entrySchema).min(1).max(MAX_RESULTS);
 
@@ -33,7 +36,7 @@ export function registerImport(result: Command): void {
     .description("Add many results to a run in one request from a JSON file")
     .requiredOption(
       "-f, --file <path>",
-      'JSON array of {"case":"C12","status":"failed","comment","defects","elapsed","version"} (- reads stdin)',
+      'JSON array of {"case":"C12","status":"failed","comment","defects","elapsed","version","assign"} (- reads stdin)',
     )
     .addHelpText(
       "after",
@@ -42,15 +45,25 @@ export function registerImport(result: Command): void {
     .action(async (rawRun: string, opts: ImportOptions, cmd: Command) => {
       const run = runId(rawRun);
       const entries = parseFile(await readText(undefined, opts.file, "results file"));
-      const { mode } = bootstrap(cmd);
+      const { config, mode } = bootstrap(cmd);
       const meta = new MetaService();
-      // Statuses before the write: a failed lookup after it would hide that the results were saved.
+      // Statuses and assignees before the write: a failed lookup after it would hide that the results were saved.
       const statuses = await meta.statuses();
+      const assignees = new Map<string, Promise<User>>();
+      const users = new UserService();
       const results: (ResultInput & { case_id: number })[] = [];
       for (const [index, entry] of entries.entries()) {
         const where = `entry ${index + 1}`;
         const id = typeof entry.case === "number" ? entry.case : caseId(entry.case, where);
-        results.push({ case_id: id, ...(await toResultInput(entry, meta, where)) });
+        const assign = entry.assign === undefined ? undefined : String(entry.assign).trim().toLowerCase();
+        if (assign !== undefined && !assignees.has(assign)) {
+          assignees.set(assign, users.resolve(assign, config.email, `${where}: assign`));
+        }
+        const assignee = assign === undefined ? undefined : await assignees.get(assign);
+        results.push({
+          case_id: id,
+          ...(await toResultInput({ ...entry, assignedToId: assignee?.id }, meta, where)),
+        });
       }
       const added = await new ResultService().addForCases(run, results);
       const rows = added.map((item, index) => ({
