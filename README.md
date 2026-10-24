@@ -21,8 +21,10 @@ The scripts ([sh](install.sh), [PowerShell](install.ps1)) check your Node.js ver
 To teach your AI agent (Claude Code, Codex, Cursor and others) to use the CLI, run:
 
 ```sh
-npx skills add chrisvasqm/testrail-cli
+npx skills add chrisvasqm/skills --skill testrail-cli
 ```
+
+`npx skills add chrisvasqm/skills` adds every skill there, including the one for [jira-cli](https://github.com/chrisvasqm/jira-cli).
 
 ## Set up
 
@@ -101,7 +103,7 @@ Exit codes:
 - `130`: cancelled with Ctrl+C
 - `1`: any other error
 
-The [agent skill](skills/testrail-cli/SKILL.md) lists the data shapes and every error code.
+The [agent skill](https://github.com/chrisvasqm/skills/blob/main/skills/testrail-cli/SKILL.md) lists the data shapes and every error code.
 
 ## Development
 
