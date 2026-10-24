@@ -28,6 +28,11 @@ export class RunService {
     return collectPages<Run>(`get_runs/${projectId}`, "runs", { is_completed: completed }, limit, this.http);
   }
 
+  /** The latest runs (not in a plan), open and closed, newest first; only the suite's when one is given. */
+  recent(projectId: number, suiteId: number | undefined, limit: number): Promise<Collected<Run>> {
+    return collectPages<Run>(`get_runs/${projectId}`, "runs", { suite_id: suiteId }, limit, this.http);
+  }
+
   /** Every run (not in a plan), open or closed, whose refs include `key` (exactly, ignoring case; TestRail's refs_filter is looser). */
   async withRef(projectId: number, suiteId: number | undefined, key: string): Promise<Run[]> {
     const { items } = await collectPages<Run>(

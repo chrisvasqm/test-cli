@@ -1,6 +1,7 @@
 import { CliError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import type { Result, Test } from "../core/testrail-types.js";
+import { collectPages, type Collected } from "../core/paging.js";
+import type { Result, Run, Test } from "../core/testrail-types.js";
 import { CaseService } from "./case.service.js";
 import { RunService } from "./run.service.js";
 import { TestService } from "./test.service.js";
@@ -19,7 +20,35 @@ export interface ResultInput {
 /** Where a result goes: a test, or a case inside a run. */
 export type ResultTarget = { kind: "test"; testId: number } | { kind: "case"; runId: number; caseId: number };
 
-/** add_result(s) endpoints. Results are append-only: TestRail has no edit or delete for them. */
+/** Runs `history` asks at once. */
+const HISTORY_BATCH = 5;
+
+export interface RunResult {
+  run: Run;
+  result: Result;
+}
+
+export interface CaseHistory extends Collected<RunResult> {
+  /** How many of the runs given were asked; the rest were not needed. */
+  scanned: number;
+}
+
+/** A real case outside the run: "No (active) test found for the run/case combination." */
+function notInRun(runId: number, caseId: number): (err: unknown) => never {
+  return (err: unknown) => {
+    if (err instanceof CliError && err.status === 400 && /no \(active\) test found/i.test(err.message)) {
+      throw new CliError("CASE_NOT_IN_RUN", `Case C${caseId} is not in run R${runId}.`, err.message);
+    }
+    throw err;
+  };
+}
+
+function skipNotInRun(err: unknown): undefined {
+  if (err instanceof CliError && err.code === "CASE_NOT_IN_RUN") return undefined;
+  throw err;
+}
+
+/** add_result(s) and get_results_for_case endpoints. Results are append-only: TestRail has no edit or delete for them. */
 export class ResultService {
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -32,13 +61,44 @@ export class ResultService {
       .post<Result>(`add_result_for_case/${runId}/${caseId}`, input)
       .catch(notFound.run(runId))
       .catch(notFound.case(caseId))
-      .catch((err: unknown) => {
-        // A real case outside the run: "No (active) test found for the run/case combination."
-        if (err instanceof CliError && err.status === 400 && /no \(active\) test found/i.test(err.message)) {
-          throw new CliError("CASE_NOT_IN_RUN", `Case C${caseId} is not in run R${runId}.`, err.message);
-        }
-        throw err;
+      .catch(notInRun(runId, caseId));
+  }
+
+  /** The case's results in one run, newest first. */
+  forCase(runId: number, caseId: number, limit: number): Promise<Collected<Result>> {
+    return collectPages<Result>(`get_results_for_case/${runId}/${caseId}`, "results", {}, limit, this.http)
+      .catch(notFound.run(runId))
+      .catch(notFound.case(caseId))
+      .catch(notInRun(runId, caseId));
+  }
+
+  /**
+   * The case's results across `runs` (newest run first), newest result first; runs without the case
+   * are skipped. One get_results_for_case per run: get_tests then get_results would take two.
+   * Runs are asked a few at a time, and the scan stops once `limit` results are in.
+   */
+  async history(runs: Run[], caseId: number, limit: number): Promise<CaseHistory> {
+    const found: RunResult[] = [];
+    let scanned = 0;
+    let pageCut = false;
+    while (scanned < runs.length && found.length < limit) {
+      const batch = runs.slice(scanned, scanned + HISTORY_BATCH);
+      const pages = await Promise.all(
+        batch.map((run) => this.forCase(run.id, caseId, limit).catch(skipNotInRun)),
+      );
+      batch.forEach((run, index) => {
+        const page = pages[index];
+        pageCut ||= page?.hasMore ?? false;
+        found.push(...(page?.items ?? []).map((result) => ({ run, result })));
       });
+      scanned += batch.length;
+    }
+    found.sort((left, right) => right.result.created_on - left.result.created_on);
+    return {
+      items: found.slice(0, limit),
+      hasMore: pageCut || found.length > limit || scanned < runs.length,
+      scanned,
+    };
   }
 
   /** One request for many cases; TestRail applies all or none. */

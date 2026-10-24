@@ -91,6 +91,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail section move <id>`           | Move under `-s <parent>` (or `top`) and/or after `-A <sibling>` (or `first`)                                   |
 | `testrail section delete <id>`         | Delete a section, its child sections and all their cases                                                       |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                                                              |
+| `testrail case history <C>`            | Results across the latest runs, newest first (`-u <runs>`, 25; `-n <limit>`, 20; or `-R <R>`)                  |
 | `testrail case create`                 | New case (`-s <section>`, and `-t <title>` or `-J KAN-12`)                                                     |
 | `testrail case edit <C>`               | Change only the fields you pass                                                                                |
 | `testrail case delete <C>`             | Delete a case and its tests in active runs                                                                     |
