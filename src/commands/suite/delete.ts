@@ -1,6 +1,6 @@
 import type { Command } from "commander";
-import { suiteId } from "../../core/args.js";
-import { SuiteService } from "../../services/suite.service.js";
+import { provider } from "../../providers/index.js";
+import { suiteId } from "../../providers/testrail/ids.js";
 import { registerDeleteAction } from "../action.js";
 
 export function registerDelete(suite: Command): void {
@@ -8,7 +8,8 @@ export function registerDelete(suite: Command): void {
     usage: "delete <suite>",
     description: "Delete a suite with its sections, cases and tests, e.g. S3; TestRail has no undo",
     parseId: suiteId,
-    service: () => new SuiteService(),
+    needs: "suites",
+    service: () => provider().suites,
     key: "name",
     ref: (id) => `S${id}`,
     question: (id, found) =>

@@ -1,14 +1,12 @@
 import type { Command } from "commander";
+import { provider } from "../providers/index.js";
 import { intInRange, jiraKey } from "../core/args.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { InputError } from "../core/errors.js";
 import { jiraTickets, type TicketSource } from "../core/jira.js";
 import { grid, printResult } from "../core/output.js";
-import type { Case, Run, Status, Test } from "../core/testrail-types.js";
-import { CaseService } from "../services/case.service.js";
-import { MetaService, nameOf } from "../services/meta.service.js";
-import { RunService } from "../services/run.service.js";
-import { TestService } from "../services/test.service.js";
+import type { Case, Run, Status, Test } from "../providers/testrail/types.js";
+import { nameOf } from "../providers/testrail/lookup.js";
 
 /** Most runs to read: one TestRail page. */
 const MAX_RUNS = 250;
@@ -55,9 +53,9 @@ export function registerCoverage(program: Command): void {
       const found = await jiraTickets(source);
       const keys = found.tickets.map((item) => item.key);
       const [byKey, runs, statuses] = await Promise.all([
-        new CaseService().linkedToEach(config.projectId, config.suiteId, keys),
-        new RunService().list(config.projectId, scan, { suiteId: config.suiteId }),
-        new MetaService().statuses(),
+        provider().cases.linkedToEach(config.projectId, config.suiteId, keys),
+        provider().runs.list(config.projectId, scan, { suiteId: config.suiteId }),
+        provider().meta.statuses(),
       ]);
       const caseIds = new Set([...byKey.values()].flat().map((item) => item.id));
       const latest = await latestResults(runs.items, caseIds, statuses);
@@ -113,7 +111,7 @@ async function latestResults(
   if (caseIds.size === 0) return latest;
   const untested = new Set(statuses.filter((status) => status.is_untested).map((status) => status.id));
   const ordered = runs.toSorted((left, right) => right.created_on - left.created_on || right.id - left.id);
-  const tests = new TestService();
+  const tests = provider().tests;
   for (let start = 0; start < ordered.length && latest.size < caseIds.size; start += RUN_BATCH) {
     const batch = ordered.slice(start, start + RUN_BATCH);
     const found = await Promise.all(batch.map((run) => tests.all(run.id)));

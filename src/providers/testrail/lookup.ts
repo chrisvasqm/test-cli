@@ -1,15 +1,45 @@
-import { InputError, notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import type { Config, ConfigGroup } from "../core/testrail-types.js";
-import { sameName, splitList } from "../core/text.js";
+import { InputError } from "../../core/errors.js";
+import { sameName, splitList } from "../../core/text.js";
+import type { Config, ConfigGroup, Named } from "./types.js";
 
-/** get_configs endpoint: configuration groups (e.g. Browsers, OS) and their configurations. */
-export class ConfigurationService {
-  constructor(private readonly http = HttpClient.get()) {}
+/** Pure lookups over TestRail's tables (statuses, priorities, case types, configurations). */
 
-  groups(projectId: number): Promise<ConfigGroup[]> {
-    return this.http.get<ConfigGroup[]>(`get_configs/${projectId}`).catch(notFound.project(projectId));
-  }
+/** Case type or priority id by name ("functional", "High"); `what` names it in the error. */
+export function idByName(items: Named[], typed: string, code: string, what: string): number {
+  return findByName(items, typed, (item) => sameName(item.name, typed.trim()), code, what).id;
+}
+
+/** "High,Critical" → ids, each looked up as idByName does. */
+export function idsByName(items: Named[], typed: string, code: string, what: string): number[] {
+  const names = splitList(typed);
+  if (names.length === 0) throw new InputError("USAGE", `Give at least one ${what} name`);
+  return names.map((name) => idByName(items, name, code, what));
+}
+
+export function findByName<T extends { name: string; label?: string }>(
+  items: T[],
+  typed: string,
+  matches: (item: T) => boolean,
+  code: string,
+  what: string,
+): T {
+  const found = items.find(matches);
+  if (found) return found;
+  throw new InputError(
+    code,
+    `No ${what} named "${typed}"`,
+    items.map((item) => item.label ?? item.name),
+  );
+}
+
+/** Name for an id from a lookup table, or "#id" when TestRail did not list it. */
+export function nameOf(
+  items: ReadonlyArray<{ id: number; name?: string; label?: string }>,
+  id: number | null,
+) {
+  if (id === null) return null;
+  const item = items.find((entry) => entry.id === id);
+  return item?.label ?? item?.name ?? `#${id}`;
 }
 
 /**

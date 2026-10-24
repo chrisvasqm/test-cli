@@ -20,9 +20,10 @@ Every flag has a short form (`-s` for `--status`). Give each new flag one too:
   - Node 24, TypeScript (strict ESM, NodeNext, `.js` import suffixes), commander and zod.
   - `pnpm build` runs `tsc --noEmit`, then esbuild bundles the CLI into `dist/cli.js`. `dist/index.js` (the Node version guard) is built on its own so old Node can parse it. Releases have no runtime dependencies.
 - **Layout.**
-  - `src/core`: HTTP client singleton (auth, retries, timeouts, error mapping), config, output, prompts, paging, errors and argument parsers.
-  - `src/services`: one class per group of TestRail endpoints. Services turn "not found" (404, or 400 naming the path's id field) into `*_NOT_FOUND` codes with `notFoundAs`.
-  - `src/commands`: commander wiring and rendering only.
+  - `src/core`: provider-neutral pieces: config (a zod union on `provider`; a file without it is TestRail), output, prompts, errors, paging helpers, Jira (jira-cli) and argument parsers.
+  - `src/providers/index.ts`: the registry. `bootstrap(cmd, capability?)` builds the configured provider; commands get services with `provider().cases`, `provider().runs`, …. A command that needs an optional feature (`suites`, `plans`, `milestones`, `configurations`, `reports`, `attachments`, see `capability.ts`) passes it, and a provider without it fails with `NOT_SUPPORTED` (exit 2).
+  - `src/providers/testrail/`: the only provider today. `http.ts` (client singleton: auth, retries, timeouts, error mapping), `paging.ts` (`collectPages`), `errors.ts` (`notFound`), `ids.ts` (C/R/T/P/S/M ids), `lookup.ts` (names to ids), `types.ts` and `services/` (one class per group of endpoints). Services turn "not found" (404, or 400 naming the path's id field) into `*_NOT_FOUND` codes with `notFoundAs`.
+  - `src/commands`: commander wiring and rendering only. oxlint stops commands and core from importing TestRail's client, paging, errors or service classes; types, ids and lookups are fine until a second provider brings neutral types.
 - **TestRail API quirks.**
   - URLs are `<site>/index.php?/api/v2/<method>/<ids>&<params>`: filters follow with `&`, not `?`.
   - Every write is a POST. Unknown ids come back as 400 "Field :case_id is not a valid test case.", not 404.
@@ -33,6 +34,6 @@ Every flag has a short form (`-s` for `--status`). Give each new flag one too:
 - **Checks.**
   - `pnpm check` runs the build, oxlint (max-depth 2, id-length ≥ 2, prefer-for-of, no-console) and `prettier --check`.
   - There are no automated tests (owner decision). Verify with `pnpm check` and, after a command or flag change, `pnpm regression` (every command with short flags; Jira features use the real `jira` CLI, set up for this directory, and its throwaway tickets are deleted), plus live runs against the owner's throwaway TestRail project, with the owner's OK.
-- **Config file.** `.test-cli.json` (`baseUrl` https only, `email`, `apiKey`, `projectId`, optional `suiteId`) is gitignored and saved with mode 600. Never read it or commit it.
+- **Config file.** `.test-cli.json` (`provider: "testrail"`, `baseUrl` https only, `email`, `apiKey`, `projectId`, optional `suiteId`) is gitignored and saved with mode 600; the old `.testrail-cli.json` still loads. Never read either or commit them.
 - **Dependencies.** pnpm only, with exact versions. Never relax the supply-chain policy in `pnpm-workspace.yaml`.
 - **Pull requests.** Every change gets a branch and a squash-merged PR. There is no AI credit in commits or PRs. Bumping, release notes and `pnpm release` follow [README → Releasing](README.md#releasing).

@@ -1,7 +1,7 @@
-import { InputError } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { sameName, splitList } from "../core/text.js";
-import type { Named, Status, Template } from "../core/testrail-types.js";
+import { HttpClient } from "../http.js";
+import { sameName, splitList } from "../../../core/text.js";
+import { findByName } from "../lookup.js";
+import type { Named, Status, Template } from "../types.js";
 
 /** Lookup tables (statuses, priorities, case types, templates). Statuses are fetched once per command. */
 export class MetaService {
@@ -52,42 +52,4 @@ export class MetaService {
   statusIds(typed: string): Promise<number[]> {
     return Promise.all(splitList(typed).map(async (name) => (await this.status(name)).id));
   }
-}
-
-/** Case type or priority id by name ("functional", "High"); `what` names it in the error. */
-export function idByName(items: Named[], typed: string, code: string, what: string): number {
-  return findByName(items, typed, (item) => sameName(item.name, typed.trim()), code, what).id;
-}
-
-/** "High,Critical" → ids, each looked up as idByName does. */
-export function idsByName(items: Named[], typed: string, code: string, what: string): number[] {
-  const names = splitList(typed);
-  if (names.length === 0) throw new InputError("USAGE", `Give at least one ${what} name`);
-  return names.map((name) => idByName(items, name, code, what));
-}
-
-function findByName<T extends { name: string; label?: string }>(
-  items: T[],
-  typed: string,
-  matches: (item: T) => boolean,
-  code: string,
-  what: string,
-): T {
-  const found = items.find(matches);
-  if (found) return found;
-  throw new InputError(
-    code,
-    `No ${what} named "${typed}"`,
-    items.map((item) => item.label ?? item.name),
-  );
-}
-
-/** Name for an id from a lookup table, or "#id" when TestRail did not list it. */
-export function nameOf(
-  items: ReadonlyArray<{ id: number; name?: string; label?: string }>,
-  id: number | null,
-) {
-  if (id === null) return null;
-  const item = items.find((entry) => entry.id === id);
-  return item?.label ?? item?.name ?? `#${id}`;
 }

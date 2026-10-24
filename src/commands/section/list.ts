@@ -1,8 +1,8 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { moreHint, printResult } from "../../core/output.js";
-import { SectionService } from "../../services/section.service.js";
 
 interface ListOptions {
   limit: string;
@@ -16,7 +16,7 @@ export function registerList(section: Command): void {
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);
-      const { items, hasMore } = await new SectionService().list(config.projectId, config.suiteId, limit);
+      const { items, hasMore } = await provider().sections.list(config.projectId, config.suiteId, limit);
       const sections = items.map((item) => ({
         id: item.id,
         name: item.name,

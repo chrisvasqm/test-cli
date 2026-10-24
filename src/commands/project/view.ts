@@ -1,13 +1,10 @@
 import type { Command } from "commander";
-import { listLimit, projectId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { projectId } from "../../providers/testrail/ids.js";
+import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { grid, moreHint, printResult, table } from "../../core/output.js";
-import { SUITE_MODE_SINGLE, type Milestone } from "../../core/testrail-types.js";
-import { MetaService } from "../../services/meta.service.js";
-import { MilestoneService } from "../../services/milestone.service.js";
-import { PlanService } from "../../services/plan.service.js";
-import { ProjectService } from "../../services/project.service.js";
-import { RunService } from "../../services/run.service.js";
+import { SUITE_MODE_SINGLE, type Milestone } from "../../providers/testrail/types.js";
 import { isoTime, localDate, passRate, progress, renderProgress, toRunSummary } from "../render.js";
 import { toPlanSummary } from "../plan/render.js";
 
@@ -58,11 +55,11 @@ export function registerView(project: Command): void {
       const { config, mode } = bootstrap(cmd);
       const id = wanted ?? config.projectId;
       const [found, runList, planList, milestoneList, statuses] = await Promise.all([
-        new ProjectService().get(id),
-        new RunService().list(id, limit, { completed: false }),
-        new PlanService().list(id, false, limit),
-        new MilestoneService().list(id, false, limit),
-        new MetaService().statuses(),
+        provider().projects.get(id),
+        provider().runs.list(id, limit, { completed: false }),
+        provider().plans.list(id, false, limit),
+        provider().milestones.list(id, false, limit),
+        provider().meta.statuses(),
       ]);
       const runs = runList.items.map((item) => ({
         ...toRunSummary(item, statuses),

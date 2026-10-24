@@ -1,6 +1,6 @@
-import { notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import type { Suite } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { HttpClient } from "../http.js";
+import type { Suite } from "../types.js";
 
 export interface SuiteInput {
   name: string;

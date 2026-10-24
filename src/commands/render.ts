@@ -8,8 +8,8 @@ import type {
   StatusCounts,
   StepInput,
   User,
-} from "../core/testrail-types.js";
-import { nameOf } from "../services/meta.service.js";
+} from "../providers/testrail/types.js";
+import { nameOf } from "../providers/testrail/lookup.js";
 
 const LOCAL_TIME = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",

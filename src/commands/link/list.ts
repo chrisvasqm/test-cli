@@ -1,11 +1,9 @@
 import type { Command } from "commander";
-import { idOrJiraKey } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { idOrJiraKey } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import type { Config } from "../../core/config.js";
 import { printResult, renderList, type OutputMode } from "../../core/output.js";
-import { CaseService } from "../../services/case.service.js";
-import { LinkService } from "../../services/link.service.js";
-import { RunService } from "../../services/run.service.js";
 import { caseUrl, runUrl } from "../render.js";
 import { renderKeys, targetName, targetUrl } from "./target.js";
 
@@ -22,7 +20,7 @@ export function registerList(link: Command): void {
         await listForKey(config, mode, target.key);
         return;
       }
-      const { keys } = await new LinkService().load(target);
+      const { keys } = await provider().links.load(target);
       const view = { target: targetName(target), keys, url: targetUrl(config, target) };
       printResult(mode, view, () => `${renderKeys(view.target, keys)}\n${view.url}`);
     });
@@ -31,11 +29,11 @@ export function registerList(link: Command): void {
 /** The cases (in the configured suite) and runs (open or closed, not in plans) whose refs hold `key`. */
 async function listForKey(config: Config, mode: OutputMode, key: string): Promise<void> {
   const [cases, runs] = await Promise.all([
-    new CaseService().withRef(
+    provider().cases.withRef(
       { projectId: config.projectId, suiteId: config.suiteId, sectionId: undefined },
       key,
     ),
-    new RunService().withRef(config.projectId, config.suiteId, key),
+    provider().runs.withRef(config.projectId, config.suiteId, key),
   ]);
   const view = {
     target: key,

@@ -1,7 +1,7 @@
 import { InputError } from "../../core/errors.js";
 import { joinRefs } from "../../core/text.js";
-import type { ResultInput } from "../../services/result.service.js";
-import type { MetaService } from "../../services/meta.service.js";
+import type { ResultInput } from "../../providers/testrail/services/result.service.js";
+import type { MetaService } from "../../providers/testrail/services/meta.service.js";
 
 /** TestRail's timespan format: "30s", "1m 45s", "2h 30m", "1w 2d". */
 const ELAPSED = /^(\d+\s*[wdhms]\s*)+$/i;

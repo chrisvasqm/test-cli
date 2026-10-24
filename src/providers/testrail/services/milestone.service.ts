@@ -1,7 +1,8 @@
-import { notFound, notFoundAs } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
-import type { Milestone } from "../core/testrail-types.js";
+import { notFound, notFoundAs } from "../errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { type Collected } from "../../../core/paging.js";
+import type { Milestone } from "../types.js";
 
 export interface MilestoneInput {
   name: string;

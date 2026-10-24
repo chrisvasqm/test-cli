@@ -1,8 +1,8 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { LinkService } from "../../services/link.service.js";
 import { jiraKeys } from "../../core/args.js";
 import { linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
 
@@ -20,7 +20,7 @@ export function registerRemove(link: Command): void {
       }
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
-      const links = new LinkService();
+      const links = provider().links;
       const loaded = await links.load(target);
       const { linked: removed, unlinked: notLinked } = partition(keys, loaded.keys);
       const left = partition(loaded.keys, removed).unlinked;

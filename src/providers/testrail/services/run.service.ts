@@ -1,8 +1,10 @@
-import { CliError, InputError, notFound, notFoundAs } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { collectPages, inBatches, type Collected } from "../core/paging.js";
-import type { Plan, PlanEntry, PlanRun, Run } from "../core/testrail-types.js";
-import { hasRef } from "../core/text.js";
+import { notFound, notFoundAs } from "../errors.js";
+import { CliError, InputError } from "../../../core/errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { inBatches, type Collected } from "../../../core/paging.js";
+import type { Plan, PlanEntry, PlanRun, Run } from "../types.js";
+import { hasRef } from "../../../core/text.js";
 import { PlanService } from "./plan.service.js";
 
 /** A run with the plan it belongs to (null outside plans). */

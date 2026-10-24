@@ -1,7 +1,7 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { grid, printResult } from "../../core/output.js";
-import { ConfigurationService } from "../../services/configuration.service.js";
 
 interface ConfigRow {
   id: number;
@@ -13,8 +13,8 @@ export function registerList(configuration: Command): void {
     .command("list")
     .description("List configuration groups and their configurations in the project")
     .action(async (_opts: unknown, cmd: Command) => {
-      const { config, mode } = bootstrap(cmd);
-      const found = await new ConfigurationService().groups(config.projectId);
+      const { config, mode } = bootstrap(cmd, "configurations");
+      const found = await provider().configurations.groups(config.projectId);
       const groups = found.map((group) => ({
         id: group.id,
         name: group.name,

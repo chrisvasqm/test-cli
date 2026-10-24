@@ -1,7 +1,8 @@
-import { notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { ALL, collectPages, findInPages, inBatches, type Collected } from "../core/paging.js";
-import type { Result, Test } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages, findInPages } from "../paging.js";
+import { ALL, inBatches, type Collected } from "../../../core/paging.js";
+import type { Result, Test } from "../types.js";
 
 /** get_test(s) and get_results endpoints. A test is one case inside one run. */
 export class TestService {

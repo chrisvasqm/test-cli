@@ -1,5 +1,5 @@
 import { grid, table } from "../../core/output.js";
-import type { Plan, PlanEntry, Status } from "../../core/testrail-types.js";
+import type { Plan, PlanEntry, Status } from "../../providers/testrail/types.js";
 import { isoTime, localTime, renderCounts, runCounts, toRunSummary } from "../render.js";
 
 /** The fields every plan output shares; commands add what they need. */

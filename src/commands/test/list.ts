@@ -1,10 +1,10 @@
 import type { Command } from "commander";
-import { listLimit, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { runId } from "../../providers/testrail/ids.js";
+import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, renderList } from "../../core/output.js";
-import { MetaService, nameOf } from "../../services/meta.service.js";
-import { TestService } from "../../services/test.service.js";
-import { UserService } from "../../services/user.service.js";
+import { nameOf } from "../../providers/testrail/lookup.js";
 
 interface ListOptions {
   status?: string;
@@ -23,13 +23,13 @@ export function registerList(test: Command): void {
       const run = runId(rawRun);
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);
-      const meta = new MetaService();
+      const meta = provider().meta;
       const [statusIds, assignee] = await Promise.all([
         opts.status === undefined ? [] : meta.statusIds(opts.status),
-        new UserService().resolveOptional(opts.assigned, config.email, "--assigned"),
+        provider().users.resolveOptional(opts.assigned, config.email, "--assigned"),
       ]);
       const [{ items, hasMore }, statuses] = await Promise.all([
-        new TestService().list(run, statusIds, limit, assignee?.id),
+        provider().tests.list(run, statusIds, limit, assignee?.id),
         meta.statuses(),
       ]);
       const tests = items.map((item) => ({

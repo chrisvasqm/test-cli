@@ -1,7 +1,9 @@
-import { CliError, InputError, notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { collectPages, inBatches, type Collected } from "../core/paging.js";
-import type { Result, Run, StepResult, Test } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { CliError, InputError } from "../../../core/errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { inBatches, type Collected } from "../../../core/paging.js";
+import type { Result, Run, StepResult, Test } from "../types.js";
 import { CaseService } from "./case.service.js";
 import { RunService } from "./run.service.js";
 import { TestService } from "./test.service.js";

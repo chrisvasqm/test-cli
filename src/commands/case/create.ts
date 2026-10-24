@@ -1,10 +1,9 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult } from "../../core/output.js";
 import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
-import { CaseService } from "../../services/case.service.js";
-import { MetaService } from "../../services/meta.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { caseUrl } from "../render.js";
 import { addCaseFieldOptions, toCaseInput, type CaseFieldOptions } from "./fields.js";
@@ -35,8 +34,8 @@ export function registerCreate(testCase: Command): void {
       fields.title = opts.title ?? clip(ticket.summary, MAX_NAME);
       fields.refs = joinRefs(refs);
     }
-    const { input } = await toCaseInput(fields, new MetaService(), config.projectId);
-    const created = await new CaseService().add(sectionId, { ...input, title: input.title ?? "" });
+    const { input } = await toCaseInput(fields, provider().meta, config.projectId);
+    const created = await provider().cases.add(sectionId, { ...input, title: input.title ?? "" });
     const view = {
       id: created.id,
       title: created.title,

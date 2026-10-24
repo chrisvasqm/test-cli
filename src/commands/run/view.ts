@@ -1,10 +1,9 @@
 import type { Command } from "commander";
-import { runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { runId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { printResult, table } from "../../core/output.js";
 import { splitList } from "../../core/text.js";
-import { MetaService } from "../../services/meta.service.js";
-import { RunService } from "../../services/run.service.js";
 import { isoTime, localTime, renderCounts, toRunSummary } from "../render.js";
 
 export function registerView(run: Command): void {
@@ -14,7 +13,7 @@ export function registerView(run: Command): void {
     .action(async (rawId: string, _opts: unknown, cmd: Command) => {
       const id = runId(rawId);
       const { mode } = bootstrap(cmd);
-      const [found, statuses] = await Promise.all([new RunService().get(id), new MetaService().statuses()]);
+      const [found, statuses] = await Promise.all([provider().runs.get(id), provider().meta.statuses()]);
       const view = {
         ...toRunSummary(found, statuses),
         description: found.description,

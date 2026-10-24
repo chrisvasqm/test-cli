@@ -1,14 +1,13 @@
 import type { Command } from "commander";
-import { caseIds, milestoneId, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseIds, milestoneId, runId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { confirm } from "../../core/confirm.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
-import { RunService, type RunInput } from "../../services/run.service.js";
-import { TestService } from "../../services/test.service.js";
-import { UserService } from "../../services/user.service.js";
+import { type RunInput } from "../../providers/testrail/services/run.service.js";
 import { assigneeView } from "../render.js";
 
 interface EditOptions {
@@ -59,13 +58,13 @@ export function registerEdit(run: Command): void {
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name or --add C4");
       }
       const { config, mode } = bootstrap(cmd);
-      const runs = new RunService();
+      const runs = provider().runs;
       const target = await runs.editable(id);
       const found = target.run;
       // Before resolving users or asking about removals.
       runs.assertChangeable(target, input);
       const [assignee, current] = await Promise.all([
-        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
+        provider().users.resolveOptional(opts.assign, config.email, "--assign"),
         change === undefined ? undefined : runCases(id),
       ]);
       if (assignee) input.assignedto_id = assignee.id;
@@ -125,7 +124,7 @@ function caseChange(opts: EditOptions): CaseChange | undefined {
 
 /** Case ids of the run's tests: update_run takes the whole list, so add and remove start from it. */
 async function runCases(id: number): Promise<number[]> {
-  return (await new TestService().all(id)).map((test) => test.case_id);
+  return (await provider().tests.all(id)).map((test) => test.case_id);
 }
 
 /** The new case list and what it adds and removes; undefined when it matches the run's cases. */

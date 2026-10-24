@@ -1,10 +1,11 @@
 import type { Command } from "commander";
-import { suiteId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { suiteId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { SuiteService, type SuiteInput } from "../../services/suite.service.js";
+import { type SuiteInput } from "../../providers/testrail/services/suite.service.js";
 
 interface EditOptions {
   name?: string;
@@ -29,8 +30,8 @@ export function registerEdit(suite: Command): void {
       const changed = Object.keys(input);
       if (changed.length === 0)
         throw new InputError("USAGE", "Give at least one field to change, e.g. --name");
-      const { mode } = bootstrap(cmd);
-      const updated = await new SuiteService().update(id, input);
+      const { mode } = bootstrap(cmd, "suites");
+      const updated = await provider().suites.update(id, input);
       const view = { id: updated.id, name: updated.name, changed, url: updated.url };
       printResult(mode, view, () => `Updated S${view.id}  ${view.name}\n${view.url}`);
     });

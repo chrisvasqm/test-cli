@@ -1,9 +1,10 @@
 import type { Command } from "commander";
+import { provider } from "../../providers/index.js";
 import { requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { SuiteService, type SuiteInput } from "../../services/suite.service.js";
+import { type SuiteInput } from "../../providers/testrail/services/suite.service.js";
 
 interface CreateOptions {
   name?: string;
@@ -21,10 +22,10 @@ export function registerCreate(suite: Command): void {
     .action(async (opts: CreateOptions, cmd: Command) => {
       requireName(opts.name, "suite");
       const description = await readOptionalText(opts.description, opts.file, "description");
-      const { config, mode } = bootstrap(cmd);
+      const { config, mode } = bootstrap(cmd, "suites");
       const input: SuiteInput = { name: opts.name };
       if (description !== undefined) input.description = description;
-      const created = await new SuiteService().add(config.projectId, input);
+      const created = await provider().suites.add(config.projectId, input);
       const view = { id: created.id, name: created.name, url: created.url };
       printResult(mode, view, () => `Created S${view.id}  ${view.name}\n${view.url}`);
     });

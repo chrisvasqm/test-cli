@@ -1,9 +1,11 @@
 import { openAsBlob } from "node:fs";
-import { CliError, notFound } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import type { Upload } from "../core/input.js";
-import { ALL, collectPages, type Collected } from "../core/paging.js";
-import type { Attachment } from "../core/testrail-types.js";
+import { notFound } from "../errors.js";
+import { CliError } from "../../../core/errors.js";
+import { HttpClient } from "../http.js";
+import type { Upload } from "../../../core/input.js";
+import { collectPages } from "../paging.js";
+import { ALL, type Collected } from "../../../core/paging.js";
+import type { Attachment } from "../types.js";
 import { TestService } from "./test.service.js";
 
 /** What a file can be attached to. A test has no attachments of its own; they go on its results. */

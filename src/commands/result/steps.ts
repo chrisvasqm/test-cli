@@ -1,7 +1,7 @@
 import { InputError } from "../../core/errors.js";
-import type { Step, StepResult } from "../../core/testrail-types.js";
+import type { Step, StepResult } from "../../providers/testrail/types.js";
 import { splitList } from "../../core/text.js";
-import type { MetaService } from "../../services/meta.service.js";
+import type { MetaService } from "../../providers/testrail/services/meta.service.js";
 
 /** One step's outcome as typed: its 1-based number in the case, a status name and what happened. */
 export interface StepSpec {

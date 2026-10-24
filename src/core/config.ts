@@ -11,7 +11,11 @@ export const GLOBAL_CONFIG = join(homedir(), ".config", "test-cli", "config.json
 const LEGACY_CONFIG_FILE = ".testrail-cli.json";
 const LEGACY_GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
 
-export const configSchema = z.object({
+/** The providers a config can name; a config without `provider` (from before 3.0.0) is TestRail. */
+export const PROVIDERS = ["testrail"] as const;
+
+export const testRailConfigSchema = z.object({
+  provider: z.literal("testrail"),
   baseUrl: z
     .url({ protocol: /^https$/, error: "Use the https:// address of your TestRail site" })
     // A pasted browser link such as https://acme.testrail.io/index.php?/dashboard keeps only the site.
@@ -27,7 +31,18 @@ export const configSchema = z.object({
   suiteId: z.number().int().positive().optional(),
 });
 
+export const configSchema = z.preprocess(
+  (raw) => (isObject(raw) && raw.provider === undefined ? { provider: "testrail", ...raw } : raw),
+  z.discriminatedUnion("provider", [testRailConfigSchema], {
+    error: `provider must be one of: ${PROVIDERS.join(", ")}`,
+  }),
+);
+
 export type Config = z.infer<typeof configSchema>;
+
+function isObject(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw);
+}
 
 function walkUp(start: string): string | undefined {
   let dir = resolve(start);

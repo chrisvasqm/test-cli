@@ -1,10 +1,9 @@
 import type { Command } from "commander";
-import { caseIdList } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseIdList } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { CaseService } from "../../services/case.service.js";
-import { MetaService } from "../../services/meta.service.js";
 import { caseUrl } from "../render.js";
 import { addCaseFieldOptions, toCaseInput, type CaseFieldOptions } from "./fields.js";
 
@@ -28,10 +27,10 @@ export function registerEdit(testCase: Command): void {
       );
     }
     const { config, mode } = bootstrap(command);
-    const { input, changed } = await toCaseInput(opts, new MetaService(), config.projectId);
+    const { input, changed } = await toCaseInput(opts, provider().meta, config.projectId);
     if (changed.length === 0)
       throw new InputError("USAGE", "Give at least one field to change, e.g. --title");
-    const cases = new CaseService();
+    const cases = provider().cases;
     if (ids.length === 1) {
       const updated = await cases.update(ids[0]!, input);
       const view = { id: updated.id, title: updated.title, changed, url: caseUrl(config, updated.id) };

@@ -1,14 +1,12 @@
 import type { Command } from "commander";
-import { caseId, intInRange, runId } from "../../core/args.js";
+import { provider } from "../../providers/index.js";
+import { caseId, runId } from "../../providers/testrail/ids.js";
+import { intInRange } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import type { Run } from "../../core/testrail-types.js";
-import { CaseService } from "../../services/case.service.js";
-import { MetaService } from "../../services/meta.service.js";
-import { ResultService } from "../../services/result.service.js";
-import { RunService } from "../../services/run.service.js";
-import { UserService } from "../../services/user.service.js";
+import type { Run } from "../../providers/testrail/types.js";
+import { type RunService } from "../../providers/testrail/services/run.service.js";
 import { renderResult, toResult } from "../render.js";
 
 /** Most results, and most runs to scan: one TestRail page each. */
@@ -39,11 +37,11 @@ export function registerHistory(testCase: Command): void {
       }
       const scan = intInRange(opts.runs ?? "25", "--runs", 1, MAX_HISTORY);
       const { config, mode } = bootstrap(cmd);
-      const statusesLoaded = new MetaService().statuses();
-      const runService = new RunService();
+      const statusesLoaded = provider().meta.statuses();
+      const runService = provider().runs;
       // The case is checked even with --run, so an unknown case is CASE_NOT_FOUND, not an empty history.
       const [found, single] = await Promise.all([
-        new CaseService().get(id),
+        provider().cases.get(id),
         onlyRun === undefined ? undefined : runService.get(onlyRun),
       ]);
       const history = single
@@ -51,7 +49,7 @@ export function registerHistory(testCase: Command): void {
         : await recentRuns(runService, config.projectId, found.suite_id, scan, id, limit);
       const [statuses, authors] = await Promise.all([
         statusesLoaded,
-        new UserService().names(history.items.map((item) => item.result.created_by)),
+        provider().users.names(history.items.map((item) => item.result.created_by)),
       ]);
       const view = {
         case: { id: found.id, title: found.title },
@@ -87,7 +85,7 @@ export function registerHistory(testCase: Command): void {
 
 /** With --run, a case outside it is CASE_NOT_IN_RUN. */
 async function singleRun(run: Run, id: number, limit: number) {
-  const page = await new ResultService().forCase(run.id, id, limit);
+  const page = await provider().results.forCase(run.id, id, limit);
   const items = page.items.map((result) => ({ run, result }));
   return { items, hasMore: page.hasMore, scanned: 1, moreRuns: false };
 }
@@ -102,6 +100,6 @@ async function recentRuns(
   limit: number,
 ) {
   const runs = await runService.list(projectId, scan, { suiteId });
-  const history = await new ResultService().history(runs.items, id, limit);
+  const history = await provider().results.history(runs.items, id, limit);
   return { ...history, scanned: runs.items.length, moreRuns: runs.hasMore };
 }

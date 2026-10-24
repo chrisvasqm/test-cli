@@ -1,7 +1,8 @@
-import { notFound, notFoundAs } from "../core/errors.js";
-import { HttpClient } from "../core/http.js";
-import { ALL, collectPages, type Collected } from "../core/paging.js";
-import type { Report, ReportRun } from "../core/testrail-types.js";
+import { notFound, notFoundAs } from "../errors.js";
+import { HttpClient } from "../http.js";
+import { collectPages } from "../paging.js";
+import { ALL, type Collected } from "../../../core/paging.js";
+import type { Report, ReportRun } from "../types.js";
 
 /**
  * get_reports and run_report endpoints. Only templates made in the UI with "On-demand via the API"
