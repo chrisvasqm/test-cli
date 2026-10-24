@@ -70,7 +70,8 @@ export class AttachmentService {
       id: item.id ?? legacyId ?? 0,
     }));
     // get_attachments_for_run on Cloud lists each attachment twice.
-    const unique = [...new Map(items.map((item) => [item.id, item])).values()];
+    const byId = new Map(items.filter((item) => item.id !== 0).map((item) => [item.id, item]));
+    const unique = [...byId.values(), ...items.filter((item) => item.id === 0)];
     return { items: unique, hasMore: found.hasMore };
   }
 

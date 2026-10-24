@@ -75,7 +75,7 @@ async function viewAll(keys: readonly string[]): Promise<(readonly [string, Jira
 }
 
 /** The status fields of `jira ticket view`; older jira-cli has no `statusCategory` (new, indeterminate or done). */
-const statusSchema = z.object({ status: z.string().min(1), statusCategory: z.string().optional() });
+const statusSchema = z.object({ status: z.string().min(1), statusCategory: z.string().nullish() });
 export type JiraStatus = z.infer<typeof statusSchema>;
 
 /**
@@ -137,7 +137,7 @@ const listedSchema = z.object({
   key: z.string().min(1),
   summary: z.string(),
   status: z.string(),
-  statusCategory: z.string().optional(),
+  statusCategory: z.string().nullish(),
 });
 export type JiraListed = z.infer<typeof listedSchema>;
 
@@ -168,7 +168,11 @@ export async function jiraTickets(source: TicketSource): Promise<JiraTickets> {
 }
 
 async function ticketQuery(source: TicketSource): Promise<Omit<JiraTickets, "tickets">> {
-  if ("jql" in source) return { kind: "jql", name: source.jql, jql: source.jql };
+  if ("jql" in source) {
+    // jira-cli wraps the query in parentheses and adds its own ORDER BY.
+    if (/\border\s+by\b/i.test(source.jql)) throw new InputError("USAGE", "Leave ORDER BY out of the JQL");
+    return { kind: "jql", name: source.jql, jql: source.jql };
+  }
   if ("epic" in source) {
     const epic = await jiraTicket(source.epic);
     return { kind: "epic", name: `${epic.key}: ${epic.summary}`, jql: `parent = ${epic.key}` };
@@ -192,7 +196,11 @@ async function jiraSprint(raw: string): Promise<{ id: number; name: string }> {
   if (/^\d+$/.test(typed)) {
     const id = Number(typed);
     const listed = await callJira(args, sprintsSchema).catch(() => ({ sprints: [] }));
-    return { id, name: listed.sprints.find((item) => item.id === id)?.name ?? `Sprint ${id}` };
+    // An id wins; a sprint named like a number is found by name only when no sprint has that id.
+    const match =
+      listed.sprints.find((item) => item.id === id) ??
+      listed.sprints.find((item) => sameName(item.name, typed));
+    return match ? { id: match.id, name: match.name } : { id, name: `Sprint ${id}` };
   }
   const { sprints } = await callJira(args, sprintsSchema);
   const matches = active ? sprints : sprints.filter((item) => sameName(item.name, typed));

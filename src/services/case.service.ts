@@ -1,7 +1,7 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, inBatches, type Collected } from "../core/paging.js";
-import { hasRef } from "../core/text.js";
+import { hasRef, splitList } from "../core/text.js";
 import type { Case, CaseContent } from "../core/testrail-types.js";
 
 export interface CaseFilter {
@@ -88,16 +88,24 @@ export class CaseService {
     suiteId: number | undefined,
     keys: readonly string[],
   ): Promise<Map<string, Case[]>> {
+    if (keys.length === 0) return new Map();
     const { items } = await this.list({
       projectId,
       suiteId,
       sectionId: undefined,
       limit: Number.MAX_SAFE_INTEGER,
     });
+    // One pass over the cases: each ref, upper-cased, points at the cases that carry it.
+    const byRef = new Map<string, Case[]>();
+    for (const item of items) {
+      for (const ref of new Set(splitList(item.refs).map((part) => part.toUpperCase()))) {
+        byRef.set(ref, [...(byRef.get(ref) ?? []), item]);
+      }
+    }
     const linked = new Map<string, Case[]>();
     for (const key of keys) {
-      const cases = items.filter((item) => hasRef(item.refs, key));
-      if (cases.length > 0) linked.set(key, cases);
+      const cases = byRef.get(key.toUpperCase());
+      if (cases) linked.set(key, cases);
     }
     return linked;
   }
