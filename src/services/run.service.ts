@@ -39,7 +39,7 @@ export class RunService {
       { is_completed: completed, milestone_id: milestoneId },
       limit,
       this.http,
-    );
+    ).catch(notFound.project(projectId));
   }
 
   /** Every open run, those inside open plans too (get_runs leaves them out), newest first. */

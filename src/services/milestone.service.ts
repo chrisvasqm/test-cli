@@ -36,7 +36,7 @@ export class MilestoneService {
       { is_completed: completed },
       limit,
       this.http,
-    );
+    ).catch(notFound.project(projectId));
   }
 
   add(projectId: number, input: MilestoneInput): Promise<Milestone> {

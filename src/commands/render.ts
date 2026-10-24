@@ -100,6 +100,27 @@ export function runCounts(run: StatusCounts, statuses: Status[]): Record<string,
   return counts;
 }
 
+/** The *_count fields of a run or plan: system statuses and custom_status1..7. */
+const COUNT_FIELD = /^(passed|failed|blocked|retest|untested|custom_status[1-7])_count$/;
+
+/** Share of tests passed, 0-100 rounded; null with no tests. */
+export const passRate = (passed: number, total: number): number | null =>
+  total === 0 ? null : Math.round((passed * 100) / total);
+
+/** Tests in a run or plan over every status, how many passed, and the pass rate. */
+export function progress(run: StatusCounts) {
+  let total = 0;
+  for (const [field, value] of Object.entries(run)) {
+    if (COUNT_FIELD.test(field) && typeof value === "number") total += value;
+  }
+  return { total, passed: run.passed_count, passRate: passRate(run.passed_count, total) };
+}
+
+/** "Passed 3, Failed 1 · 75% passed". */
+export function renderProgress(counts: Record<string, number>, rate: number | null): string {
+  return rate === null ? renderCounts(counts) : `${renderCounts(counts)} · ${rate}% passed`;
+}
+
 export function renderCounts(counts: Record<string, number>): string {
   const parts = Object.entries(counts).map(([label, count]) => `${label} ${count}`);
   return parts.length > 0 ? parts.join(", ") : "no tests";

@@ -56,7 +56,7 @@ export class PlanService {
       { is_completed: completed, milestone_id: milestoneId },
       limit,
       this.http,
-    );
+    ).catch(notFound.project(projectId));
   }
 
   add(projectId: number, input: PlanInput): Promise<Plan> {
