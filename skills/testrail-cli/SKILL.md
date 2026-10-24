@@ -113,7 +113,7 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `SUITE_REQUIRED`, `SUITE_NOT_FOUND`, `NO_SUITES`: `details` lists the project's suites (`S<id>  name`). Pass one with `--suite`.
 - `NO_STEPS_TEMPLATE`: the project has no steps template; use `--steps` and `--expected`.
 - `JIRA_TICKET_NOT_FOUND`: `details` lists the keys Jira does not have. Nothing was linked. Check the keys with the user.
-- `JIRA_CHECK_FAILED`: jira-cli is installed but failed (e.g. no `.jira-cli.json`); `details` is its error. Nothing was linked. Ask the user to fix jira-cli, or pass `--no-check` if they say so.
+- `JIRA_CHECK_FAILED`: jira-cli is installed but failed (e.g. no `.jira-cli.json`); `details` is its error. Nothing was linked. In a terminal the CLI offers `jira setup`; without one, ask the user to run `jira setup` themselves (it asks for secrets), or pass `--no-check` if they say so.
 - `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.
 - `CONFIRM_REQUIRED`: see the rule on deletes above.
 - `FILE_ERROR`: the `--file` path can't be read.
