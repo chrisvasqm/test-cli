@@ -1,4 +1,5 @@
 import type { Run } from "../types.js";
+import { ALL } from "../../../core/paging.js";
 import { joinRefs, splitList, uniqueRefs } from "../../../core/text.js";
 import type { CaseService } from "./case.service.js";
 import type { ResultService } from "./result.service.js";
@@ -9,9 +10,6 @@ import type { TestService } from "./test.service.js";
 export type LinkTarget = RefsTarget | { kind: "test"; id: number };
 /** Targets whose links are a refs field, so they can also be removed. */
 export type RefsTarget = { kind: "case" | "run"; id: number };
-
-/** Every result is read when collecting a test's defects. */
-const ALL_RESULTS = Number.MAX_SAFE_INTEGER;
 
 /** Jira keys on cases and runs (the refs field) and on tests (defects of their results). */
 export class LinkService {
@@ -34,7 +32,7 @@ export class LinkService {
     }
     const [test, { items }] = await Promise.all([
       this.tests.get(target.id),
-      this.tests.results(target.id, ALL_RESULTS),
+      this.tests.results(target.id, ALL),
     ]);
     const keys = uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
     return { keys, runId: test.run_id };

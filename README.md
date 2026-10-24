@@ -39,7 +39,7 @@ Then run `test-cli setup` in the project directory. It asks for:
 - the API key;
 - a project, and a suite if the project has several.
 
-It saves them to `.test-cli.json` with file mode 600 (configs from before 3.0.0, `.testrail-cli.json` and `~/.config/testrail-cli/config.json`, are still read). If that file already exists, it asks before replacing it (`--yes` skips the question). Add `--global` to save to `~/.config/test-cli/config.json` instead, or pass `--config <path>` to choose the file.
+It saves them to `.test-cli.json` with file mode 600 (configs from before 3.0.0, `.testrail-cli.json` and `~/.config/testrail-cli/config.json`, are still read, and `setup` in a directory that has only `.testrail-cli.json` rewrites that file). If that file already exists, it asks before replacing it (`--yes` skips the question). Add `--global` to save to `~/.config/test-cli/config.json` instead, or pass `--config <path>` to choose the file.
 
 - Keep the file out of git, because it holds your API key. `setup` warns you when git does not ignore it.
 - Each directory can have its own config, so different projects can use different TestRail sites or projects.

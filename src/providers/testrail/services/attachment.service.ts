@@ -6,7 +6,7 @@ import type { Upload } from "../../../core/input.js";
 import { collectPages } from "../paging.js";
 import { ALL, type Collected } from "../../../core/paging.js";
 import type { Attachment } from "../types.js";
-import { TestService } from "./test.service.js";
+import type { TestService } from "./test.service.js";
 
 /** What a file can be attached to. A test has no attachments of its own; they go on its results. */
 export type AttachTarget = { kind: "case" | "run" | "result"; id: number };
@@ -18,7 +18,10 @@ const notFoundFor = { case: notFound.case, run: notFound.run, test: notFound.tes
 
 /** add_attachment_to_* and get_attachments_for_* endpoints. */
 export class AttachmentService {
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly tests: TestService,
+  ) {}
 
   /** One file per request, as TestRail takes them. The id is a number on older servers, a UUID on Cloud. */
   async add(target: AttachTarget, upload: Upload): Promise<number | string> {
@@ -76,7 +79,7 @@ export class AttachmentService {
 
   /** The id of a test's newest result, or of `resultId` after checking it belongs to the test. */
   async resultOf(testId: number, resultId?: number): Promise<number> {
-    const tests = new TestService(this.http);
+    const { tests } = this;
     if (resultId === undefined) {
       const { items } = await tests.results(testId, 1);
       if (items[0]) return items[0].id;
