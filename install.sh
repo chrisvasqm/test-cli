@@ -34,10 +34,12 @@ else
 fi
 
 # The package was called testrail-cli before 3.0.0; both claim the testrail command, so the old one goes first.
+removed_old=""
 if npm ls -g --depth=0 testrail-cli >/dev/null 2>&1; then
   npm uninstall -g testrail-cli >/dev/null || fail "could not remove the old testrail-cli package"
+  removed_old=" The old testrail-cli was already removed; fix the error and run this script again."
 fi
-npm install -g "$tmp/test-cli.tgz" >/dev/null || fail "npm install failed (see the error above)"
+npm install -g "$tmp/test-cli.tgz" >/dev/null || fail "npm install failed (see the error above).$removed_old"
 
 # Report the binary npm just installed, not whichever test-cli comes first on PATH.
 bin="$(npm prefix -g)/bin"

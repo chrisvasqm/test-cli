@@ -8,7 +8,7 @@ import { CliError } from "./errors.js";
 export const CONFIG_FILE = ".test-cli.json";
 export const GLOBAL_CONFIG = join(homedir(), ".config", "test-cli", "config.json");
 /** Names from before the rename to test-cli; still read, never written by setup. */
-const LEGACY_CONFIG_FILE = ".testrail-cli.json";
+export const LEGACY_CONFIG_FILE = ".testrail-cli.json";
 const LEGACY_GLOBAL_CONFIG = join(homedir(), ".config", "testrail-cli", "config.json");
 
 /** The providers a config can name; a config without `provider` (from before 3.0.0) is TestRail. */

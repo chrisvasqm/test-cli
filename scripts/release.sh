@@ -74,7 +74,7 @@ On Windows (PowerShell):
 irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-To install exactly this version: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
+To install exactly this version: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\` (coming from testrail-cli 2.x, run \`npm uninstall -g testrail-cli\` first; the install scripts do this for you)
 
 ---
 
@@ -98,7 +98,7 @@ En Windows (PowerShell):
 irm https://raw.githubusercontent.com/chrisvasqm/test-cli/main/install.ps1 | iex
 \`\`\`
 
-Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\`
+Para instalar exactamente esta versión: \`npm install -g https://github.com/chrisvasqm/test-cli/releases/download/$tag/$asset_name\` (si viene de testrail-cli 2.x, ejecute antes \`npm uninstall -g testrail-cli\`; los scripts de instalación lo hacen por usted)
 NOTES
 if tagged=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
   [ "$tagged" = "$head" ] || die "$tag exists on another commit; bump the version in the PR first"
@@ -142,11 +142,6 @@ asset="$out/$asset_name"
 # Same file under a fixed name, so releases/latest/download/test-cli.tgz always installs the newest version.
 stable="$out/test-cli.tgz"
 cp "$asset" "$stable"
-# Install links from before the rename (releases/latest/download/testrail-cli.tgz) keep working.
-legacy="$out/testrail-cli.tgz"
-cp "$asset" "$legacy"
-legacy_checksum="$out/testrail-cli.tgz.sha256"
-(cd "$out" && shasum -a 256 testrail-cli.tgz >"$legacy_checksum")
 # Checksum of the stable asset, which install.sh and install.ps1 verify before installing.
 checksum="$out/test-cli.tgz.sha256"
 (cd "$out" && shasum -a 256 test-cli.tgz >"$checksum")
@@ -155,9 +150,9 @@ printf '\nSHA-256 of `%s`: `%s`\n' "$asset_name" "$(cut -d' ' -f1 "$checksum")" 
 git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "test-cli $tag"
 git push -q origin "$tag"
 if [ "$state" != none ]; then
-  gh release upload "$tag" "$asset" "$stable" "$checksum" "$legacy" "$legacy_checksum" --clobber
+  gh release upload "$tag" "$asset" "$stable" "$checksum" --clobber
   gh release edit "$tag" --notes-file "$notes" --draft=false >/dev/null
   echo "uploaded the assets and refreshed the notes of existing $state release $tag"
 else
-  gh release create "$tag" "$asset" "$stable" "$checksum" "$legacy" "$legacy_checksum" --verify-tag --title "test-cli $tag" --notes-file "$notes"
+  gh release create "$tag" "$asset" "$stable" "$checksum" --verify-tag --title "test-cli $tag" --notes-file "$notes"
 fi
