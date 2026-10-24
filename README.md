@@ -126,6 +126,10 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail milestone list`              | Open milestones with due dates (`-D` for completed, `-n <limit>`, 25)                                                                                                          |
 | `testrail milestone view <M>`          | Dates, parent, refs and description                                                                                                                                            |
 | `testrail milestone create`            | New milestone (`-N <name>`; `-d`/`-f`, `-F`/`-U` start/due dates, `-M <M>` parent, `-r`)                                                                                       |
+| `testrail milestone edit <M>`          | Change the fields given (`-N`, `-d`/`-f`, `-F`/`-U`, `-M <M>`, `-r`); `-G` marks it started (`-F` makes it upcoming again)                                                     |
+| `testrail milestone close <M>`         | Mark it completed                                                                                                                                                              |
+| `testrail milestone reopen <M>`        | Mark a completed milestone open again                                                                                                                                          |
+| `testrail milestone delete <M>`        | Delete a milestone (its sub-milestones stay, without a parent)                                                                                                                 |
 | `testrail test list <R>`               | Tests in a run (`-s failed,retest`, `-a me`, `-n <limit>`, 100)                                                                                                                |
 | `testrail test view <T>`               | Status, steps and latest results (`-n <0-100>` results, 5)                                                                                                                     |
 | `testrail result add <T>`              | Add a result (`-O 1:passed,2:failed` step statuses, `-A <file>` attaches, `-B` files a Jira bug, `-a me` reassigns); or `-R <R> -C <C>`                                        |
@@ -185,7 +189,7 @@ pnpm check          # type-check, bundle, lint, format check
 pnpm add -g .       # once: use your local build as the global `testrail` (then `pnpm build` after changes)
 ```
 
-[AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs as evidence. Jira features go through the real `jira` CLI: it creates throwaway tickets in its configured project and deletes them when the run ends, even on Ctrl+C.
+[AGENTS.md](AGENTS.md) covers the layout and the repo rules. `pnpm regression` runs every command with short flags against your configured TestRail project; it deletes the case it creates and leaves its closed runs, plan and milestone as evidence. Jira features go through the real `jira` CLI: it creates throwaway tickets in its configured project and deletes them when the run ends, even on Ctrl+C.
 
 ## Releasing
 

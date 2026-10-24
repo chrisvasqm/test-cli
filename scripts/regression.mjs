@@ -357,6 +357,46 @@ check(
   run("milestone", "list", "-n", "250"),
   hasRows("milestones", (item) => item.id === milestone?.id),
 );
+check(
+  "milestone edit",
+  run("milestone", "edit", msRef, "-N", `Regression ${tag} edited`, "-U", "2030-02-28", "-d", "edited"),
+  (res) => okData(res) && res.out.data.name === `Regression ${tag} edited`,
+);
+check("milestone edit with no field", run("milestone", "edit", msRef), errCode("USAGE", 2));
+check("milestone edit -F -G", run("milestone", "edit", msRef, "-F", "2030-01-01", "-G"), errCode("USAGE", 2));
+check(
+  "MILESTONE_NOT_FOUND on edit",
+  run("milestone", "edit", "M999999", "-N", "x"),
+  errCode("MILESTONE_NOT_FOUND", 1),
+);
+const subMilestone = check(
+  "milestone create -F",
+  run("milestone", "create", "-N", `Regression ${tag} child`, "-F", "2030-01-01"),
+  okData,
+);
+const subRef = `M${subMilestone?.id}`;
+check(
+  "milestone edit -M -G",
+  run("milestone", "edit", subRef, "-M", msRef, "-G"),
+  (res) => okData(res) && res.out.data.parentId === milestone?.id && res.out.data.started === true,
+);
+check("milestone close", run("milestone", "close", subRef), (res) => okData(res) && res.out.data.completed);
+check(
+  "milestone reopen",
+  run("milestone", "reopen", subRef),
+  (res) => okData(res) && res.out.data.completed === false,
+);
+check(
+  "CONFIRM_REQUIRED on milestone delete",
+  run("milestone", "delete", subRef),
+  errCode("CONFIRM_REQUIRED", 2),
+);
+check(
+  "milestone delete",
+  run("milestone", "delete", subRef, "-y"),
+  (res) => okData(res) && res.out.data.deleted === true,
+);
+check("milestone gone", run("milestone", "view", subRef), errCode("MILESTONE_NOT_FOUND", 1));
 const section = check(
   "section create",
   run("section", "create", "-N", `Regression ${tag}`, "-s", sectionId, "-d", "regression"),
@@ -497,8 +537,15 @@ check(
 );
 check("case gone", run("case", "view", caseRef), errCode("CASE_NOT_FOUND", 1));
 
+// Last: the plan and run on it are done with the milestone.
+check(
+  "milestone close (kept)",
+  run("milestone", "close", msRef),
+  (res) => okData(res) && res.out.data.completed,
+);
+
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
 console.log(
-  `left behind: closed runs ${runRef}, ${jiraRunRef}, ${rerunRef}, closed plan ${planRef} and milestone ${msRef} (kept in TestRail as evidence)`,
+  `left behind: closed runs ${runRef}, ${jiraRunRef}, ${rerunRef}, closed plan ${planRef} and closed milestone ${msRef} (kept in TestRail as evidence)`,
 );
 process.exit(failures === 0 ? 0 : 1);
