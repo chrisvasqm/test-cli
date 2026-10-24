@@ -93,10 +93,13 @@ export function idOrJiraKey(
   return { kind: "key", key: jiraKey(raw, "<target>") };
 }
 
+/** A Jira key such as KAN-12, upper case. */
+export const isJiraKey = (text: string): boolean => /^[A-Z][A-Z0-9_]*-[1-9]\d*$/.test(text);
+
 /** "KAN-1 KAN-2" or "KAN-1,KAN-2" → ["KAN-1", "KAN-2"], upper-cased, duplicates dropped. */
 export function jiraKeys(raw: readonly string[]): string[] {
   const keys = raw.flatMap((part) => splitList(part)).map((key) => key.toUpperCase());
-  const bad = keys.filter((key) => !/^[A-Z][A-Z0-9_]*-[1-9]\d*$/.test(key));
+  const bad = keys.filter((key) => !isJiraKey(key));
   if (bad.length > 0) throw new InputError("USAGE", `Not a Jira key like KAN-12: ${bad.join(", ")}`);
   if (keys.length === 0) throw new InputError("USAGE", "Give at least one Jira key, e.g. KAN-12");
   return uniqueRefs(keys);
