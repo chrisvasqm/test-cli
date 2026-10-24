@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { caseIds, milestoneId } from "../../core/args.js";
+import { caseIds, milestoneId, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
@@ -7,7 +7,9 @@ import { printResult, table } from "../../core/output.js";
 import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
+import type { Run } from "../../core/testrail-types.js";
 import { RunService, type RunInput } from "../../services/run.service.js";
+import { TestService } from "../../services/test.service.js";
 import { UserService } from "../../services/user.service.js";
 import { fromJiraKey, jiraView, loadFromJira } from "../from-jira.js";
 import { renderCounts, toRunSummary } from "../render.js";
@@ -21,16 +23,29 @@ interface CreateOptions {
   refs?: string;
   milestone?: string;
   assign?: string;
+  fromRun?: string;
+  status?: string;
 }
+
+/** The statuses `--from-run` reruns when `--status` is not given. */
+const RERUN_STATUSES = "failed,retest,blocked";
 
 export function registerCreate(run: Command): void {
   run
     .command("create")
     .description("Create a run in the project (and suite) from the config")
-    .option("-N, --name <name>", "Run name (required unless --from-jira)")
+    .option("-N, --name <name>", "Run name (required unless --from-jira or --from-run)")
     .option(
       "-J, --from-jira <key>",
       'Run the cases linked to this Jira ticket; name "KAN-12: <summary>", key in refs (needs jira-cli)',
+    )
+    .option(
+      "-R, --from-run <run>",
+      'Rerun an earlier run\'s tests by status, same suite; name "<its name> (rerun)", its milestone',
+    )
+    .option(
+      "-s, --status <names>",
+      `With --from-run: these statuses, comma-separated (default: ${RERUN_STATUSES})`,
     )
     .option("-C, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
     .option("-d, --description <text>", "Description (Markdown)")
@@ -41,25 +56,33 @@ export function registerCreate(run: Command): void {
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
-      const key = fromJiraKey(opts.fromJira, opts.name, "--name");
+      const sourceId = fromRunId(opts);
+      const key = sourceId === undefined ? fromJiraKey(opts.fromJira, opts.name, "--name") : undefined;
       const description = await readOptionalText(opts.description, opts.file, "description");
       const { config, mode } = bootstrap(cmd);
       // Jira first, alone: it may prompt for `jira setup`. Then the TestRail lookups, all before the
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
       const { ticket, refs } = await loadFromJira(key, opts.refs);
+      const rerun = sourceId === undefined ? undefined : await rerunCases(sourceId, opts.status);
       const [caseList, statuses, assignee] = await Promise.all([
-        cases ?? (key === undefined ? undefined : linkedCases(config.projectId, config.suiteId, key)),
+        rerun?.caseIds ??
+          cases ??
+          (key === undefined ? undefined : linkedCases(config.projectId, config.suiteId, key)),
         new MetaService().statuses(),
         opts.assign === undefined
           ? undefined
           : new UserService().resolve(opts.assign, config.email, "--assign"),
       ]);
-      const name = opts.name ?? clip(`${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
+      const source = rerun?.source;
+      const name =
+        opts.name ?? clip(source ? `${source.name} (rerun)` : `${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
       const input: RunInput = { name, include_all: caseList === undefined };
-      if (config.suiteId !== undefined) input.suite_id = config.suiteId;
+      const suite = source?.suite_id ?? config.suiteId;
+      if (suite !== undefined) input.suite_id = suite;
       if (caseList) input.case_ids = caseList;
       if (description !== undefined) input.description = description;
-      if (milestone !== undefined) input.milestone_id = milestone;
+      const milestoneToSet = milestone ?? source?.milestone_id ?? undefined;
+      if (milestoneToSet !== undefined) input.milestone_id = milestoneToSet;
       if (refs.length > 0) input.refs = joinRefs(refs);
       if (assignee) input.assignedto_id = assignee.id;
       const created = await new RunService().add(config.projectId, input);
@@ -68,12 +91,14 @@ export function registerCreate(run: Command): void {
         includeAll: created.include_all,
         assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
         jira: jiraView(ticket),
+        fromRun: source ? { id: source.id, name: source.name, planId: source.plan_id } : null,
       };
       printResult(mode, view, () =>
         [
           `Created R${view.id}  ${view.name}`,
           table([
             ["Tests", renderCounts(view.counts)],
+            ...(view.fromRun ? [["From", fromRunLabel(view.fromRun)] as const] : []),
             ...(view.assignedTo ? [["Assigned", view.assignedTo.name] as const] : []),
             ["URL", view.url],
           ]),
@@ -97,3 +122,37 @@ export async function linkedCases(
   }
   return ids;
 }
+
+/** --from-run as an id; it builds its own case list, so --cases and --from-jira cannot join it. */
+function fromRunId(opts: CreateOptions): number | undefined {
+  if (opts.fromRun === undefined) {
+    if (opts.status !== undefined) throw new InputError("USAGE", "--status needs --from-run");
+    return undefined;
+  }
+  if (opts.cases !== undefined || opts.fromJira !== undefined) {
+    throw new InputError("USAGE", "Use --from-run alone, without --cases or --from-jira");
+  }
+  return runId(opts.fromRun);
+}
+
+/** The source run and the cases of its tests in those statuses; none would make an empty run. */
+async function rerunCases(
+  id: number,
+  status: string | undefined,
+): Promise<{ source: Run; caseIds: number[] }> {
+  const typed = status ?? RERUN_STATUSES;
+  const [source, statusIds] = await Promise.all([
+    new RunService().get(id),
+    new MetaService().statusIds(typed),
+  ]);
+  if (statusIds.length === 0) throw new InputError("USAGE", "Give at least one status name");
+  const { items } = await new TestService().list(id, statusIds, Number.MAX_SAFE_INTEGER);
+  const ids = [...new Set(items.map((item) => item.case_id))];
+  if (ids.length === 0) {
+    throw new InputError("NO_MATCHING_TESTS", `Run R${id} has no tests with status ${typed}.`);
+  }
+  return { source, caseIds: ids };
+}
+
+const fromRunLabel = (from: { id: number; name: string; planId: number | null }): string =>
+  `R${from.id}  ${from.name}${from.planId === null ? "" : ` (in plan R${from.planId})`}`;
