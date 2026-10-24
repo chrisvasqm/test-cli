@@ -1,10 +1,11 @@
 import type { Command } from "commander";
-import { caseIds, milestoneId, runId } from "../../core/args.js";
+import { caseIds, jiraKey, milestoneId, runId } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
-import { printResult, table } from "../../core/output.js";
-import { clip, joinRefs, MAX_NAME } from "../../core/text.js";
+import { jiraTickets, type JiraTicket, type JiraTickets, type TicketSource } from "../../core/jira.js";
+import { info, printResult, table } from "../../core/output.js";
+import { clip, fitRefs, joinRefs, MAX_NAME } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import type { Run } from "../../core/testrail-types.js";
@@ -17,6 +18,8 @@ import { renderCounts, toRunSummary, assigneeView } from "../render.js";
 interface CreateOptions {
   name?: string;
   fromJira?: string;
+  fromSprint?: string;
+  fromEpic?: string;
   cases?: string;
   description?: string;
   file?: string;
@@ -34,10 +37,21 @@ export function registerCreate(run: Command): void {
   run
     .command("create")
     .description("Create a run in the project (and suite) from the config")
-    .option("-N, --name <name>", "Run name (required unless --from-jira or --from-run)")
+    .option(
+      "-N, --name <name>",
+      "Run name (required unless --from-jira, --from-sprint, --from-epic or --from-run)",
+    )
     .option(
       "-J, --from-jira <key>",
       'Run the cases linked to this Jira ticket; name "KAN-12: <summary>", key in refs (needs jira-cli)',
+    )
+    .option(
+      "-w, --from-sprint <sprint>",
+      "Run the cases linked to a sprint's tickets (active, an id or a name); named after the sprint, linked keys in refs (needs jira-cli)",
+    )
+    .option(
+      "-K, --from-epic <key>",
+      'Run the cases linked to an epic\'s child tickets; name "KAN-5: <summary>", linked keys in refs (needs jira-cli)',
     )
     .option(
       "-R, --from-run <run>",
@@ -56,24 +70,32 @@ export function registerCreate(run: Command): void {
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
+      const tickets = ticketSource(opts);
       const sourceId = fromRunId(opts);
-      const key = sourceId === undefined ? fromJiraKey(opts.fromJira, opts.name, "--name") : undefined;
+      const key =
+        sourceId === undefined && tickets === undefined
+          ? fromJiraKey(opts.fromJira, opts.name, "--name")
+          : undefined;
       const description = await readOptionalText(opts.description, opts.file, "description");
       const { config, mode } = bootstrap(cmd);
       // Jira first, alone: it may prompt for `jira setup`. Then the TestRail lookups, all before the
       // write; statuses too, as a failed lookup after it would report an error for a run that exists.
-      const { ticket, refs } = await loadFromJira(key, opts.refs);
+      const { ticket, refs: given } = await loadFromJira(key, opts.refs);
+      const found = tickets === undefined ? undefined : await jiraTickets(tickets);
       const meta = new MetaService();
-      const [rerun, linked, statuses, assignee] = await Promise.all([
+      const [rerun, fromTickets, linked, statuses, assignee] = await Promise.all([
         sourceId === undefined ? undefined : rerunCases(sourceId, opts.status, meta),
+        found === undefined ? undefined : ticketCases(config.projectId, config.suiteId, found),
         key === undefined || cases ? undefined : linkedCases(config.projectId, config.suiteId, key),
         meta.statuses(),
         new UserService().resolveOptional(opts.assign, config.email, "--assign"),
       ]);
-      const caseList = rerun?.caseIds ?? cases ?? linked;
+      const caseList = rerun?.caseIds ?? fromTickets?.caseIds ?? cases ?? linked;
+      // Typed refs first; a sprint's keys can outgrow the refs field, so the rest are named instead.
+      const { refs, left } = fitRefs(given, fromTickets?.linked ?? []);
+      if (left.length > 0) info(`The run's refs have no room for ${left.join(", ")}.`);
       const source = rerun?.source;
-      const name =
-        opts.name ?? clip(source ? `${source.name} (rerun)` : `${ticket?.key}: ${ticket?.summary}`, MAX_NAME);
+      const name = opts.name ?? clip(defaultName(source, found, ticket), MAX_NAME);
       const input: RunInput = { name, include_all: caseList === undefined };
       const suite = source?.suite_id ?? config.suiteId;
       if (suite !== undefined) input.suite_id = suite;
@@ -89,6 +111,15 @@ export function registerCreate(run: Command): void {
         includeAll: created.include_all,
         assignedTo: assigneeView(assignee),
         jira: jiraView(ticket),
+        tickets:
+          found && fromTickets
+            ? {
+                from: found.kind,
+                name: found.name,
+                linked: fromTickets.linked,
+                unlinked: fromTickets.unlinked,
+              }
+            : null,
         fromRun: source ? { id: source.id, name: source.name, planId: source.plan_id } : null,
       };
       printResult(mode, view, () =>
@@ -97,6 +128,7 @@ export function registerCreate(run: Command): void {
           table([
             ["Tests", renderCounts(view.counts)],
             ...(view.fromRun ? [["From", fromRunLabel(view.fromRun)] as const] : []),
+            ...(view.tickets ? [["Tickets", ticketsLabel(view.tickets)] as const] : []),
             ...(view.assignedTo ? [["Assigned", view.assignedTo.name] as const] : []),
             ["URL", view.url],
           ]),
@@ -120,6 +152,59 @@ export async function linkedCases(
   }
   return ids;
 }
+
+/** --from-sprint or --from-epic; each builds its own case list, so it stands alone. */
+function ticketSource(opts: CreateOptions): TicketSource | undefined {
+  const flag =
+    opts.fromSprint !== undefined ? "--from-sprint" : opts.fromEpic !== undefined ? "--from-epic" : undefined;
+  if (flag === undefined) return undefined;
+  const others = [opts.fromSprint, opts.fromEpic, opts.fromJira, opts.fromRun, opts.cases];
+  if (others.filter((value) => value !== undefined).length > 1) {
+    throw new InputError(
+      "USAGE",
+      "Use one of --from-sprint and --from-epic, without --from-jira, --from-run or --cases",
+    );
+  }
+  if (opts.fromEpic !== undefined) return { epic: jiraKey(opts.fromEpic, "--from-epic") };
+  const sprint = opts.fromSprint?.trim() ?? "";
+  if (sprint === "") throw new InputError("USAGE", `${flag} needs active, a sprint id or a name`);
+  return { sprint };
+}
+
+/** The cases linked to the tickets, and which tickets have some; none at all would make an empty run. */
+async function ticketCases(projectId: number, suiteId: number | undefined, found: JiraTickets) {
+  const keys = found.tickets.map((item) => item.key);
+  const byKey = await new CaseService().linkedToEach(projectId, suiteId, keys);
+  if (byKey.size === 0) {
+    const what =
+      keys.length === 0
+        ? "has no tickets in jira-cli's project"
+        : `has no ticket linked to a case in this project${suiteId === undefined ? "" : " and suite"}`;
+    throw new InputError(
+      "NO_LINKED_CASES",
+      `${found.kind === "sprint" ? "Sprint" : "Epic"} ${found.name} ${what}. Link cases with \`testrail link add C12 KAN-12\`.`,
+    );
+  }
+  const ids = [...new Set([...byKey.values()].flat().map((item) => item.id))];
+  return {
+    caseIds: ids,
+    linked: keys.filter((key) => byKey.has(key)),
+    unlinked: keys.filter((key) => !byKey.has(key)),
+  };
+}
+
+function defaultName(
+  source: Run | undefined,
+  found: JiraTickets | undefined,
+  ticket: JiraTicket | undefined,
+): string {
+  if (source) return `${source.name} (rerun)`;
+  return found?.name ?? `${ticket?.key}: ${ticket?.summary}`;
+}
+
+const ticketsLabel = (tickets: { linked: string[]; unlinked: string[] }): string =>
+  tickets.linked.join(", ") +
+  (tickets.unlinked.length === 0 ? "" : `; no cases: ${tickets.unlinked.join(", ")}`);
 
 /** --from-run as an id; it builds its own case list, so --cases and --from-jira cannot join it. */
 function fromRunId(opts: CreateOptions): number | undefined {

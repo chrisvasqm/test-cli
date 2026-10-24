@@ -6,6 +6,7 @@ import { z } from "zod";
 import { CliError, InputError } from "./errors.js";
 import { info } from "./output.js";
 import { ask, closePrompts } from "./prompt.js";
+import { sameName } from "./text.js";
 
 /** jira-cli errors that `jira setup` fixes. */
 const NEEDS_SETUP = new Set(["CONFIG_MISSING", "CONFIG_INVALID", "AUTH_FAILED"]);
@@ -125,6 +126,83 @@ export function jiraTicket(key: string): Promise<JiraTicket> {
 /** A ticket's current status name, e.g. "In Progress". */
 export async function jiraStatus(key: string): Promise<string> {
   return (await callJira(viewArgs(key), z.object({ status: z.string() }), key)).status;
+}
+
+/** Where `jiraTickets` takes its tickets from: a sprint (id, name or "active"), an epic's children, or JQL. */
+export type TicketSource = { sprint: string } | { epic: string } | { jql: string };
+
+/** The fields of a `jira ticket list` issue this CLI uses; `statusCategory` is missing before jira-cli has it. */
+const listedSchema = z.object({
+  key: z.string().min(1),
+  summary: z.string(),
+  status: z.string(),
+  statusCategory: z.string().optional(),
+});
+export type JiraListed = z.infer<typeof listedSchema>;
+
+/** The tickets, the JQL that found them, and a name for them ("KAN Sprint 3", "KAN-5: Login"). */
+export interface JiraTickets {
+  kind: "sprint" | "epic" | "jql";
+  name: string;
+  jql: string;
+  tickets: JiraListed[];
+}
+
+/** jira-cli's search cap: `ticket list --limit` takes at most this many. */
+const MAX_TICKETS = 1000;
+
+/**
+ * The tickets of a sprint, an epic or a JQL query, through `jira ticket list` (jira-cli 2.1.0+), in
+ * key order. It always passes --jql, so done tickets are kept, and searches the project jira-cli is
+ * set up for. Past MAX_TICKETS the rest are left out, with a note.
+ */
+export async function jiraTickets(source: TicketSource): Promise<JiraTickets> {
+  const found = await ticketQuery(source);
+  const listed = await callJira(
+    ["--json", "ticket", "list", "--jql", found.jql, "--limit", String(MAX_TICKETS), "--order-by", "key ASC"],
+    z.object({ issues: z.array(listedSchema), hasMore: z.boolean() }),
+  );
+  if (listed.hasMore) info(`Only the first ${MAX_TICKETS} tickets of ${found.name} are used.`);
+  return { ...found, tickets: listed.issues };
+}
+
+async function ticketQuery(source: TicketSource): Promise<Omit<JiraTickets, "tickets">> {
+  if ("jql" in source) return { kind: "jql", name: source.jql, jql: source.jql };
+  if ("epic" in source) {
+    const epic = await jiraTicket(source.epic);
+    return { kind: "epic", name: `${epic.key}: ${epic.summary}`, jql: `parent = ${epic.key}` };
+  }
+  const sprint = await jiraSprint(source.sprint);
+  return { kind: "sprint", name: sprint.name, jql: `sprint = ${sprint.id}` };
+}
+
+const sprintsSchema = z.object({
+  sprints: z.array(z.object({ id: z.number().int(), name: z.string(), state: z.string() })),
+});
+
+/**
+ * A sprint of jira-cli's configured board: "active" (there must be exactly one), an id, or a name
+ * (any state, so a closed sprint counts). An id outside the board is used as is, named "Sprint <id>".
+ */
+async function jiraSprint(raw: string): Promise<{ id: number; name: string }> {
+  const typed = raw.trim();
+  const active = typed.toLowerCase() === "active";
+  const args = ["--json", "sprint", "list", "--state", active ? "active" : "all"];
+  if (/^\d+$/.test(typed)) {
+    const id = Number(typed);
+    const listed = await callJira(args, sprintsSchema).catch(() => ({ sprints: [] }));
+    return { id, name: listed.sprints.find((item) => item.id === id)?.name ?? `Sprint ${id}` };
+  }
+  const { sprints } = await callJira(args, sprintsSchema);
+  const matches = active ? sprints : sprints.filter((item) => sameName(item.name, typed));
+  const [only] = matches;
+  if (matches.length === 1 && only) return { id: only.id, name: only.name };
+  if (matches.length > 1) {
+    const list = matches.map((item) => `${item.id} ${item.name}`).join(", ");
+    throw new InputError("USAGE", `Several sprints match "${typed}" (${list}); give the sprint id.`);
+  }
+  if (active) throw new CliError("NO_ACTIVE_SPRINT", "jira-cli's board has no active sprint.");
+  throw new InputError("SPRINT_NOT_FOUND", `jira-cli's board has no sprint named "${typed}".`);
 }
 
 /** Adds a comment to a ticket; the text goes through stdin, not the command line. */

@@ -44,6 +44,24 @@ export function uniqueRefs(refs: readonly string[]): string[] {
   return refs.filter((ref) => !seen.has(ref.toUpperCase()) && seen.add(ref.toUpperCase()));
 }
 
+/** Longest refs field TestRail takes ("Field :refs is too long (250 characters at most)."). */
+export const MAX_REFS = 250;
+
+/** `extra` keys added after `refs` while the joined field stays within MAX_REFS; returns the extras left out. */
+export function fitRefs(
+  refs: readonly string[],
+  extra: readonly string[],
+): { refs: string[]; left: string[] } {
+  const kept = uniqueRefs(refs);
+  const left: string[] = [];
+  for (const key of uniqueRefs(extra)) {
+    if (kept.some((ref) => sameKey(ref, key))) continue;
+    if (joinRefs([...kept, key]).length <= MAX_REFS) kept.push(key);
+    else left.push(key);
+  }
+  return { refs: kept, left };
+}
+
 /** Refs or defects as TestRail stores them: "KAN-1,KAN-2". */
 export function joinRefs(refs: string | readonly string[] | undefined): string {
   return (typeof refs === "string" || refs === undefined ? splitList(refs) : refs).join(",");
