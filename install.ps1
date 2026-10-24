@@ -45,7 +45,8 @@ try {
   if (-not (Test-Path $installed)) { $installed = Join-Path (Join-Path $prefix "bin") "testrail" }
   Write-Host "Installed testrail $(& $installed -v). Run 'testrail setup' in your project directory to connect it to TestRail."
   $onPath = Get-Command testrail -ErrorAction SilentlyContinue
-  if (-not $onPath -or $onPath.Source -ne $installed) {
+  # npm also writes testrail.ps1 next to testrail.cmd, and PowerShell picks that one, so compare folders.
+  if (-not $onPath -or (Split-Path -Parent $onPath.Source) -ne (Split-Path -Parent $installed)) {
     Write-Host "Note: 'testrail' on your PATH is not $installed. Put $prefix first in PATH, or remove the other install." -ForegroundColor Yellow
   }
 }

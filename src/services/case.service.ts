@@ -1,7 +1,7 @@
-import { notFound } from "../core/errors.js";
+import { InputError, notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
 import { collectPages, type Collected } from "../core/paging.js";
-import { splitList } from "../core/text.js";
+import { sameKey, splitList } from "../core/text.js";
 import type { Case, CaseContent, Section } from "../core/testrail-types.js";
 
 export interface CaseFilter {
@@ -50,9 +50,19 @@ export class CaseService {
       Number.MAX_SAFE_INTEGER,
       this.http,
     );
-    return items.filter((item) =>
-      splitList(item.refs).some((ref) => ref.toUpperCase() === key.toUpperCase()),
-    );
+    return items.filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)));
+  }
+
+  /** Ids of the cases linked to `key`; NO_LINKED_CASES when there are none (a run of them would be empty). */
+  async linkedIds(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
+    const linked = await this.linkedTo(projectId, suiteId, key);
+    if (linked.length === 0) {
+      throw new InputError(
+        "NO_LINKED_CASES",
+        `No case in this project${suiteId === undefined ? "" : " and suite"} has ${key} in its refs. Link some with \`testrail link add C12 ${key}\`, or pass --cases.`,
+      );
+    }
+    return linked.map((item) => item.id);
   }
 
   section(id: number): Promise<Section> {

@@ -4,7 +4,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { jiraTicket } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
-import { splitList, uniqueRefs } from "../../core/text.js";
+import { clip, MAX_NAME, splitList, uniqueRefs } from "../../core/text.js";
 import { CaseService } from "../../services/case.service.js";
 import { MetaService } from "../../services/meta.service.js";
 import { jiraKey } from "../link/target.js";
@@ -37,7 +37,7 @@ export function registerCreate(testCase: Command): void {
     const ticket = key === undefined ? undefined : await jiraTicket(key);
     const fields: CaseFieldOptions = { ...opts };
     if (ticket) {
-      fields.title = opts.title ?? ticket.summary;
+      fields.title = opts.title ?? clip(ticket.summary, MAX_NAME);
       fields.refs = uniqueRefs([ticket.key, ...splitList(opts.refs)]).join(",");
     }
     const { input } = await toCaseInput(fields, new MetaService(), config.projectId);

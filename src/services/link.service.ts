@@ -1,3 +1,4 @@
+import { InputError } from "../core/errors.js";
 import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
 import { CaseService } from "./case.service.js";
 import { ResultService } from "./result.service.js";
@@ -21,11 +22,23 @@ export class LinkService {
     private readonly results = new ResultService(),
   ) {}
 
-  /** Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first. */
-  async keys(target: LinkTarget): Promise<string[]> {
+  /**
+   * Linked keys in TestRail's order; a test's are deduplicated across its results, oldest first.
+   * `forWrite` refuses a run inside a test plan: update_run cannot change those.
+   */
+  async keys(target: LinkTarget, forWrite = false): Promise<string[]> {
     if (target.kind === "case") return splitList((await this.cases.get(target.id)).refs);
-    if (target.kind === "run") return splitList((await this.runs.get(target.id)).refs);
-    await this.tests.get(target.id);
+    if (target.kind === "run") {
+      const run = await this.runs.get(target.id);
+      if (forWrite && run.plan_id !== null) {
+        throw new InputError(
+          "RUN_IN_PLAN",
+          `R${target.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,
+        );
+      }
+      return splitList(run.refs);
+    }
+    // get_results maps an unknown test to TEST_NOT_FOUND itself.
     const { items } = await this.tests.results(target.id, ALL_RESULTS);
     return uniqueRefs(items.toReversed().flatMap((result) => splitList(result.defects)));
   }
@@ -52,9 +65,4 @@ export class LinkService {
     if (target.kind === "case") await this.cases.update(target.id, input);
     else await this.runs.update(target.id, input);
   }
-}
-
-/** Keys compare ignoring case, as Jira does; the first spelling wins. */
-export function sameKey(left: string, right: string): boolean {
-  return left.toUpperCase() === right.toUpperCase();
 }

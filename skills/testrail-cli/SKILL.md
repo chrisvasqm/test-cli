@@ -125,6 +125,7 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `NO_LINKED_CASES`: no case has that key in its refs. Link cases first (`link add`) or pass `--cases`.
 - `RUN_CLOSED`: `--create-bug` checks first that the run is open and (with `--run --case`) that the case is in it (`CASE_NOT_IN_RUN`), so no bug is filed for a result TestRail would refuse.
 - After `--create-bug`, if the TestRail result then fails, the error message and `details.bug` name the bug that was created. Retry with `--defects <that key>`, not `--create-bug`, or you get a second bug.
+- `RUN_IN_PLAN`: the run belongs to a test plan; `link add|remove` cannot change its refs. Edit it in TestRail.
 - `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.
 - `CONFIRM_REQUIRED`: see the rule on deletes above.
 - `FILE_ERROR`: the `--file` path can't be read.

@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
 import { stdin } from "node:process";
+import { z } from "zod";
 import { CliError, InputError } from "./errors.js";
 import { info } from "./output.js";
 import { ask, closePrompts } from "./prompt.js";
@@ -18,20 +19,16 @@ interface JiraReply {
   error?: { code: string; message: string };
 }
 
-/** The fields of `jira ticket view` this CLI uses. */
-export interface JiraTicket {
-  key: string;
-  url: string;
-  type: string;
-  summary: string;
-  description: string | null;
-}
+/** At most this many jira-cli processes run at once (each makes its own Jira request). */
+const MAX_PARALLEL = 4;
+
+/** The fields of `jira ticket view` this CLI uses; other fields are dropped. */
+const ticketSchema = z.object({ key: z.string().min(1), url: z.string(), summary: z.string().min(1) });
+export type JiraTicket = z.infer<typeof ticketSchema>;
 
 /** `jira ticket create`'s data. */
-export interface JiraCreated {
-  key: string;
-  url: string;
-}
+const createdSchema = z.object({ key: z.string().min(1), url: z.string() });
+export type JiraCreated = z.infer<typeof createdSchema>;
 
 /**
  * Check that each key is a Jira ticket by running `jira --json ticket view` (jira-cli, its own
@@ -40,7 +37,13 @@ export interface JiraCreated {
  * runs again.
  */
 export async function checkJiraKeys(keys: readonly string[], setupOffered = false): Promise<boolean> {
-  const replies = await Promise.all(keys.map(async (key) => [key, await runJira(viewArgs(key))] as const));
+  const replies: (readonly [string, JiraReply | undefined])[] = [];
+  for (let start = 0; start < keys.length; start += MAX_PARALLEL) {
+    const batch = keys.slice(start, start + MAX_PARALLEL);
+    replies.push(
+      ...(await Promise.all(batch.map(async (key) => [key, await runJira(viewArgs(key))] as const))),
+    );
+  }
   if (replies.some(([, reply]) => reply === undefined)) {
     info("jira-cli is not installed, so the Jira keys were not checked.");
     return false;
@@ -66,7 +69,7 @@ export async function checkJiraKeys(keys: readonly string[], setupOffered = fals
 
 /** A Jira ticket through jira-cli, which must be installed. */
 export function jiraTicket(key: string): Promise<JiraTicket> {
-  return callJira<JiraTicket>(viewArgs(key), key);
+  return callJira(viewArgs(key), ticketSchema, key);
 }
 
 /**
@@ -85,7 +88,7 @@ export function createJiraBug(summary: string, description: string): Promise<Jir
     "--description-file",
     "-",
   ];
-  return callJira<JiraCreated>(args, undefined, description).catch((err: unknown) => {
+  return callJira(args, createdSchema, undefined, description).catch((err: unknown) => {
     // No JSON answer (timeout, crash): the ticket may exist, so a blind retry could file two.
     if (err instanceof CliError && err.code === "JIRA_ERROR" && isNoAnswer(err.details)) {
       throw new CliError(
@@ -112,7 +115,13 @@ function ticketNotFound(keys: string[]): CliError {
 }
 
 /** jira-cli's data, offering `jira setup` once when it is not set up. `key` names a looked-up ticket. */
-async function callJira<T>(args: string[], key?: string, input?: string, setupOffered = false): Promise<T> {
+async function callJira<T>(
+  args: string[],
+  schema: z.ZodType<T>,
+  key?: string,
+  input?: string,
+  setupOffered = false,
+): Promise<T> {
   const reply = await runJira(args, input);
   if (reply === undefined) {
     throw new CliError(
@@ -120,11 +129,18 @@ async function callJira<T>(args: string[], key?: string, input?: string, setupOf
       "This needs jira-cli (`jira`) on PATH: https://github.com/chrisvasqm/jira-cli",
     );
   }
-  if (reply.ok) return reply.data as T;
+  if (reply.ok) {
+    const parsed = schema.safeParse(reply.data);
+    if (parsed.success) return parsed.data;
+    throw new CliError("JIRA_ERROR", "jira-cli answered in an unexpected shape; update jira-cli.", {
+      code: "INVALID_RESPONSE",
+      issues: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`),
+    });
+  }
   const error = reply.error;
   if (key !== undefined && error?.code === "TICKET_NOT_FOUND") throw ticketNotFound([key]);
   if (!setupOffered && NEEDS_SETUP.has(error?.code ?? "") && (await offerSetup(error?.message))) {
-    return callJira<T>(args, key, input, true);
+    return callJira(args, schema, key, input, true);
   }
   throw new CliError("JIRA_ERROR", `jira-cli: ${error?.message ?? "no answer"}`, error);
 }
@@ -177,13 +193,16 @@ function runJira(args: string[], input?: string): Promise<JiraReply | undefined>
 /**
  * How to start jira-cli without a shell. On Windows npm installs a `jira.cmd` shim, which Node can
  * only run through cmd.exe, where ticket text could act as commands; so the shim's script runs
- * with node instead.
+ * with node instead. A real `jira.exe` (e.g. a Volta shim) runs as it is.
  */
 function jiraCommand(): { file: string; prefix: string[] } | undefined {
   if (process.platform !== "win32") return { file: "jira", prefix: [] };
   for (const dir of (process.env["PATH"] ?? "").split(delimiter)) {
+    if (!dir) continue;
+    const exe = join(dir, "jira.exe");
+    if (existsSync(exe)) return { file: exe, prefix: [] };
     const shim = join(dir, "jira.cmd");
-    if (!dir || !existsSync(shim)) continue;
+    if (!existsSync(shim)) continue;
     const script = /"%~?dp0%?\\([^"]+\.[cm]?js)"/i.exec(readFileSync(shim, "utf8"))?.[1];
     const path = script ? join(dirname(shim), script) : undefined;
     if (path && existsSync(path)) return { file: process.execPath, prefix: [path] };

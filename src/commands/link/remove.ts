@@ -2,7 +2,8 @@ import type { Command } from "commander";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { printResult } from "../../core/output.js";
-import { LinkService, sameKey } from "../../services/link.service.js";
+import { sameKey } from "../../core/text.js";
+import { LinkService } from "../../services/link.service.js";
 import { jiraKeys, linkTarget, partition, renderKeys, targetName, targetUrl } from "./target.js";
 
 export function registerRemove(link: Command): void {
@@ -20,7 +21,7 @@ export function registerRemove(link: Command): void {
       const keys = jiraKeys(rawKeys);
       const { config, mode } = bootstrap(cmd);
       const links = new LinkService();
-      const current = await links.keys(target);
+      const current = await links.keys(target, true);
       const { linked: removed, unlinked: notLinked } = partition(keys, current);
       const left = current.filter((key) => !removed.some((other) => sameKey(other, key)));
       if (removed.length > 0) await links.setRefs(target, left);

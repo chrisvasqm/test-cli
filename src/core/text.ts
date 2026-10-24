@@ -13,6 +13,19 @@ export function splitList(raw: string | null | undefined): string[] {
     .filter(Boolean);
 }
 
+/** Keys compare ignoring case, as Jira does. */
+export function sameKey(left: string, right: string): boolean {
+  return left.toUpperCase() === right.toUpperCase();
+}
+
+/** Longest TestRail run name or case title. */
+export const MAX_NAME = 250;
+
+/** Text cut to `max` characters, ending in "…" when cut (TestRail names and titles hold 250). */
+export function clip(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+
 /** Keys without repeats, compared ignoring case; the first spelling wins. */
 export function uniqueRefs(refs: readonly string[]): string[] {
   const seen = new Set<string>();
