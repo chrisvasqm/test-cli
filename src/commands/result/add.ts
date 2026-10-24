@@ -29,15 +29,15 @@ export function registerAdd(result: Command): void {
   result
     .command("add [test]")
     .description("Add a result to a test (T45), or to a case in a run with --run and --case")
-    .option("--status <name>", "Status, e.g. passed, failed, blocked, retest")
-    .option("--comment <text>", "Comment (Markdown)")
-    .option("--file <path>", "Read the comment from a file (- reads stdin)")
-    .option("--defects <keys>", "Defect keys, comma-separated (e.g. KAN-2,KAN-3)")
-    .option("--elapsed <time>", "Time spent, e.g. 1m 45s")
-    .option("--build <version>", "Build or version tested (--version is the CLI's own)")
-    .option("--run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
-    .option("--case <case>", "Case in that run, e.g. C12")
-    .option("--create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
+    .option("-s, --status <name>", "Status, e.g. passed, failed, blocked, retest")
+    .option("-m, --comment <text>", "Comment (Markdown)")
+    .option("-f, --file <path>", "Read the comment from a file (- reads stdin)")
+    .option("-d, --defects <keys>", "Defect keys, comma-separated (e.g. KAN-2,KAN-3)")
+    .option("-e, --elapsed <time>", "Time spent, e.g. 1m 45s")
+    .option("-b, --build <version>", "Build or version tested (--version is the CLI's own)")
+    .option("-R, --run <run>", "Run of the case, e.g. R3 (with --case, instead of a test id)")
+    .option("-C, --case <case>", "Case in that run, e.g. C12")
+    .option("-B, --create-bug", "Create a Jira Bug first and add its key to --defects (needs jira-cli)")
     .action(async (rawTest: string | undefined, opts: AddOptions, cmd: Command) => {
       const target = parseTarget(rawTest, opts);
       const comment = await readOptionalText(opts.comment, opts.file, "comment");

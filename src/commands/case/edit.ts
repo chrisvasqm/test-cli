@@ -12,7 +12,7 @@ export function registerEdit(testCase: Command): void {
   const cmd = testCase
     .command("edit <case>")
     .description("Change a case's fields, e.g. C12; fields left out stay as they are")
-    .option("--title <title>", "New title");
+    .option("-t, --title <title>", "New title");
   addCaseFieldOptions(cmd).action(async (rawId: string, opts: CaseFieldOptions, command: Command) => {
     const id = caseId(rawId);
     const { config, mode } = bootstrap(command);

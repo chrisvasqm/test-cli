@@ -25,16 +25,16 @@ export function registerCreate(run: Command): void {
   run
     .command("create")
     .description("Create a run in the project (and suite) from the config")
-    .option("--name <name>", "Run name (required unless --from-jira)")
+    .option("-N, --name <name>", "Run name (required unless --from-jira)")
     .option(
-      "--from-jira <key>",
+      "-J, --from-jira <key>",
       'Run the cases linked to this Jira ticket; name "KAN-12: <summary>", key in refs (needs jira-cli)',
     )
-    .option("--cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
-    .option("--description <text>", "Description (Markdown)")
-    .option("--file <path>", "Read the description from a file (- reads stdin)")
-    .option("--refs <keys>", "References, comma-separated (e.g. KAN-1)")
-    .option("--milestone <id>", "Milestone id")
+    .option("-C, --cases <ids>", "Only these cases, comma-separated (e.g. C1,C2); default: every case")
+    .option("-d, --description <text>", "Description (Markdown)")
+    .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
+    .option("-r, --refs <keys>", "References, comma-separated (e.g. KAN-1)")
+    .option("-M, --milestone <id>", "Milestone id")
     .action(async (opts: CreateOptions, cmd: Command) => {
       const cases = opts.cases === undefined ? undefined : caseIds(opts.cases);
       const milestone =

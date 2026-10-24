@@ -19,7 +19,7 @@ export function registerView(test: Command): void {
     .command("view <test>")
     .description("Show a test's status, steps and latest results, e.g. T45")
     .option(
-      "--results <n>",
+      "-n, --results <n>",
       `How many of the latest results to show (0 for none, at most ${MAX_RESULTS})`,
       "5",
     )

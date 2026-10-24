@@ -15,8 +15,8 @@ export function registerList(run: Command): void {
   run
     .command("list")
     .description("List open runs in the project, newest first")
-    .option("--completed", "List closed runs instead")
-    .option("--limit <n>", "Most runs to show", "25")
+    .option("-D, --completed", "List closed runs instead")
+    .option("-n, --limit <n>", "Most runs to show", "25")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);

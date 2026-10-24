@@ -13,7 +13,7 @@ export function registerSection(program: Command): void {
   section
     .command("list")
     .description("List sections in the project (and suite) from the config, nested by indent")
-    .option("--limit <n>", "Most sections to show", "250")
+    .option("-n, --limit <n>", "Most sections to show", "250")
     .action(async (opts: ListOptions, cmd: Command) => {
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);

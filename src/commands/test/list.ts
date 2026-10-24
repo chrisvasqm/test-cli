@@ -14,8 +14,8 @@ export function registerList(test: Command): void {
   test
     .command("list <run>")
     .description("List the tests in a run, e.g. R3")
-    .option("--status <names>", "Only these statuses, comma-separated (e.g. failed,retest)")
-    .option("--limit <n>", "Most tests to show", "100")
+    .option("-s, --status <names>", "Only these statuses, comma-separated (e.g. failed,retest)")
+    .option("-n, --limit <n>", "Most tests to show", "100")
     .action(async (rawRun: string, opts: ListOptions, cmd: Command) => {
       const run = runId(rawRun);
       const limit = listLimit(opts.limit);

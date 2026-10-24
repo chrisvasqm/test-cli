@@ -16,7 +16,7 @@ export function registerUse(project: Command): void {
   project
     .command("use <project>")
     .description("Save the project (and suite) that commands use, e.g. P2")
-    .option("--suite <suite>", "Suite for multi-suite projects, e.g. S3 (not needed with one suite)")
+    .option("-S, --suite <suite>", "Suite for multi-suite projects, e.g. S3 (not needed with one suite)")
     .action(async (rawProject: string, opts: UseOptions, cmd: Command) => {
       const id = projectId(rawProject);
       const wantedSuite = opts.suite === undefined ? undefined : suiteId(opts.suite);

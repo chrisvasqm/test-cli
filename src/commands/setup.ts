@@ -48,7 +48,7 @@ export function registerSetup(program: Command): void {
   program
     .command("setup")
     .description(`Create ${CONFIG_FILE} in the current directory by prompting for TestRail details`)
-    .option("--global", `Write to ${GLOBAL_CONFIG} instead`)
+    .option("-g, --global", `Write to ${GLOBAL_CONFIG} instead`)
     .option("-y, --yes", "Overwrite an existing config without asking")
     .action(async (opts: SetupOptions, cmd: Command) => {
       const all = globalOptions(cmd);
