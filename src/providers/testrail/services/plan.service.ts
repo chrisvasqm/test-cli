@@ -1,7 +1,7 @@
 import { notFound, notFoundAs } from "../errors.js";
 import type { HttpClient } from "../http.js";
 import { collectPages } from "../paging.js";
-import { type Collected } from "../../../core/paging.js";
+import type { Collected } from "../../../core/paging.js";
 import type { Plan, PlanEntry } from "../types.js";
 
 /** Which cases a run gets and who it is assigned to. */

@@ -1,14 +1,13 @@
 import type { Command } from "commander";
-import { provider } from "../../providers/index.js";
+import { provider, type Provider } from "../../providers/index.js";
 import { z } from "zod";
 import { caseId, runId } from "../../providers/testrail/ids.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readText } from "../../core/input.js";
 import { grid, printResult } from "../../core/output.js";
-import { type MetaService } from "../../providers/testrail/services/meta.service.js";
 import type { Step } from "../../providers/testrail/types.js";
-import { type ResultInput } from "../../providers/testrail/services/result.service.js";
+import type { ResultInput } from "../../providers/testrail/services/result.service.js";
 import type { User } from "../../providers/testrail/types.js";
 import { toResult } from "../render.js";
 import { toResultInput } from "./fields.js";
@@ -107,7 +106,7 @@ function stepResults(
   stepsOf: Map<number, Step[] | null | undefined>,
   id: number,
   run: number,
-  meta: MetaService,
+  meta: Provider["meta"],
   where: string,
 ) {
   if (!stepsOf.has(id))

@@ -7,7 +7,7 @@ import { checkUploads, readOptionalText, type Upload } from "../../core/input.js
 import { createJiraBug, type JiraCreated } from "../../core/jira.js";
 import { printResult } from "../../core/output.js";
 import type { Status, Step, Test } from "../../providers/testrail/types.js";
-import { type ResultInput, type ResultTarget } from "../../providers/testrail/services/result.service.js";
+import type { ResultInput, ResultTarget } from "../../providers/testrail/services/result.service.js";
 import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
 import { renderResult, testUrl, toResult, assigneeView } from "../render.js";
 import type { Config } from "../../core/config.js";

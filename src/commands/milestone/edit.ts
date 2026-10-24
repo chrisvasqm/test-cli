@@ -7,7 +7,7 @@ import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
-import { type MilestoneUpdate } from "../../providers/testrail/services/milestone.service.js";
+import type { MilestoneUpdate } from "../../providers/testrail/services/milestone.service.js";
 import { milestoneRows, toMilestoneView } from "./render.js";
 
 interface EditOptions {

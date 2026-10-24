@@ -6,7 +6,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { checkUploads } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { type AttachTarget } from "../../providers/testrail/services/attachment.service.js";
+import type { AttachTarget } from "../../providers/testrail/services/attachment.service.js";
 import { targetName, targetUrl } from "../link/target.js";
 import { attached, renderAttached } from "./files.js";
 

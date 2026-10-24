@@ -7,6 +7,8 @@ import { globalOptions, outputMode } from "../core/bootstrap.js";
 import {
   CONFIG_FILE,
   configFileIn,
+  globalConfigFile,
+  isGlobalConfig,
   GLOBAL_CONFIG,
   configSchema,
   isGitignored,
@@ -61,10 +63,10 @@ export function registerSetup(program: Command): void {
       const mode = outputMode(cmd);
       if (opts.global && all.config)
         throw new InputError("USAGE", "Use either --global or --config, not both.");
-      // An existing config here is rewritten in place, even under the old name: the repo's .gitignore
-      // may list only that name, and a second file would shadow the first.
+      // An existing config (here, or the global one) is rewritten in place, even under the old name:
+      // a repo's .gitignore may list only that name, and a second file would shadow the first.
       const target = opts.global
-        ? GLOBAL_CONFIG
+        ? (globalConfigFile() ?? GLOBAL_CONFIG)
         : all.config
           ? resolve(all.config)
           : (configFileIn(process.cwd()) ?? resolve(CONFIG_FILE));
@@ -119,7 +121,7 @@ async function runSetup(path: string, mode: OutputMode): Promise<void> {
   });
   saveConfig(path, config);
 
-  const ignored = path === GLOBAL_CONFIG ? undefined : isGitignored(path);
+  const ignored = isGlobalConfig(path) ? undefined : isGitignored(path);
   const warning =
     ignored === false
       ? `${basename(path)} is not ignored by git (add it to .gitignore, or \`git rm --cached\` it if tracked) so the API key is never committed.`

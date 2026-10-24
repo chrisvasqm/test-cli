@@ -5,7 +5,7 @@ import { listLimit } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { grid, moreHint, printResult } from "../../core/output.js";
 import { nameOf } from "../../providers/testrail/lookup.js";
-import { type OpenRun } from "../../providers/testrail/services/run.service.js";
+import type { OpenRun } from "../../providers/testrail/services/run.service.js";
 import { assigneeView } from "../render.js";
 
 interface TodoOptions {
@@ -66,11 +66,13 @@ export function registerTodo(test: Command): void {
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
       const { config, mode } = bootstrap(cmd);
       const { meta } = provider();
+      // Read before any request starts, so a provider without milestones fails cleanly.
+      const milestones = milestone === undefined ? undefined : provider().milestones;
       const [user, statusIds, runs] = await Promise.all([
         provider().users.resolve(opts.assigned ?? "me", config.email, "--assigned"),
         opts.status === undefined ? meta.openStatusIds() : meta.statusIds(opts.status),
         provider().runs.allOpen(config.projectId, milestone),
-        milestone === undefined ? undefined : provider().milestones.get(milestone),
+        milestone === undefined ? undefined : milestones?.get(milestone),
       ]);
       const byRun = new Map(runs.map((item) => [item.run.id, runView(item)]));
       const [found, statuses] = await Promise.all([

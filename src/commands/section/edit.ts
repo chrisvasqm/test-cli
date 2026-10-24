@@ -5,7 +5,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
-import { type SectionInput } from "../../providers/testrail/services/section.service.js";
+import type { SectionInput } from "../../providers/testrail/services/section.service.js";
 import { toSectionView } from "./render.js";
 
 interface EditOptions {
