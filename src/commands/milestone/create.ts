@@ -5,7 +5,7 @@ import { readOptionalText } from "../../core/input.js";
 import { printResult, table } from "../../core/output.js";
 import { joinRefs, splitList, uniqueRefs } from "../../core/text.js";
 import { MilestoneService, type MilestoneInput } from "../../services/milestone.service.js";
-import { milestoneRows, toMilestoneView } from "./view.js";
+import { milestoneRows, toMilestoneView } from "./render.js";
 
 interface CreateOptions {
   name?: string;
