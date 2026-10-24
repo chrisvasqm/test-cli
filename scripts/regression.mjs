@@ -146,6 +146,21 @@ check(
   run("project", "list"),
   (res) => okData(res) && res.out.data.projects.some((item) => item.current),
 );
+const keysAre = (keys) => (res) => okData(res) && res.out.data.keys.join() === keys;
+check("link add case", run("link", "add", caseRef, "REG-2", "reg-1", "--no-check"), keysAre("REG-1,REG-2"));
+check("link remove case", run("link", "remove", caseRef, "REG-1"), keysAre("REG-2"));
+check("link add run", run("link", "add", runRef, "REG-3", "--no-check"), keysAre("REG-3"));
+check(
+  "link add test",
+  run("link", "add", testRef, "REG-4", "--no-check"),
+  (res) => okData(res) && res.out.data.keys.includes("REG-4"),
+);
+check(
+  "link list test",
+  run("link", "list", testRef),
+  (res) => okData(res) && res.out.data.keys.includes("REG-4"),
+);
+check("LINK_NOT_REMOVABLE", run("link", "remove", testRef, "REG-4"), errCode("LINK_NOT_REMOVABLE", 2));
 check("USAGE on bad id", run("case", "view", "X1"), errCode("USAGE", 2));
 check("CASE_NOT_FOUND", run("case", "view", "C999999999"), errCode("CASE_NOT_FOUND", 1));
 check("UNKNOWN_STATUS", run("test", "list", runRef, "--status", "nope"), errCode("UNKNOWN_STATUS", 2));

@@ -57,9 +57,15 @@ testrail test view T45 [--results <0-100>]   # status, steps, latest results (5)
 testrail result add T45 --status failed [--comment <text> | --file <path|->] [--defects KAN-2] [--elapsed "1m 30s"] [--build 1.2.0]
 testrail result add --run R3 --case C12 --status passed …   # when you know the case, not the test
 testrail result import R3 --file results.json               # many results in one request (- reads stdin)
+
+testrail link list C12|R3|T45                # Jira keys linked to a case or run (refs) or a test (its results' defects)
+testrail link add C12 KAN-1 [KAN-2 …] [--no-check]   # adds to the refs; on a test, adds a status-less result "Linked KAN-1"
+testrail link remove C12 KAN-1 [KAN-2 …]     # cases and runs only
 ```
 
-Status, type and priority names match TestRail's labels, ignoring case (`failed`, `Smoke & Sanity`, `high`). A result needs at least one of `--status`, `--comment` or `--defects`.
+`link` needs the letter (`C12`, not `12`). Keys are upper-cased and must look like `KAN-12`; ones already linked are skipped. `link add` first checks each new key with jira-cli (`jira --json ticket view`) when `jira` is on PATH, and skips the check with a note on stderr when it is not. A test's link is a result, so it is permanent: add one only when the user asked.
+
+Status, type and priority names match TestRail's labels, ignoring case (`failed`, `Smoke & Sanity`, `high`). A result needs `--status` or `--comment`; `--defects` alone is refused.
 
 `result import` takes a JSON array of 1 to 1000 entries:
 
@@ -91,6 +97,9 @@ All entries are added in one request, so either all land or none do.
 - `test view`: `{id, title, url, caseId, runId, status, refs, preconditions, steps, expected, stepList, results: {shown: [result], hasMore}}`
 - `result add`: a result plus `{testId, url}`
 - `result import`: `{runId, added: [{id, testId, caseId, status}]}`
+- `link list`: `{target, keys, url}` (`target` is e.g. `"C12"`)
+- `link add`: `{target, keys, added, already, checked, url}` (`keys` is the full list after the change; `checked` is true when jira-cli confirmed the new keys)
+- `link remove`: `{target, keys, removed, notLinked, url}`
 
 A `result` is `{id, status, comment, defects, elapsed, version, created}`; `status` is null for a comment-only result. `counts` maps status labels to numbers of tests (`{"Passed": 3, "Failed": 1}`), leaving out zeros. `refs` and `defects` are arrays of keys. Times are ISO 8601 strings. If `hasMore` is true, raise `--limit`.
 
@@ -103,6 +112,9 @@ A `result` is `{id, status, comment, defects, elapsed, version, created}`; `stat
 - `UNKNOWN_STATUS`, `UNKNOWN_PRIORITY`, `UNKNOWN_TYPE`: `details` lists the valid names. Pick one.
 - `SUITE_REQUIRED`, `SUITE_NOT_FOUND`, `NO_SUITES`: `details` lists the project's suites (`S<id>  name`). Pass one with `--suite`.
 - `NO_STEPS_TEMPLATE`: the project has no steps template; use `--steps` and `--expected`.
+- `JIRA_TICKET_NOT_FOUND`: `details` lists the keys Jira does not have. Nothing was linked. Check the keys with the user.
+- `JIRA_CHECK_FAILED`: jira-cli is installed but failed (e.g. no `.jira-cli.json`); `details` is its error. Nothing was linked. Ask the user to fix jira-cli, or pass `--no-check` if they say so.
+- `LINK_NOT_REMOVABLE`: a test's links are result defects, which TestRail cannot change.
 - `CONFIRM_REQUIRED`: see the rule on deletes above.
 - `FILE_ERROR`: the `--file` path can't be read.
 - `FORBIDDEN`, `TESTRAIL_ERROR`: TestRail refused. Report the message, which names the bad field.

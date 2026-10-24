@@ -38,8 +38,9 @@ export async function toResultInput(
     input.elapsed = fields.elapsed.trim();
   }
   if (fields.version !== undefined) input.version = fields.version;
-  if (input.status_id === undefined && input.comment === undefined && input.defects === undefined) {
-    throw new InputError("USAGE", `${where}: give a status, a comment or defects`);
+  // TestRail: "One of Status ID, Assigned To or Comment is required"; defects alone are refused.
+  if (input.status_id === undefined && input.comment === undefined) {
+    throw new InputError("USAGE", `${where}: give a status or a comment`);
   }
   return input;
 }

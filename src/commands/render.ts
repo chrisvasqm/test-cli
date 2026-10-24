@@ -30,6 +30,7 @@ export function localTime(iso: string | null): string {
 
 export const caseUrl = (config: Config, id: number): string =>
   `${config.baseUrl}/index.php?/cases/view/${id}`;
+export const runUrl = (config: Config, id: number): string => `${config.baseUrl}/index.php?/runs/view/${id}`;
 export const testUrl = (config: Config, id: number): string =>
   `${config.baseUrl}/index.php?/tests/view/${id}`;
 
