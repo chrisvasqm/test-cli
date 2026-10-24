@@ -197,6 +197,8 @@ export interface Status {
   label: string;
   is_system: boolean;
   is_untested: boolean;
+  /** Done (Passed, Blocked, Failed); Untested and Retest are not. Older servers may leave it out. */
+  is_final?: boolean;
 }
 
 export interface Named {
