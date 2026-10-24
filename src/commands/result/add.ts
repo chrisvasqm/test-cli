@@ -12,7 +12,7 @@ import { ResultService, type ResultInput, type ResultTarget } from "../../servic
 import { UserService } from "../../services/user.service.js";
 import { TestService } from "../../services/test.service.js";
 import { clip, joinRefs, MAX_SUMMARY, splitList } from "../../core/text.js";
-import { renderResult, testUrl, toResult } from "../render.js";
+import { renderResult, testUrl, toResult, assigneeView } from "../render.js";
 import type { Config } from "../../core/config.js";
 import { toResultInput } from "./fields.js";
 import { parseStepList, toStepResults } from "./steps.js";
@@ -66,9 +66,7 @@ export function registerAdd(result: Command): void {
       // Statuses and the assignee before the write: a failed lookup after it would report an error for a saved result.
       const [statuses, assignee] = await Promise.all([
         meta.statuses(),
-        opts.assign === undefined
-          ? undefined
-          : new UserService().resolve(opts.assign, config.email, "--assign"),
+        new UserService().resolveOptional(opts.assign, config.email, "--assign"),
       ]);
       const input = await toResultInput(
         { ...opts, comment, version: opts.build, assignedToId: assignee?.id },
@@ -97,7 +95,7 @@ export function registerAdd(result: Command): void {
         ...toResult(added, statuses),
         testId: added.test_id,
         bug: bug ? { key: bug.key, url: bug.url } : null,
-        assignedTo: assignee ? { id: assignee.id, name: assignee.name } : null,
+        assignedTo: assigneeView(assignee),
         attachments: attached(uploads, ids),
         url: testUrl(config, added.test_id),
       };

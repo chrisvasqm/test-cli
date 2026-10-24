@@ -1,6 +1,6 @@
 import { notFound } from "../core/errors.js";
 import { HttpClient } from "../core/http.js";
-import { collectPages, type Collected } from "../core/paging.js";
+import { collectPages, inBatches, type Collected } from "../core/paging.js";
 import { hasRef } from "../core/text.js";
 import type { Case, CaseContent } from "../core/testrail-types.js";
 
@@ -36,6 +36,11 @@ export interface CaseInput extends CaseContent {
  */
 export class CaseService {
   constructor(private readonly http = HttpClient.get()) {}
+
+  /** Every case, a few at a time; the first unknown one fails with CASE_NOT_FOUND. */
+  getMany(ids: number[]): Promise<Case[]> {
+    return inBatches(ids, (id) => this.get(id));
+  }
 
   get(id: number): Promise<Case> {
     return this.http.get<Case>(`get_case/${id}`).catch(notFound.case(id));

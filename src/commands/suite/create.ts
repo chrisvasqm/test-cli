@@ -1,6 +1,6 @@
 import type { Command } from "commander";
+import { requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
 import { SuiteService, type SuiteInput } from "../../services/suite.service.js";
@@ -19,7 +19,7 @@ export function registerCreate(suite: Command): void {
     .option("-d, --description <text>", "Description (Markdown)")
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .action(async (opts: CreateOptions, cmd: Command) => {
-      if (!opts.name?.trim()) throw new InputError("USAGE", "Give the suite a name with --name");
+      requireName(opts.name, "suite");
       const description = await readOptionalText(opts.description, opts.file, "description");
       const { config, mode } = bootstrap(cmd);
       const input: SuiteInput = { name: opts.name };

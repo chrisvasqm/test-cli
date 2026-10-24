@@ -1,7 +1,6 @@
 import type { Command } from "commander";
-import { milestoneId } from "../../core/args.js";
+import { milestoneId, requireName } from "../../core/args.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { InputError } from "../../core/errors.js";
 import { readOptionalText } from "../../core/input.js";
 import { printResult } from "../../core/output.js";
 import { MetaService } from "../../services/meta.service.js";
@@ -26,9 +25,7 @@ export function registerCreate(plan: Command): void {
     .option("-f, --file <path>", "Read the description from a file (- reads stdin)")
     .option("-M, --milestone <milestone>", "Milestone, e.g. M3");
   entryOptions(create).action(async (opts: CreateOptions, cmd: Command) => {
-    if (opts.name === undefined || !opts.name.trim()) {
-      throw new InputError("USAGE", "Give the plan a name with --name");
-    }
+    requireName(opts.name, "plan");
     const input: PlanInput = { name: opts.name };
     if (opts.milestone !== undefined) input.milestone_id = milestoneId(opts.milestone);
     const parsed = parseEntry(opts);
