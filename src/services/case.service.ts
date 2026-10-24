@@ -78,6 +78,30 @@ export class CaseService {
     return cases.map((item) => item.id);
   }
 
+  /**
+   * The cases linked to each key (keys without any are left out). One sweep of every case in the
+   * project (and suite), matched here: get_cases takes a single refs filter, so this stays a few
+   * pages however many keys there are.
+   */
+  async linkedToEach(
+    projectId: number,
+    suiteId: number | undefined,
+    keys: readonly string[],
+  ): Promise<Map<string, Case[]>> {
+    const { items } = await this.list({
+      projectId,
+      suiteId,
+      sectionId: undefined,
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+    const linked = new Map<string, Case[]>();
+    for (const key of keys) {
+      const cases = items.filter((item) => hasRef(item.refs, key));
+      if (cases.length > 0) linked.set(key, cases);
+    }
+    return linked;
+  }
+
   add(sectionId: number, input: CaseInput & { title: string }): Promise<Case> {
     return this.http.post<Case>(`add_case/${sectionId}`, input).catch(notFound.section(sectionId));
   }

@@ -51,7 +51,8 @@ const nextKey = (key) => key.replace(/\d+$/, (num) => String(Number(num) + 1));
 const noTicket = (key) => jira("ticket", "view", key, "--comments", "0").error?.code === "TICKET_NOT_FOUND";
 
 process.on("exit", () => {
-  const left = tickets.filter((key) => jira("ticket", "delete", key, "--yes").ok !== true);
+  // Newest first, so a subtask goes before its parent.
+  const left = tickets.toReversed().filter((key) => jira("ticket", "delete", key, "--yes").ok !== true);
   console.log(`deleted Jira tickets: ${tickets.filter((key) => !left.includes(key)).join(", ") || "none"}`);
   if (left.length > 0) {
     console.log(`FAIL could not delete Jira tickets: ${left.join(", ")}`);
@@ -236,6 +237,28 @@ check(
 );
 check("link list <bad key>", run("link", "list", "KAN-0"), errCode("USAGE", 2));
 check("NO_LINKED_CASES", run("run", "create", "-J", K1), errCode("NO_LINKED_CASES", 2));
+// An epic's children: a subtask of K2, linked to the from-jira case.
+const child = jira(
+  "ticket",
+  "create",
+  "--type",
+  "Subtask",
+  "--parent",
+  K2,
+  "--summary",
+  `Regression ${tag} child (delete me)`,
+).data?.key;
+if (child) tickets.push(child);
+check("link add <child>", run("link", "add", jiraCaseRef, child ?? missing), okData);
+const epicRun = check(
+  "run create --from-epic",
+  run("run", "create", "-K", K2),
+  (res) => okData(res) && res.out.data.tickets.from === "epic" && res.out.data.tickets.linked.includes(child),
+)?.id;
+if (epicRun) check("delete the from-epic run", run("run", "delete", `R${epicRun}`, "-y"), okData);
+check("run create -K (no children)", run("run", "create", "-K", K1), errCode("NO_LINKED_CASES", 2));
+check("run create -w -J", run("run", "create", "-w", "active", "-J", K1), errCode("USAGE", 2));
+check("SPRINT_NOT_FOUND", run("run", "create", "-w", `No sprint ${tag}`), errCode("SPRINT_NOT_FOUND", 2));
 check(
   "JIRA_TICKET_NOT_FOUND",
   run("case", "create", "-s", sectionId, "-J", missing),
