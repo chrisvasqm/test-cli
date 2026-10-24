@@ -24,8 +24,11 @@ export class UserService {
   }
 
   /** Users with access to the project; TestRail Cloud needs the project id unless you are an admin. */
-  list(projectId: number): Promise<Collected<User>> {
-    return collectPages<User>(`get_users/${projectId}`, "users", {}, MAX_USERS, this.http);
+  async list(projectId: number): Promise<Collected<User>> {
+    const inProject = await collectPages<User>(`get_users/${projectId}`, "users", {}, MAX_USERS, this.http);
+    if (inProject.items.length > 0) return inProject;
+    // On Cloud, get_users/<project> can come back empty for projects open to everyone; an admin may still list all.
+    return collectPages<User>("get_users", "users", {}, MAX_USERS, this.http).catch(() => inProject);
   }
 
   /**
