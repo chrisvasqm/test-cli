@@ -1,4 +1,3 @@
-import { InputError } from "../core/errors.js";
 import type { Run } from "../core/testrail-types.js";
 import { joinRefs, splitList, uniqueRefs } from "../core/text.js";
 import { CaseService } from "./case.service.js";
@@ -44,8 +43,13 @@ export class LinkService {
   /**
    * Adds keys, which must not be linked yet. A test gets a status-less result with a "Linked KAN-1" comment and
    * the keys as defects, so its status stays; results are append-only, so that link cannot be removed.
+   * `loaded` is what `load` returned.
    */
-  async add(target: LinkTarget, current: readonly string[], added: readonly string[]): Promise<void> {
+  async add(
+    target: LinkTarget,
+    loaded: { keys: readonly string[]; run?: Run },
+    added: readonly string[],
+  ): Promise<void> {
     if (target.kind === "test") {
       // TestRail needs a status or a comment; defects alone are refused.
       await this.results.addForTest(target.id, {
@@ -54,25 +58,18 @@ export class LinkService {
       });
       return;
     }
-    await this.setRefs(target, [...current, ...added]);
+    await this.setRefs(target, [...loaded.keys, ...added], loaded.run);
   }
 
-  /** Replaces a case's or run's refs. */
-  async setRefs(target: RefsTarget, refs: readonly string[]): Promise<void> {
+  /** Replaces a case's or run's refs; a run in a test plan changes through its plan entry. `run` skips reading it. */
+  async setRefs(target: RefsTarget, refs: readonly string[], run?: Run): Promise<void> {
     const input = { refs: joinRefs(refs) };
     if (target.kind === "case") await this.cases.update(target.id, input);
-    else await this.runs.update(target.id, input);
+    else await this.runs.update(await this.runs.editable(target.id, run), input);
   }
 
-  /** Before a write: the run must be open, and update_run cannot change runs inside test plans. */
-  async assertWritable(target: LinkTarget, loaded: { runId?: number; run?: Run }): Promise<void> {
-    if (loaded.runId === undefined) return;
-    const run = await this.runs.open(loaded.runId, loaded.run);
-    if (target.kind === "run" && run.plan_id) {
-      throw new InputError(
-        "RUN_IN_PLAN",
-        `R${run.id} is part of test plan ${run.plan_id}; the CLI cannot change refs of runs in plans.`,
-      );
-    }
+  /** Before a write: the run must be open. */
+  async assertWritable(loaded: { runId?: number; run?: Run }): Promise<void> {
+    if (loaded.runId !== undefined) await this.runs.open(loaded.runId, loaded.run);
   }
 }

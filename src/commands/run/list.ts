@@ -21,7 +21,7 @@ export function registerList(run: Command): void {
       const limit = listLimit(opts.limit);
       const { config, mode } = bootstrap(cmd);
       const [{ items, hasMore }, statuses] = await Promise.all([
-        new RunService().list(config.projectId, Boolean(opts.completed), limit),
+        new RunService().list(config.projectId, limit, { completed: Boolean(opts.completed) }),
         new MetaService().statuses(),
       ]);
       const runs = items.map((item) => ({

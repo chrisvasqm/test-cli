@@ -26,9 +26,9 @@ export function registerAdd(link: Command): void {
       let checked = false;
       if (added.length > 0) {
         // In turn, not in parallel: the Jira check may prompt for `jira setup`. Both finish before the write.
-        await links.assertWritable(target, loaded);
+        await links.assertWritable(loaded);
         checked = opts.check ? await checkJiraKeys(added) : false;
-        await links.add(target, current, added);
+        await links.add(target, loaded, added);
       }
       const name = targetName(target);
       const view = {

@@ -59,7 +59,7 @@ export function registerView(project: Command): void {
       const id = wanted ?? config.projectId;
       const [found, runList, planList, milestoneList, statuses] = await Promise.all([
         new ProjectService().get(id),
-        new RunService().list(id, false, limit),
+        new RunService().list(id, limit, { completed: false }),
         new PlanService().list(id, false, limit),
         new MilestoneService().list(id, false, limit),
         new MetaService().statuses(),

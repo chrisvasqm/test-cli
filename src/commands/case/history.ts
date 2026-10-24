@@ -101,7 +101,7 @@ async function recentRuns(
   id: number,
   limit: number,
 ) {
-  const runs = await runService.recent(projectId, suiteId, scan);
+  const runs = await runService.list(projectId, scan, { suiteId });
   const history = await new ResultService().history(runs.items, id, limit);
   return { ...history, scanned: runs.items.length, moreRuns: runs.hasMore };
 }

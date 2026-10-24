@@ -56,7 +56,7 @@ export function registerCoverage(program: Command): void {
       const keys = found.tickets.map((item) => item.key);
       const [byKey, runs, statuses] = await Promise.all([
         new CaseService().linkedToEach(config.projectId, config.suiteId, keys),
-        new RunService().recent(config.projectId, config.suiteId, scan),
+        new RunService().list(config.projectId, scan, { suiteId: config.suiteId }),
         new MetaService().statuses(),
       ]);
       const caseIds = new Set([...byKey.values()].flat().map((item) => item.id));
