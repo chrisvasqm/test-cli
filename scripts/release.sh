@@ -54,6 +54,8 @@ done < <(git log --no-merges --format='%s%x1f%(trailers:key=Es,valueonly,separat
 cambios=${cambios%$'\n'}
 [ "$missing" -eq 0 ] || echo "release: $missing commit(s) have no Es: trailer; their Spanish line repeats the English subject" >&2
 cat >"$notes" <<NOTES
+# English
+
 ## What's changed
 
 $changes
@@ -75,6 +77,8 @@ irm https://raw.githubusercontent.com/chrisvasqm/testrail-cli/main/install.ps1 |
 To install exactly this version: \`npm install -g https://github.com/chrisvasqm/testrail-cli/releases/download/$tag/$asset_name\`
 
 ---
+
+# Spanish
 
 ## Cambios
 
