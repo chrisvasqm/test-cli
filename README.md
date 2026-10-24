@@ -66,6 +66,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail run view <R>`                | Progress per status, refs and description                         |
 | `testrail run create`                  | New run with every case, `--cases C1,C2`, or `--from-jira KEY`    |
 | `testrail run close <R>`               | Close a run (it cannot be reopened)                               |
+| `testrail run delete <R>`              | Delete a run, its tests and results (closed runs need permission) |
 | `testrail test list <R>`               | Tests in a run (`--status failed,retest`, `--limit <n>`, 100)     |
 | `testrail test view <T>`               | Status, steps and latest results (`--results <0-100>`, 5)         |
 | `testrail result add <T>`              | Add a result (`--create-bug` files a Jira Bug); or `--run --case` |
