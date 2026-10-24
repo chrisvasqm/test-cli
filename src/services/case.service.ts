@@ -43,13 +43,16 @@ export class CaseService {
     return filter.sectionId === undefined ? page : page.catch(notFound.section(filter.sectionId));
   }
 
-  /** Ids of every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
+  /** Every case whose refs include `key` (exactly, ignoring case; TestRail's refs filter is looser). */
+  async withRef(filter: Omit<CaseFilter, "refs" | "limit">, key: string): Promise<Case[]> {
+    const { items } = await this.list({ ...filter, refs: key, limit: Number.MAX_SAFE_INTEGER });
+    return items.filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)));
+  }
+
+  /** Ids of every case linked to `key`. */
   async linkedTo(projectId: number, suiteId: number | undefined, key: string): Promise<number[]> {
-    const filter = { projectId, suiteId, sectionId: undefined, refs: key, limit: Number.MAX_SAFE_INTEGER };
-    const { items } = await this.list(filter);
-    return items
-      .filter((item) => splitList(item.refs).some((ref) => sameKey(ref, key)))
-      .map((item) => item.id);
+    const cases = await this.withRef({ projectId, suiteId, sectionId: undefined }, key);
+    return cases.map((item) => item.id);
   }
 
   section(id: number): Promise<Section> {

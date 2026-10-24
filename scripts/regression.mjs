@@ -103,6 +103,16 @@ check(
   (res) =>
     okData(res) && res.out.data.cases.some((item) => item.id === created?.id && item.priority === "Low"),
 );
+check(
+  "case list --refs",
+  run("case", "list", "--refs", "reg-1"),
+  (res) => okData(res) && res.out.data.cases.some((item) => item.id === created?.id),
+);
+check(
+  "case list --refs (no match)",
+  run("case", "list", "--refs", "REG-999"),
+  (res) => okData(res) && res.out.data.cases.length === 0,
+);
 const runData = check(
   "run create",
   run("run", "create", "--name", `Regression ${stamp}`, "--cases", caseRef),

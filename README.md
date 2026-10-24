@@ -55,7 +55,7 @@ Ids carry TestRail's letters: `C12` is a case, `R3` a run, `T45` a test (one cas
 | `testrail project list`                | Active projects; `*` marks yours                                  |
 | `testrail project use <P>`             | Make a project (and `--suite <S>`) the default                    |
 | `testrail section list`                | Sections and their ids, nested                                    |
-| `testrail case list`                   | Cases (`--section <id>`, `--limit <n>`, 50)                       |
+| `testrail case list`                   | Cases (`--section <id>`, `--refs KAN-12`, `--limit <n>`, 50)      |
 | `testrail case view <C>`               | Fields, preconditions, steps and expected results                 |
 | `testrail case create`                 | New case (`--section`, and `--title` or `--from-jira KAN-12`)     |
 | `testrail case edit <C>`               | Change only the fields you pass                                   |
