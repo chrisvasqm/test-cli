@@ -1,6 +1,6 @@
 {
   "name": "testrail-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Small TestRail CLI for humans and agents",
   "type": "module",
   "engines": {
@@ -20,7 +20,9 @@
     "check": "pnpm build && pnpm lint && pnpm format:check",
     "lint": "oxlint src",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "bump": "pnpm version --no-git-tag-version --no-git-checks",
+    "release": "bash scripts/release.sh"
   },
   "license": "ISC",
   "devEngines": {
