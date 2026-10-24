@@ -65,18 +65,18 @@ export function registerTodo(test: Command): void {
       const limit = listLimit(opts.limit);
       const milestone = opts.milestone === undefined ? undefined : milestoneId(opts.milestone);
       const { config, mode } = bootstrap(cmd);
-      const { meta } = provider();
-      // Read before any request starts, so a provider without milestones fails cleanly.
-      const milestones = milestone === undefined ? undefined : provider().milestones;
+      const { meta, users, runs: runService, tests: testService } = provider();
+      // Started first, so a provider without milestones fails before any other request.
+      const checked = milestone === undefined ? undefined : provider().milestones.get(milestone);
       const [user, statusIds, runs] = await Promise.all([
-        provider().users.resolve(opts.assigned ?? "me", config.email, "--assigned"),
+        users.resolve(opts.assigned ?? "me", config.email, "--assigned"),
         opts.status === undefined ? meta.openStatusIds() : meta.statusIds(opts.status),
-        provider().runs.allOpen(config.projectId, milestone),
-        milestone === undefined ? undefined : milestones?.get(milestone),
+        runService.allOpen(config.projectId, milestone),
+        checked,
       ]);
       const byRun = new Map(runs.map((item) => [item.run.id, runView(item)]));
       const [found, statuses] = await Promise.all([
-        provider().tests.assigned([...byRun.keys()], statusIds, user.id),
+        testService.assigned([...byRun.keys()], statusIds, user.id),
         meta.statuses(),
       ]);
       const tests = found.slice(0, limit).map((item) => ({
