@@ -29,7 +29,11 @@ export interface CaseInput extends CaseContent {
   estimate?: string;
 }
 
-/** get/add/update/delete_case, and get_cases endpoints. */
+/**
+ * get/add/update/delete_case, get_cases, update_cases, and copy_/move_cases_to_section endpoints.
+ * The bulk endpoints answer an unknown case with one 400 for the whole list, so callers check each
+ * case with get first to name the missing one.
+ */
 export class CaseService {
   constructor(private readonly http = HttpClient.get()) {}
 
@@ -76,6 +80,27 @@ export class CaseService {
   /** Only the fields given change. */
   update(id: number, input: CaseInput): Promise<Case> {
     return this.http.post<Case>(`update_case/${id}`, input).catch(notFound.case(id));
+  }
+
+  /** Sets the same fields on every case; they must all be in `suiteId`. */
+  async updateMany(suiteId: number, ids: number[], input: CaseInput): Promise<void> {
+    await this.http
+      .post<unknown>(`update_cases/${suiteId}`, { ...input, case_ids: ids })
+      .catch(notFound.suite(suiteId));
+  }
+
+  /** Copies the cases into the section; the originals stay where they are. */
+  async copyTo(sectionId: number, ids: number[]): Promise<void> {
+    await this.http
+      .post<unknown>(`copy_cases_to_section/${sectionId}`, { case_ids: ids })
+      .catch(notFound.section(sectionId));
+  }
+
+  /** Moves the cases into the section, which is in `suiteId`. */
+  async moveTo(sectionId: number, suiteId: number, ids: number[]): Promise<void> {
+    await this.http
+      .post<unknown>(`move_cases_to_section/${sectionId}`, { suite_id: suiteId, case_ids: ids })
+      .catch(notFound.section(sectionId));
   }
 
   /** Deletes the case and its tests and results in active runs. TestRail has no undo. */
